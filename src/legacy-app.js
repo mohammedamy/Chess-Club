@@ -303,6 +303,24 @@ const OPENINGS = [
       {move:'Bd6', text:'Trying to challenge the strong London bishop.'},
       {move:'Bg3', text:'Avoids the trade — the bishop stays on its excellent diagonal.'}
     ]},
+  { id:'scandinavian', name:'The Scandinavian Defence', eco:'B01', color:'Black',
+    summary:'An active reply to 1.e4: Black challenges the center immediately and accepts an early queen move in exchange for a clear, practical structure.',
+    keyIdeas:['Challenge e4 at once','Develop with tempo against the queen','Aim for ...c6 and ...Bf5','Keep the position concrete'],
+    line:[
+      {move:'e4', text:'White claims the center.'}, {move:'d5', text:'Black challenges e4 immediately.'},
+      {move:'exd5', text:'White accepts the exchange.'}, {move:'Qxd5', text:'Black recaptures and restores material.'},
+      {move:'Nc3', text:'Developing with tempo against the queen.'}, {move:'Qa5', text:'The main practical square: the queen stays active and avoids another tempo.'},
+      {move:'d4', text:'White builds a broad center.'}, {move:'c6', text:'Black prepares ...Bf5 and a solid pawn chain.'}
+    ]},
+  { id:'english', name:'The English Opening', eco:'A10', color:'White',
+    summary:'A flexible flank opening where White controls d5 from the side and can transpose into many queen-pawn structures.',
+    keyIdeas:['Control d5 from the flank','Flexible pawn structure','Fianchetto the king bishop','Transpose when useful'],
+    line:[
+      {move:'c4', text:'White immediately influences the central d5 square.'}, {move:'e5', text:'Black stakes a claim in the center.'},
+      {move:'Nc3', text:'Developing while increasing pressure on d5.'}, {move:'Nf6', text:'Black develops naturally.'},
+      {move:'g3', text:'Preparing the king-side fianchetto.'}, {move:'d5', text:'Black builds a classical pawn center.'},
+      {move:'cxd5', text:'White clarifies the center.'}, {move:'Nxd5', text:'Black recaptures with an active knight.'}
+    ]},
 ];
 
 // =========================================================
@@ -495,6 +513,16 @@ const TACTICS = [
     prompt:'White to move. Exploit the pin on the f6 knight.',
     solution:['e5'],
     explanation:'e5 attacks the f6 knight, which is absolutely pinned to the queen on d8 by the bishop on g5. The knight cannot move without losing the queen. Black\'s best try is dxe5, but then Bxd8 wins the queen anyway. The pin and the attacker collaborate to win heavy material.'
+  },
+  { id:'deflection', theme:'Deflection', difficulty:'Medium',
+    fen:'4k3/8/8/8/8/8/4Q3/4K3 w - - 0 1', sideToMove:'White',
+    prompt:'White to move. Give check by placing the queen on the seventh rank.', solution:['Qe7+','Qe7'],
+    explanation:'Qe7+ puts the queen directly in front of the king. Train yourself to look for forcing checks first: they restrict the opponent’s choices and often begin a tactical sequence.'
+  },
+  { id:'queen-check', theme:'Forcing Check', difficulty:'Easy',
+    fen:'4k3/8/8/8/8/8/3Q4/4K3 w - - 0 1', sideToMove:'White',
+    prompt:'White to move. Find the most forcing queen check.', solution:['Qd7+','Qd7'],
+    explanation:'Qd7+ checks along the seventh rank while controlling key escape squares. In simple positions, name every legal check before searching for quieter moves.'
   },
 ];
 
