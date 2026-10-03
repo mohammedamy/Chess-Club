@@ -1,4 +1,5 @@
 import { computeElo } from './domain/rating.js';
+import { completeEmailSignInLink, currentUser as currentFirebaseUser, isEmailSignInLink, sendEmailSignInLink, signOut as signOutFirebase, upsertMyProfile } from './data/club-api.js';
 
 /* =========================================================
    EDUGATES INTERNATIONAL SCHOOL — CHESS CLUB
@@ -61,7 +62,9 @@ const State = {
   promotionPending: null,
   engine: null, engineThinking: false,
   puzzleSolution: [], puzzleStep: 0, puzzleFeedback: null,
+  authError: null, completingEmailLink: false,
 };
+const sharedClub = window.CHESS_CLUB_SHARED === true;
 
 // =========================================================
 // ELO
@@ -70,6 +73,7 @@ const State = {
 // MEMBERS
 // =========================================================
 async function loadMembers(){
+  if(sharedClub){ State.members = {}; return; }
   const raw = await storage.get('eis_members', true);
   if(raw){ try{ State.members = JSON.parse(raw); }catch(e){ State.members = {}; } }
   else State.members = {};
@@ -83,6 +87,20 @@ async function registerMember(name){
 }
 async function setUser(id){ State.user = State.members[id]; await storage.set('eis_currentUser', id, true); }
 async function loadCurrentUser(){
+  if(sharedClub){
+    try{
+      State.completingEmailLink = await isEmailSignInLink();
+      const savedEmail = localStorage.getItem('chess-club:email-for-sign-in');
+      if(State.completingEmailLink && savedEmail) await completeEmailSignInLink(savedEmail);
+      const user = await currentFirebaseUser();
+      if(user){
+        const name = user.displayName || (user.email ? user.email.split('@')[0] : 'Club member');
+        State.user = {id:user.uid, name, rating:1200, wins:0, losses:0, draws:0};
+        await upsertMyProfile(name);
+      }
+    }catch(error){ State.authError = error.message; }
+    return;
+  }
   const id = await storage.get('eis_currentUser', true);
   if(id && State.members[id]) State.user = State.members[id];
 }
@@ -611,7 +629,7 @@ function renderHeader(){
     <div><div class="name">${escapeHtml(State.user.name)}</div><div class="rating">Elo ${State.user.rating}</div></div>
     <button id="logoutBtn">leave</button>
   </div>`);
-  user.querySelector('#logoutBtn').onclick = async ()=>{ await logoutUser(); render(); };
+  user.querySelector('#logoutBtn').onclick = async ()=>{ if(sharedClub) await signOutFirebase(); else await logoutUser(); State.user=null; render(); };
   c.appendChild(brand); c.appendChild(nav); c.appendChild(user);
   h.appendChild(c);
   return h;
@@ -624,6 +642,7 @@ function renderFooter(){
 // LOGIN
 // =========================================================
 function renderLogin(){
+  if(sharedClub) return renderSharedLogin();
   const wrap = document.createElement('div');
   const stage = document.createElement('div'); stage.className='login-stage';
   const card = document.createElement('div'); card.className='card ornate login-card';
@@ -672,6 +691,33 @@ function renderLogin(){
   stage.appendChild(card);
   wrap.appendChild(stage);
   return wrap;
+}
+
+function renderSharedLogin(){
+  const wrap = document.createElement('div');
+  const stage = document.createElement('div'); stage.className='login-stage';
+  const card = document.createElement('div'); card.className='card ornate login-card';
+  const action = State.completingEmailLink ? 'Complete sign-in' : 'Send link';
+  card.innerHTML = `
+    <div class="crest" role="img" aria-label="Edugates International School logo"></div>
+    <div class="eyebrow">A private club</div><h1>Edugates International School</h1><div class="ornament"></div>
+    <p class="italic" style="color:var(--ink-soft)">${State.completingEmailLink ? 'Enter the email address that received the sign-in link.' : 'Enter your school email and we will send a secure sign-in link.'}</p>
+    ${State.authError ? `<p role="alert" style="color:var(--burgundy)">${escapeHtml(State.authError)}</p>` : ''}
+    <div style="text-align:left;margin-top:1.4rem"><label for="email">School email</label><div style="display:flex;gap:.5rem"><input id="email" type="email" autocomplete="email" required placeholder="you@school.edu" /><button class="btn gold" id="emailBtn" type="button">${action}</button></div></div>`;
+  const submit = async ()=>{
+    const email = card.querySelector('#email').value.trim(); if(!email){ card.querySelector('#email').focus(); return; }
+    const button = card.querySelector('#emailBtn'); button.disabled = true;
+    try{
+      if(State.completingEmailLink){
+        const user = await completeEmailSignInLink(email);
+        const name = user.email ? user.email.split('@')[0] : 'Club member';
+        State.user={id:user.uid,name,rating:1200,wins:0,losses:0,draws:0}; await upsertMyProfile(name); State.completingEmailLink=false; State.authError=null; render();
+      } else { await sendEmailSignInLink(email); button.textContent='Check your email'; }
+    }catch(error){ State.authError=error.message; render(); }
+  };
+  card.querySelector('#emailBtn').onclick=submit;
+  card.querySelector('#email').addEventListener('keydown', event=>{ if(event.key==='Enter') submit(); });
+  stage.appendChild(card); wrap.appendChild(stage); return wrap;
 }
 
 // =========================================================

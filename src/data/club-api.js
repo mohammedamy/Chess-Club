@@ -30,6 +30,11 @@ export async function completeEmailSignInLink(email = window.localStorage.getIte
   return credential.user;
 }
 
+export async function isEmailSignInLink() {
+  const { auth, authModule } = await requireServices();
+  return authModule.isSignInWithEmailLink(auth, window.location.href);
+}
+
 export async function signOut() {
   const { auth, authModule } = await requireServices();
   await authModule.signOut(auth);
