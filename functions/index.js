@@ -155,6 +155,7 @@ export const recordCoachGameResult = onCall(async (request) => {
       termination,
       pgn,
       recordedBy: callerId,
+      startedAt: FieldValue.serverTimestamp(),
       completedAt: FieldValue.serverTimestamp(),
     });
     transaction.update(whiteRef, {
