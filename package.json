@@ -12,8 +12,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.117.2",
-    "chess.js": "0.10.3"
+    "chess.js": "0.10.3",
+    "firebase": "^12.19.0"
   },
   "devDependencies": {
     "vite": "latest",

@@ -33,17 +33,25 @@ npm run build
 
 `npm run build` generates the static site in `dist/`. Vite uses relative asset paths, so the result can be deployed to GitHub Pages or another static host under a subdirectory.
 
-The current persistence adapter still falls back to browser-local storage. Shared student accounts, club data, and server-authoritative ratings are the next foundation milestone.
+The app continues to work with browser-local storage until Firebase is configured. When it is configured, the Firebase client is loaded only for shared-club use.
 
 ## Shared-club backend
 
-The first Supabase migration lives in `supabase/migrations/`. It defines club-scoped profiles, memberships, games, an immutable rating ledger, and learning progress. Every exposed table has Row Level Security enabled. Browser clients may only update their own profile and learning records; a trusted server or Edge Function must create clubs, manage membership, and write games or rating events.
+Firebase provides the shared-club foundation:
 
-Copy `.env.example` to `.env.local` and add the project's URL and **publishable** key to activate the shared client. The service role and secret keys must remain in server-only Supabase secrets; they must never be added to Vite environment files.
+- Firebase Authentication supports passwordless email-link sign-in.
+- Cloud Firestore stores profiles, clubs, memberships, games, progress, and puzzle attempts.
+- `firestore.rules` gives students access only to their own learning records; coaches and administrators can view club activity. The browser cannot create clubs, change memberships, write games, or change ratings.
+- Cloud Functions create clubs, add members, and record coach-verified games. Game recording validates the PGN where the ending can be checked automatically, then applies both Elo updates in one Firestore transaction.
 
-To validate the database locally, install Docker Desktop or Podman, then run:
+Copy `.env.example` to `.env.local` and paste the four values from Firebase Console's **Project settings → Your apps → SDK setup and configuration**. Firebase web configuration is public; Firestore Security Rules and Cloud Functions protect the data.
+
+After creating a Firebase project, deploy the shared backend with the Firebase CLI:
 
 ```sh
-supabase start
-supabase test db
+npx firebase-tools login
+npx firebase-tools use --add
+npx firebase-tools deploy --only firestore:rules,functions
 ```
+
+For local backend testing, run `npx firebase-tools emulators:start --only auth,firestore,functions`.

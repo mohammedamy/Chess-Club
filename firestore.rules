@@ -1,0 +1,62 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function membership(clubId) {
+      return get(/databases/$(database)/documents/clubs/$(clubId)/members/$(request.auth.uid));
+    }
+
+    function isMember(clubId) {
+      return signedIn() && exists(/databases/$(database)/documents/clubs/$(clubId)/members/$(request.auth.uid));
+    }
+
+    function managesClub(clubId) {
+      return isMember(clubId) && membership(clubId).data.role in ['coach', 'admin'];
+    }
+
+    match /users/{userId} {
+      allow read, create, update: if signedIn() && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    match /clubs/{clubId} {
+      allow read: if isMember(clubId);
+      allow write: if false;
+
+      match /members/{userId} {
+        allow read: if isMember(clubId);
+        allow write: if false;
+      }
+
+      match /games/{gameId} {
+        allow read: if isMember(clubId);
+        allow write: if false;
+      }
+
+      match /progress/{progressId} {
+        allow read: if isMember(clubId) && resource.data.userId == request.auth.uid;
+        allow create, update: if isMember(clubId)
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.lessonId is string
+          && request.resource.data.completedSteps is int
+          && request.resource.data.completedSteps >= 0;
+        allow delete: if false;
+      }
+
+      match /puzzleAttempts/{attemptId} {
+        allow read: if isMember(clubId)
+          && (resource.data.userId == request.auth.uid || managesClub(clubId));
+        allow create: if isMember(clubId)
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.puzzleId is string
+          && request.resource.data.correct is bool
+          && request.resource.data.usedHint is bool;
+        allow update, delete: if false;
+      }
+    }
+  }
+}
