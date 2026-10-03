@@ -30,7 +30,8 @@ export function getFirebaseServices(environment = import.meta.env) {
       import('firebase/app'),
       import('firebase/auth'),
       import('firebase/firestore'),
-    ]).then(([appModule, authModule, firestoreModule]) => {
+      import('firebase/functions'),
+    ]).then(([appModule, authModule, firestoreModule, functionsModule]) => {
       const app = appModule.initializeApp(config);
       return {
         app,
@@ -38,6 +39,8 @@ export function getFirebaseServices(environment = import.meta.env) {
         authModule,
         db: firestoreModule.getFirestore(app),
         firestoreModule,
+        functions: functionsModule.getFunctions(app),
+        functionsModule,
       };
     });
   }

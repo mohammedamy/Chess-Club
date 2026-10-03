@@ -1,5 +1,5 @@
 import { computeElo } from './domain/rating.js';
-import { completeEmailSignInLink, currentUser as currentFirebaseUser, isEmailSignInLink, sendEmailSignInLink, signOut as signOutFirebase, upsertMyProfile } from './data/club-api.js';
+import { completeEmailSignInLink, createClub, currentUser as currentFirebaseUser, isEmailSignInLink, listMyClubs, sendEmailSignInLink, signOut as signOutFirebase, upsertMyProfile } from './data/club-api.js';
 
 /* =========================================================
    EDUGATES INTERNATIONAL SCHOOL — CHESS CLUB
@@ -63,6 +63,7 @@ const State = {
   engine: null, engineThinking: false,
   puzzleSolution: [], puzzleStep: 0, puzzleFeedback: null,
   authError: null, completingEmailLink: false,
+  sharedClubs: [],
 };
 const sharedClub = window.CHESS_CLUB_SHARED === true;
 
@@ -97,6 +98,7 @@ async function loadCurrentUser(){
         const name = user.displayName || (user.email ? user.email.split('@')[0] : 'Club member');
         State.user = {id:user.uid, name, rating:1200, wins:0, losses:0, draws:0};
         await upsertMyProfile(name);
+        State.sharedClubs = await listMyClubs();
       }
     }catch(error){ State.authError = error.message; }
     return;
@@ -711,7 +713,7 @@ function renderSharedLogin(){
       if(State.completingEmailLink){
         const user = await completeEmailSignInLink(email);
         const name = user.email ? user.email.split('@')[0] : 'Club member';
-        State.user={id:user.uid,name,rating:1200,wins:0,losses:0,draws:0}; await upsertMyProfile(name); State.completingEmailLink=false; State.authError=null; render();
+        State.user={id:user.uid,name,rating:1200,wins:0,losses:0,draws:0}; await upsertMyProfile(name); State.sharedClubs=await listMyClubs(); State.completingEmailLink=false; State.authError=null; render();
       } else { await sendEmailSignInLink(email); button.textContent='Check your email'; }
     }catch(error){ State.authError=error.message; render(); }
   };
@@ -737,6 +739,15 @@ function renderHome(){
     </div>
   </div>`);
   wrap.appendChild(hero);
+  if(sharedClub && State.sharedClubs.length===0){
+    const setup = el(`<div class="card ornate" style="margin:1.5rem 0"><div class="eyebrow">First-time setup</div><h2>Create the shared club</h2><p>Set up the club once. You will become its administrator and can add coaches and students after Firebase Functions are deployed.</p><button class="btn gold" type="button">Create Edugates Chess Club</button></div>`);
+    setup.querySelector('button').onclick = async ()=>{
+      const button = setup.querySelector('button'); button.disabled=true;
+      try{ const club = await createClub({name:'Edugates Chess Club',slug:'edugates-chess'}); State.sharedClubs=[club]; render(); }
+      catch(error){ alert(error.message); button.disabled=false; }
+    };
+    wrap.appendChild(setup);
+  }
   wrap.appendChild(el(`<div style="margin:2.4rem 0 1rem"><div class="eyebrow">Choose a Volume</div><h2>The Curriculum</h2></div>`));
   const grid = document.createElement('div'); grid.className='grid grid-3';
   const modules = [

@@ -71,6 +71,13 @@ export async function listMyClubs() {
   return clubs.filter(Boolean).sort((a, b) => a.name.localeCompare(b.name));
 }
 
+export async function createClub({ name, slug }) {
+  const { functions, functionsModule } = await requireServices();
+  const create = functionsModule.httpsCallable(functions, 'createClub');
+  const { data } = await create({ name, slug });
+  return data;
+}
+
 export async function listClubMembers(clubId) {
   const { db, firestoreModule } = await requireServices();
   const snapshot = await firestoreModule.getDocs(firestoreModule.collection(db, 'clubs', clubId, 'members'));
