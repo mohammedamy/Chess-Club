@@ -57,6 +57,7 @@ const State = {
   studyContext: null, studyStep: 0,
   vsMode: null, engineLevel: null, engineCustomElo: 1500,
   playerColor: 'w',
+  variant: 'standard',
   gameRated: false, gameWhite: null, gameBlack: null,
   gameMoveHistory: [], gameOver: false, lastResult: null,
   promotionPending: null,
@@ -1059,6 +1060,22 @@ function renderPlayMenu(){
   return wrap;
 }
 
+function chess960Fen(){
+  const squares=Array(8).fill(null); const pick=options=>options[Math.floor(Math.random()*options.length)];
+  squares[pick([0,2,4,6])]='B'; squares[pick([1,3,5,7])]='B';
+  let free=()=>squares.map((v,i)=>v?null:i).filter(i=>i!==null);
+  squares[pick(free())]='Q'; for(let i=0;i<2;i++) squares[pick(free())]='N';
+  const rest=free(); squares[rest[0]]='R'; squares[rest[1]]='K'; squares[rest[2]]='R';
+  const rank=squares.join(''); return `${rank.toLowerCase()}/pppppppp/8/8/8/8/PPPPPPPP/${rank} w - - 0 1`;
+}
+
+function addVariantPicker(card){
+  const row=document.createElement('div'); row.style.marginBottom='1rem'; row.innerHTML='<label>Starting position</label>';
+  const tog=document.createElement('div'); tog.className='toggle-row';
+  [['standard','Standard'],['chess960','Chess960']].forEach(([value,label])=>{const b=document.createElement('button');b.className='toggle-btn';b.textContent=label;if(State.variant===value)b.classList.add('active');b.onclick=()=>{[...tog.children].forEach(x=>x.classList.remove('active'));b.classList.add('active');State.variant=value;};tog.appendChild(b);});
+  row.appendChild(tog); card.appendChild(row);
+}
+
 function renderVsHumanSetup(){
   const wrap = document.createElement('div');
   wrap.appendChild(el(`<button class="btn ghost sm" id="back" style="margin-bottom:1rem">← Back</button>`));
@@ -1103,6 +1120,7 @@ function renderVsHumanSetup(){
   ratedRow.dataset.type='rated';
   ratedRow.appendChild(ratedTog);
   card.appendChild(ratedRow);
+  addVariantPicker(card);
   const start = el(`<button class="btn gold full">Begin the Game</button>`);
   start.onclick = ()=>{
     let myColor = colorRow.dataset.color;
@@ -1112,7 +1130,7 @@ function renderVsHumanSetup(){
     else { State.gameWhite=opp.id; State.gameBlack=State.user.id; }
     State.gameRated = ratedRow.dataset.type==='rated';
     State.vsMode = State.gameRated?'human-rated':'human-unrated';
-    State.game = new Chess(); State.gameMoveHistory=[]; State.gameOver=false;
+    State.game = new Chess(State.variant==='chess960'?chess960Fen():undefined); State.gameMoveHistory=[]; State.gameOver=false;
     State.lastMove=null; State.selectedSquare=null; State.flipBoard=false;
     navigate('vs-human');
   };
@@ -1163,6 +1181,7 @@ function renderVsEngineSetup(){
   });
   colorRow.appendChild(tog);
   card.appendChild(colorRow);
+  addVariantPicker(card);
   const start = el(`<button class="btn gold full" style="margin-top:1.4rem">Load Engine & Begin</button>`);
   start.onclick = async ()=>{
     start.disabled=true; start.innerHTML = '<span class="spinner"></span> Summoning the engine...';
@@ -1176,7 +1195,7 @@ function renderVsEngineSetup(){
       let pc = myColor; if(pc==='random') pc = Math.random()<.5?'white':'black';
       State.playerColor = pc==='white'?'w':'b';
       State.flipBoard = State.playerColor==='b';
-      State.game = new Chess(); State.vsMode = 'engine';
+      State.game = new Chess(State.variant==='chess960'?chess960Fen():undefined); State.vsMode = 'engine';
       State._engineConfig = configureEngine(lvl);
       State._engineLevelDisplay = useCustom ? `Custom Elo ${State.engineCustomElo}` : `Level ${selectedLevel} (${presets[selectedLevel-1].name})`;
       navigate('vs-engine');
