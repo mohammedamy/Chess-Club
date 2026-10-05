@@ -65,8 +65,40 @@ const State = {
   puzzleSolution: [], puzzleStep: 0, puzzleFeedback: null,
   authError: null, completingEmailLink: false,
   sharedClubs: [],
+  openingLevel: 'All', tacticLevel: 'All',
+  preferences: loadPreferences(),
 };
 const sharedClub = window.CHESS_CLUB_SHARED === true;
+
+const BOARD_THEMES = {
+  walnut: { name:'Classic Walnut', light:'#ead7ad', dark:'#8b5a2b', frame:'#4a2c0e', accent:'#d4a943' },
+  midnight: { name:'Midnight Blue', light:'#f0eadb', dark:'#263b5f', frame:'#13213a', accent:'#65a7d8' },
+  forest: { name:'Forest Green', light:'#f3ead1', dark:'#356246', frame:'#193c2a', accent:'#d7b75b' },
+};
+const PIECE_STYLES = {
+  classic: { name:'Classic Staunton', note:'Traditional ivory and charcoal' },
+  warm: { name:'Warm Wood', note:'Soft carved-wood finish' },
+  contrast: { name:'High Contrast', note:'Maximum clarity on small screens' },
+};
+
+function loadPreferences(){
+  try{ return {...{board:'walnut', pieces:'classic', coordinates:true}, ...JSON.parse(localStorage.getItem('eis_board_preferences')||'{}')}; }
+  catch(e){ return {board:'walnut', pieces:'classic', coordinates:true}; }
+}
+function applyPreferences(){
+  const theme = BOARD_THEMES[State.preferences.board] || BOARD_THEMES.walnut;
+  const root = document.documentElement;
+  root.style.setProperty('--board-light', theme.light);
+  root.style.setProperty('--board-dark', theme.dark);
+  root.style.setProperty('--board-frame', theme.frame);
+  root.style.setProperty('--board-accent', theme.accent);
+  document.body.dataset.pieceStyle = State.preferences.pieces;
+  document.body.classList.toggle('hide-coordinates', !State.preferences.coordinates);
+}
+function savePreferences(){
+  localStorage.setItem('eis_board_preferences', JSON.stringify(State.preferences));
+  applyPreferences();
+}
 
 // =========================================================
 // ELO
@@ -322,6 +354,42 @@ const OPENINGS = [
       {move:'g3', text:'Preparing the king-side fianchetto.'}, {move:'d5', text:'Black builds a classical pawn center.'},
       {move:'cxd5', text:'White clarifies the center.'}, {move:'Nxd5', text:'Black recaptures with an active knight.'}
     ]},
+  { id:'catalan', name:'The Catalan Opening', eco:'E06', color:'White', level:'Advanced',
+    summary:'A world-championship system combining Queen’s Gambit space with long-diagonal pressure. White often invests a pawn for lasting positional control.',
+    keyIdeas:['Fianchetto pressure on the long diagonal','Restrict Black’s queenside','Recover c4 only when development is complete','Play for durable positional pressure'],
+    line:[
+      {move:'d4',text:'Claims central space.'},{move:'Nf6',text:'Black develops flexibly.'},{move:'c4',text:'White controls d5.'},{move:'e6',text:'Black prepares ...d5 or ...Bb4+.'},{move:'g3',text:'The Catalan signature: preparing Bg2.'},{move:'d5',text:'Black builds a classical center.'},{move:'Bg2',text:'The bishop becomes the strategic soul of the opening.'},{move:'Be7',text:'Black prepares to castle.'},{move:'Nf3',text:'White completes kingside development.'},{move:'O-O',text:'Black secures the king.'},{move:'O-O',text:'White is ready to pressure the queenside and central dark squares.'}
+    ]},
+  { id:'nimzo-indian', name:'The Nimzo-Indian Defence', eco:'E20', color:'Black', level:'Advanced',
+    summary:'A cornerstone of elite chess. Black gives up the bishop pair only when the resulting structure, development, or dark-square control justifies it.',
+    keyIdeas:['Pin the c3 knight','Fight e4 without occupying it','Balance bishop pair against structure','Use ...c5 or ...d5 at the right moment'],
+    line:[
+      {move:'d4',text:'White opens with the queen pawn.'},{move:'Nf6',text:'Black controls e4.'},{move:'c4',text:'White expands in the center.'},{move:'e6',text:'Black opens the diagonal for the dark bishop.'},{move:'Nc3',text:'White supports e4.'},{move:'Bb4',text:'The Nimzo-Indian pin prevents immediate e4.'},{move:'e3',text:'The Rubinstein system builds a strong center.'},{move:'O-O',text:'Black castles before clarifying the structure.'},{move:'Bd3',text:'White prepares Nge2 and e4.'},{move:'d5',text:'Black strikes in the center before White consolidates.'}
+    ]},
+  { id:'grunfeld', name:'The Grünfeld Defence', eco:'D80', color:'Black', level:'Expert',
+    summary:'An elite hypermodern defence where Black invites a broad white center, then attacks it with pieces and pawn breaks.',
+    keyIdeas:['Attack the center with ...c5','Pressure d4 with Bg7','Trade central pawns before they advance','Calculate dynamically'],
+    line:[
+      {move:'d4',text:'White claims the center.'},{move:'Nf6',text:'Black develops without committing a pawn.'},{move:'c4',text:'White builds more space.'},{move:'g6',text:'Black prepares the kingside fianchetto.'},{move:'Nc3',text:'White reinforces d5 and e4.'},{move:'d5',text:'The Grünfeld challenge.'},{move:'cxd5',text:'White opens the center.'},{move:'Nxd5',text:'Black uses a piece to contest it.'},{move:'e4',text:'White builds the imposing pawn center.'},{move:'Nxc3',text:'Black removes its main defender.'},{move:'bxc3',text:'White accepts structural weakness for space.'},{move:'Bg7',text:'The bishop immediately attacks the center.'}
+    ]},
+  { id:'petroff', name:'The Petroff Defence', eco:'C42', color:'Black', level:'Advanced',
+    summary:'A precise world-championship defence. Black meets 1.e4 symmetrically and relies on accurate timing rather than passive imitation.',
+    keyIdeas:['Counterattack e4','Do not copy blindly','Neutralize early initiative','Use central symmetry accurately'],
+    line:[
+      {move:'e4',text:'White occupies the center.'},{move:'e5',text:'Black answers classically.'},{move:'Nf3',text:'White attacks e5.'},{move:'Nf6',text:'The Petroff counterattacks e4.'},{move:'Nxe5',text:'White accepts the central challenge.'},{move:'d6',text:'Black first drives the knight away.'},{move:'Nf3',text:'The knight returns safely.'},{move:'Nxe4',text:'Only now does Black recover the pawn.'},{move:'d4',text:'White takes space and opens lines.'},{move:'d5',text:'Black stabilizes the central knight.'},{move:'Bd3',text:'White develops with tempo against e4.'}
+    ]},
+  { id:'sveshnikov', name:'The Sveshnikov Sicilian', eco:'B33', color:'Black', level:'Expert',
+    summary:'A concrete Sicilian built on dynamic imbalance. Black accepts a weak d5 square to gain time, space, and active piece play.',
+    keyIdeas:['Trade structure for activity','Control d5 tactically','Use ...f5 for kingside play','Know forcing sequences'],
+    line:[
+      {move:'e4',text:'White opens with the king pawn.'},{move:'c5',text:'Black chooses an asymmetrical fight.'},{move:'Nf3',text:'White prepares d4.'},{move:'Nc6',text:'Black develops and controls d4.'},{move:'d4',text:'The Open Sicilian.'},{move:'cxd4',text:'Black opens the c-file.'},{move:'Nxd4',text:'White centralizes the knight.'},{move:'Nf6',text:'Black attacks e4.'},{move:'Nc3',text:'White defends.'},{move:'e5',text:'The Sveshnikov thrust gains time and concedes d5.'},{move:'Ndb5',text:'White heads for d6.'},{move:'d6',text:'Black controls e5 and prepares active development.'}
+    ]},
+  { id:'reti', name:'The Réti Opening', eco:'A09', color:'White', level:'Advanced',
+    summary:'A flexible grandmaster system that controls the center from a distance and delays committing the central pawns.',
+    keyIdeas:['Invite then undermine the center','Transpose with purpose','Fianchetto the kingside bishop','Keep the pawn structure flexible'],
+    line:[
+      {move:'Nf3',text:'White controls e5 without showing the pawn structure.'},{move:'d5',text:'Black occupies the center.'},{move:'c4',text:'White attacks d5 from the flank.'},{move:'e6',text:'Black reinforces the center.'},{move:'g3',text:'White prepares a long-diagonal bishop.'},{move:'Nf6',text:'Black develops naturally.'},{move:'Bg2',text:'The bishop pressures the center from afar.'},{move:'Be7',text:'Black prepares castling.'},{move:'O-O',text:'White completes a flexible setup.'},{move:'O-O',text:'Both sides can now transform the center.'}
+    ]},
 ];
 
 // =========================================================
@@ -525,6 +593,46 @@ const TACTICS = [
     prompt:'White to move. Find the most forcing queen check.', solution:['Qd7+','Qd7'],
     explanation:'Qd7+ checks along the seventh rank while controlling key escape squares. In simple positions, name every legal check before searching for quieter moves.'
   },
+  { id:'arabian-mate', theme:'Arabian Mate', difficulty:'Advanced', rating:1800,
+    fen:'7k/6R1/5N2/8/8/8/8/6K1 w - - 0 1', sideToMove:'White',
+    prompt:'White to move. Coordinate rook and knight for mate.', solution:['Rh7#','Rh7'],
+    explanation:'Rh7# is the classic Arabian mate. The rook checks beside the king while the knight on f6 protects h7 and covers g8.'
+  },
+  { id:'anastasia-mate', theme:'Anastasia’s Mate', difficulty:'Advanced', rating:1900,
+    fen:'7k/4N2p/8/8/8/8/8/7R w - - 0 1', sideToMove:'White',
+    prompt:'White to move. Use the knight’s control to finish on the h-file.', solution:['Rxh7#','Rxh7'],
+    explanation:'Rxh7# removes the final shield. The knight on e7 controls g8 and g6, so the king has no escape from the rook.'
+  },
+  { id:'long-range-mate', theme:'Long-range Rook Mate', difficulty:'Advanced', rating:1750,
+    fen:'7k/6pp/8/8/2B5/8/8/3R2K1 w - - 0 1', sideToMove:'White',
+    prompt:'White to move. Find the forcing back-rank finish.', solution:['Rd8#','Rd8'],
+    explanation:'Rd8# uses the full open file and eighth rank. The king’s own pawns remove every flight square.'
+  },
+  { id:'bishop-queen-battery', theme:'Bishop–Queen Battery', difficulty:'Advanced', rating:1850,
+    fen:'6k1/5ppp/8/7Q/2B5/8/8/6K1 w - - 0 1', sideToMove:'White',
+    prompt:'White to move. Break through on the weak f7 square.', solution:['Qxf7+','Qxf7'],
+    explanation:'Qxf7+ is possible because the bishop on c4 supports the queen. The forcing check draws the king into a dangerous mating net.'
+  },
+  { id:'absolute-pin-win', theme:'Absolute Pin Conversion', difficulty:'Expert', rating:2050,
+    fen:'4k3/4q3/8/8/8/8/4R3/4K3 w - - 0 1', sideToMove:'White',
+    prompt:'White to move. Convert the alignment into decisive material.', solution:['Rxe7+','Rxe7'],
+    explanation:'Rxe7+ captures the queen with check. When pieces align with the king, look for captures that also force a reply.'
+  },
+  { id:'corner-net', theme:'Corner Mating Net', difficulty:'Expert', rating:2150,
+    fen:'7k/6pp/5N2/8/8/8/8/6KR w - - 0 1', sideToMove:'White',
+    prompt:'White to move. Finish with rook and knight coordination.', solution:['Rxh7#','Rxh7'],
+    explanation:'Rxh7# works because the knight on f6 controls h7 and g8. The compact net leaves the cornered king no legal square.'
+  },
+  { id:'diagonal-entry', theme:'Diagonal Queen Entry', difficulty:'Expert', rating:2200,
+    fen:'7k/6pp/8/8/2B5/8/8/3Q2K1 w - - 0 1', sideToMove:'White',
+    prompt:'White to move. Enter on the critical diagonal with check.', solution:['Qd8+','Qd8'],
+    explanation:'Qd8+ activates the queen with tempo. Advanced calculation begins with forcing moves that improve piece placement at the same time.'
+  },
+  { id:'rook-seventh', theme:'Seventh-rank Invasion', difficulty:'Advanced', rating:1950,
+    fen:'6k1/5ppp/8/8/8/8/3R4/6K1 w - - 0 1', sideToMove:'White',
+    prompt:'White to move. Invade with check and restrict the king.', solution:['Rd8+','Rd8'],
+    explanation:'Rd8+ forces the king to respond and gives the rook complete activity. Active checks are often the bridge from advantage to conversion.'
+  },
 ];
 
 // =========================================================
@@ -614,10 +722,14 @@ function navigate(page, ctx){
 function render(){
   const app = document.getElementById('app');
   app.innerHTML = '';
+  applyPreferences();
   if(!State.user){ app.appendChild(renderLogin()); return; }
   app.appendChild(renderHeader());
   const main = document.createElement('main');
-  const container = document.createElement('div'); container.className = 'container';
+  const workspacePages = ['vs-human','vs-engine','study-opening','study-trap','tactics-puzzle','endgame-study'];
+  const isWorkspace = workspacePages.includes(State.page);
+  if(isWorkspace) main.className = 'workspace-main';
+  const container = document.createElement('div'); container.className = `container${isWorkspace?' workspace-container':''}`;
   main.appendChild(container);
   const pages = {
     'home': renderHome, 'openings': renderOpenings, 'traps': renderTraps,
@@ -640,6 +752,7 @@ function render(){
 // =========================================================
 function renderHeader(){
   const h = document.createElement('header'); h.className='site';
+  if(['vs-human','vs-engine','study-opening','study-trap','tactics-puzzle','endgame-study'].includes(State.page)) h.classList.add('compact');
   const c = document.createElement('div'); c.className='container';
   const brand = el(`<div class="brand">
     <div class="seal" role="img" aria-label="Edugates International School logo"></div>
@@ -661,10 +774,41 @@ function renderHeader(){
     <button id="logoutBtn">leave</button>
   </div>`);
   user.querySelector('#logoutBtn').onclick = async ()=>{ if(sharedClub) await signOutFirebase(); else await logoutUser(); State.user=null; render(); };
-  c.appendChild(brand); c.appendChild(nav); c.appendChild(user);
+  const customize = el(`<button class="customize-button" type="button" aria-label="Customize board and pieces">⚙ <span>Board style</span></button>`);
+  customize.onclick = showCustomization;
+  const account = document.createElement('div'); account.className='header-actions'; account.appendChild(customize); account.appendChild(user);
+  c.appendChild(brand); c.appendChild(nav); c.appendChild(account);
   h.appendChild(c);
   return h;
 }
+
+function showCustomization(){
+  const back = document.createElement('div'); back.className='modal-backdrop customization-backdrop';
+  const modal = document.createElement('div'); modal.className='modal customization-modal';
+  modal.innerHTML = `<button class="modal-close" aria-label="Close">×</button>
+    <div class="eyebrow">Your board, your way</div><h2>Board & piece studio</h2>
+    <p class="custom-intro">Choose a comfortable board for long games. Your choices are saved on this device.</p>
+    <div class="custom-section"><h3>Board theme</h3><div class="choice-grid board-choices"></div></div>
+    <div class="custom-section"><h3>Piece style</h3><div class="choice-grid piece-choices"></div></div>
+    <label class="coordinate-toggle"><input type="checkbox" ${State.preferences.coordinates?'checked':''}/> Show board coordinates</label>`;
+  const boardChoices = modal.querySelector('.board-choices');
+  Object.entries(BOARD_THEMES).forEach(([id,t])=>{
+    const button = el(`<button class="visual-choice ${State.preferences.board===id?'selected':''}" type="button"><span class="board-swatch" style="--swatch-light:${t.light};--swatch-dark:${t.dark}"></span><strong>${t.name}</strong></button>`);
+    button.onclick=()=>{ State.preferences.board=id; savePreferences(); showCustomizationRefresh(back); };
+    boardChoices.appendChild(button);
+  });
+  const pieceChoices = modal.querySelector('.piece-choices');
+  Object.entries(PIECE_STYLES).forEach(([id,t])=>{
+    const button = el(`<button class="visual-choice piece-choice ${State.preferences.pieces===id?'selected':''}" type="button"><span class="piece-preview ${id}">${PIECE_SVG['N']}${PIECE_SVG['q']}</span><strong>${t.name}</strong><small>${t.note}</small></button>`);
+    button.onclick=()=>{ State.preferences.pieces=id; savePreferences(); showCustomizationRefresh(back); };
+    pieceChoices.appendChild(button);
+  });
+  modal.querySelector('input').onchange=e=>{ State.preferences.coordinates=e.target.checked; savePreferences(); };
+  modal.querySelector('.modal-close').onclick=()=>back.remove();
+  back.onclick=e=>{ if(e.target===back) back.remove(); };
+  back.appendChild(modal); document.getElementById('app').appendChild(back);
+}
+function showCustomizationRefresh(current){ current.remove(); showCustomization(); }
 function renderFooter(){
   return el(`<footer class="site"><div class="container"><div class="quote">Chess is the gymnasium of the mind. — Blaise Pascal</div></div></footer>`);
 }
@@ -801,12 +945,18 @@ function renderHome(){
 // =========================================================
 function renderOpenings(){
   const wrap = document.createElement('div');
-  wrap.appendChild(el(`<div style="margin-bottom:1.4rem"><div class="eyebrow">Volume I</div><h1>Openings of the Masters</h1><p class="italic" style="color:var(--ink-soft);max-width:60ch">A walking tour of the great chess openings. Each is annotated move-by-move with the ideas behind every choice.</p></div>`));
+  wrap.appendChild(el(`<div class="catalog-hero"><div><div class="eyebrow">Pro repertoire lab</div><h1>Openings of the Masters</h1><p>Build from sound principles to tournament-level systems, with every move explained on the board.</p></div><div class="catalog-stat"><strong>${OPENINGS.length}</strong><span>masterclasses</span></div></div>`));
+  const toolbar = el(`<div class="catalog-toolbar"><div><strong>Training pathway</strong><span>Choose the depth that matches your game.</span></div><label>Level<select><option>All</option><option>Foundation</option><option>Club</option><option>Advanced</option><option>Expert</option></select></label></div>`);
+  toolbar.querySelector('select').value=State.openingLevel;
+  toolbar.querySelector('select').onchange=e=>{ State.openingLevel=e.target.value; render(); };
+  wrap.appendChild(toolbar);
   const list = document.createElement('div'); list.className='item-list';
-  OPENINGS.forEach(o=>{
+  OPENINGS.forEach((o,index)=>{
+    const level=o.level||(index<4?'Foundation':index<10?'Club':'Advanced');
+    if(State.openingLevel!=='All'&&State.openingLevel!==level) return;
     const item = el(`<div class="list-item">
-      <div class="meta"><h4>${o.name}</h4><div class="small italic">${escapeHtml(o.summary.split('.')[0])}.</div></div>
-      <div style="display:flex;gap:.5rem;align-items:center"><span class="tag">${o.eco}</span><span class="tag ${o.color==='White'?'gold':'green'}">${o.color}</span></div>
+      <div class="meta"><div class="lesson-kicker">${level} · ${o.line.length} guided plies</div><h4>${o.name}</h4><div class="small">${escapeHtml(o.summary.split('.')[0])}.</div></div>
+      <div class="lesson-tags"><span class="tag">${o.eco}</span><span class="tag ${o.color==='White'?'gold':'green'}">${o.color}</span><span class="lesson-arrow">Study →</span></div>
     </div>`);
     item.onclick = ()=>navigate('study-opening', o);
     list.appendChild(item);
@@ -836,22 +986,21 @@ function renderTraps(){
 function renderStudyOpening(){ return renderStudyView(State.studyContext, 'opening'); }
 function renderStudyTrap(){ return renderStudyView(State.studyContext, 'trap'); }
 function renderStudyView(ctx, kind){
-  const wrap = document.createElement('div');
+  const wrap = document.createElement('div'); wrap.className='game-workspace';
   if(!ctx){ wrap.appendChild(el(`<p>Nothing selected.</p>`)); return wrap; }
   const g = new Chess();
   for(let i=0;i<State.studyStep;i++){ try{ g.move(ctx.line[i].move); }catch(e){} }
   const lastMv = State.studyStep>0 ? lastMoveSquares(g) : null;
-  const top = el(`<div style="margin-bottom:1rem">
+  const top = el(`<div class="workspace-heading">
     <button class="btn ghost sm" id="back">← Back</button>
     <div class="eyebrow" style="margin-top:.6rem">${kind==='opening'?'Opening Study':'Trap Study'}</div>
     <h1>${ctx.name}</h1>
     ${ctx.eco?`<div style="margin-top:.3rem"><span class="tag">${ctx.eco}</span> <span class="tag ${ctx.color==='White'?'gold':'green'}">${ctx.color}</span></div>`:''}
-    <p style="margin-top:.6rem;max-width:65ch">${escapeHtml(ctx.summary)}</p>
   </div>`);
   top.querySelector('#back').onclick = ()=>navigate(kind==='opening'?'openings':'traps');
   wrap.appendChild(top);
   const layout = document.createElement('div'); layout.className='play-layout';
-  const boardWrap = document.createElement('div');
+  const boardWrap = document.createElement('div'); boardWrap.className='board-column';
   const frame = document.createElement('div'); frame.className='board-frame';
   frame.appendChild(buildBoard(g, {flip:State.flipBoard, lastMove:lastMv, interactive:false}));
   boardWrap.appendChild(frame);
@@ -873,7 +1022,6 @@ function renderStudyView(ctx, kind){
   if(step===totalSteps && kind==='trap' && ctx.avoid){
     tut.innerHTML += `<hr class="fancy"/><div class="eyebrow" style="color:var(--burgundy)">How to Avoid It</div><p style="margin-top:.4rem">${escapeHtml(ctx.avoid)}</p>`;
   }
-  side.appendChild(tut);
   const ctrl = document.createElement('div'); ctrl.className='tutorial-controls';
   const prev = el(`<button class="btn ghost sm">◀ Previous</button>`);
   prev.disabled = step===0;
@@ -886,7 +1034,8 @@ function renderStudyView(ctx, kind){
   const flip = el(`<button class="btn ghost sm">Flip</button>`);
   flip.onclick = ()=>{ State.flipBoard=!State.flipBoard; render(); };
   ctrl.appendChild(prev); ctrl.appendChild(next); ctrl.appendChild(reset); ctrl.appendChild(flip);
-  side.appendChild(ctrl);
+  boardWrap.appendChild(ctrl);
+  side.appendChild(tut);
   const mp = document.createElement('div'); mp.className='moves-panel';
   mp.innerHTML = '<h4>Move List</h4>';
   const ml = document.createElement('div'); ml.className='moves-list';
@@ -912,13 +1061,18 @@ function renderStudyView(ctx, kind){
 // =========================================================
 function renderTactics(){
   const wrap = document.createElement('div');
-  wrap.appendChild(el(`<div style="margin-bottom:1.4rem"><div class="eyebrow">Volume III</div><h1>Middlegame Tactics</h1><p class="italic" style="color:var(--ink-soft);max-width:65ch">"Chess is 99% tactics" — Richard Teichmann. Train your eye with these themed puzzles. Click any to attempt.</p></div>`));
+  wrap.appendChild(el(`<div class="catalog-hero"><div><div class="eyebrow">Calculation gym</div><h1>World-class Tactics</h1><p>Train pattern recognition, forcing moves, mating nets, and advanced conversion themes.</p></div><div class="catalog-stat"><strong>${TACTICS.length}</strong><span>curated positions</span></div></div>`));
+  const toolbar = el(`<div class="catalog-toolbar"><div><strong>Difficulty ladder</strong><span>Progress from pattern fluency to expert calculation.</span></div><label>Level<select><option>All</option><option>Easy</option><option>Medium</option><option>Advanced</option><option>Expert</option></select></label></div>`);
+  toolbar.querySelector('select').value=State.tacticLevel;
+  toolbar.querySelector('select').onchange=e=>{ State.tacticLevel=e.target.value; render(); };
+  wrap.appendChild(toolbar);
   const list = document.createElement('div'); list.className='item-list';
   TACTICS.forEach(t=>{
-    const diffColor = {Easy:'green',Medium:'gold',Hard:'burg'}[t.difficulty]||'';
+    if(State.tacticLevel!=='All'&&State.tacticLevel!==t.difficulty) return;
+    const diffColor = {Easy:'green',Medium:'gold',Advanced:'burg',Expert:'burg',Hard:'burg'}[t.difficulty]||'';
     const item = el(`<div class="list-item">
-      <div class="meta"><h4>${t.theme}</h4><div class="small italic">${escapeHtml(t.prompt)}</div></div>
-      <span class="tag ${diffColor}">${t.difficulty}</span>
+      <div class="meta"><div class="lesson-kicker">${t.rating?`Target ${t.rating} Elo`:'Pattern training'}</div><h4>${t.theme}</h4><div class="small">${escapeHtml(t.prompt)}</div></div>
+      <div class="lesson-tags"><span class="tag ${diffColor}">${t.difficulty}</span><span class="lesson-arrow">Solve →</span></div>
     </div>`);
     item.onclick = ()=>{ State.puzzleStep=0; State.puzzleSolution=t.solution||[]; State.puzzleFeedback=null; navigate('tactics-puzzle', t); };
     list.appendChild(item);
@@ -928,9 +1082,9 @@ function renderTactics(){
 }
 function renderTacticsPuzzle(){
   const ctx = State.studyContext;
-  const wrap = document.createElement('div');
+  const wrap = document.createElement('div'); wrap.className='game-workspace';
   if(!ctx){ wrap.appendChild(el(`<p>No puzzle selected.</p>`)); return wrap; }
-  const top = el(`<div style="margin-bottom:1rem">
+  const top = el(`<div class="workspace-heading">
     <button class="btn ghost sm" id="back">← Back to Puzzles</button>
     <div class="eyebrow" style="margin-top:.6rem">Tactics · ${ctx.difficulty}</div>
     <h1>${ctx.theme}</h1>
@@ -942,7 +1096,7 @@ function renderTacticsPuzzle(){
     State.selectedSquare=null; State.legalDests=[]; State.lastMove=null;
   }
   const layout = document.createElement('div'); layout.className='play-layout';
-  const boardCol = document.createElement('div');
+  const boardCol = document.createElement('div'); boardCol.className='board-column';
   const frame = document.createElement('div'); frame.className='board-frame';
   const flip = ctx.sideToMove==='Black' && !State.flipBoard ? true : State.flipBoard;
   frame.appendChild(buildBoard(State.game, {flip, lastMove:State.lastMove, interactive:!!ctx.solution.length, onMove:(m)=>handlePuzzleMove(m, ctx)}));
@@ -968,7 +1122,7 @@ function renderTacticsPuzzle(){
   const flipBtn = el(`<button class="btn ghost sm">Flip</button>`);
   flipBtn.onclick = ()=>{ State.flipBoard=!State.flipBoard; render(); };
   ctrl.appendChild(showAns); ctrl.appendChild(reset); ctrl.appendChild(flipBtn);
-  side.appendChild(ctrl);
+  boardCol.appendChild(ctrl);
   layout.appendChild(side);
   wrap.appendChild(layout);
   return wrap;
@@ -1007,19 +1161,18 @@ function renderEndgames(){
 }
 function renderEndgameStudy(){
   const ctx = State.studyContext;
-  const wrap = document.createElement('div');
+  const wrap = document.createElement('div'); wrap.className='game-workspace';
   if(!ctx){ wrap.appendChild(el(`<p>None.</p>`)); return wrap; }
-  const top = el(`<div style="margin-bottom:1rem">
+  const top = el(`<div class="workspace-heading">
     <button class="btn ghost sm" id="back">← Back</button>
     <div class="eyebrow" style="margin-top:.6rem">Endgame · ${ctx.difficulty}</div>
     <h1>${ctx.name}</h1>
-    <p style="max-width:65ch;margin-top:.6rem">${escapeHtml(ctx.summary)}</p>
   </div>`);
   top.querySelector('#back').onclick = ()=>navigate('endgames');
   wrap.appendChild(top);
   if(!State.game || State.game.fen()!==ctx.fen){ State.game = new Chess(ctx.fen); State.lastMove = null; }
   const layout = document.createElement('div'); layout.className='play-layout';
-  const boardWrap = document.createElement('div');
+  const boardWrap = document.createElement('div'); boardWrap.className='board-column';
   const frame = document.createElement('div'); frame.className='board-frame';
   frame.appendChild(buildBoard(State.game, {flip:State.flipBoard, lastMove:State.lastMove, interactive:true, onMove:(m)=>{ State.lastMove = lastMoveSquares(State.game); render(); }}));
   boardWrap.appendChild(frame);
@@ -1037,7 +1190,7 @@ function renderEndgameStudy(){
   const flipBtn = el(`<button class="btn ghost sm">Flip Board</button>`);
   flipBtn.onclick = ()=>{ State.flipBoard=!State.flipBoard; render(); };
   ctrl.appendChild(reset); ctrl.appendChild(flipBtn);
-  side.appendChild(ctrl);
+  boardWrap.appendChild(ctrl);
   layout.appendChild(side);
   wrap.appendChild(layout);
   return wrap;
@@ -1214,12 +1367,12 @@ function renderVsEngineSetup(){
 // VS HUMAN GAME
 // =========================================================
 function renderVsHuman(){
-  const wrap = document.createElement('div');
+  const wrap = document.createElement('div'); wrap.className='game-workspace';
   if(!State.game) State.game = new Chess();
   const game = State.game, turn = game.turn();
   const w = State.members[State.gameWhite], b = State.members[State.gameBlack];
-  const shouldFlip = turn==='b';
-  wrap.appendChild(el(`<div style="margin-bottom:1rem">
+  const shouldFlip = State.flipBoard ? turn!=='b' : turn==='b';
+  wrap.appendChild(el(`<div class="workspace-heading">
     <button class="btn ghost sm" id="back">⟵ Resign / Leave</button>
     <div class="eyebrow" style="margin-top:.6rem">${State.gameRated?'Rated · Member vs Member':'Friendly · Member vs Member'}</div>
     <h1>${escapeHtml(w.name)} <span style="color:var(--gold);font-style:italic">vs</span> ${escapeHtml(b.name)}</h1>
@@ -1232,7 +1385,7 @@ function renderVsHuman(){
     navigate('play-menu');
   };
   const layout = document.createElement('div'); layout.className='play-layout';
-  const boardCol = document.createElement('div');
+  const boardCol = document.createElement('div'); boardCol.className='board-column';
   const frame = document.createElement('div'); frame.className='board-frame';
   frame.appendChild(buildBoard(game, {flip:shouldFlip, lastMove:State.lastMove, interactive:!State.gameOver && !State.promotionPending,
     onMove:(m)=>{ State.gameMoveHistory.push(m.san); State.lastMove = lastMoveSquares(game); checkHumanGameEnd(); render(); }
@@ -1263,7 +1416,7 @@ function renderVsHuman(){
   drawBtn.disabled = State.gameOver;
   drawBtn.onclick = ()=>{ if(confirm('Agree to a draw?')) finishHumanGame('1/2-1/2','agreement'); };
   ctrl.appendChild(undo); ctrl.appendChild(drawBtn); ctrl.appendChild(flipBtn);
-  side.appendChild(ctrl);
+  boardCol.appendChild(ctrl);
   const resignRow = document.createElement('div'); resignRow.className='tutorial-controls';
   const rW = el(`<button class="btn danger sm">${escapeHtml(w.name)} resigns</button>`);
   rW.disabled = State.gameOver;
@@ -1324,10 +1477,10 @@ async function finishHumanGame(result, reason){
 // VS ENGINE GAME
 // =========================================================
 function renderVsEngine(){
-  const wrap = document.createElement('div');
+  const wrap = document.createElement('div'); wrap.className='game-workspace';
   if(!State.game) State.game = new Chess();
   const game = State.game, turn = game.turn();
-  wrap.appendChild(el(`<div style="margin-bottom:1rem">
+  wrap.appendChild(el(`<div class="workspace-heading">
     <button class="btn ghost sm" id="back">⟵ Leave Game</button>
     <div class="eyebrow" style="margin-top:.6rem">${State._engineLevelDisplay||'Stockfish'}</div>
     <h1>${escapeHtml(State.user.name)} <span style="color:var(--gold);font-style:italic">vs</span> Stockfish</h1>
@@ -1337,7 +1490,7 @@ function renderVsEngine(){
     navigate('play-menu');
   };
   const layout = document.createElement('div'); layout.className='play-layout';
-  const boardCol = document.createElement('div');
+  const boardCol = document.createElement('div'); boardCol.className='board-column';
   const frame = document.createElement('div'); frame.className='board-frame';
   frame.appendChild(buildBoard(game, {flip:State.flipBoard, lastMove:State.lastMove,
     interactive:!State.gameOver && !State.promotionPending && !State.engineThinking && turn===State.playerColor,
@@ -1368,7 +1521,7 @@ function renderVsEngine(){
   const newG = el(`<button class="btn ghost sm">New Game</button>`);
   newG.onclick = ()=>navigate('vs-engine-setup');
   ctrl.appendChild(undo); ctrl.appendChild(flipBtn); ctrl.appendChild(resign); ctrl.appendChild(newG);
-  side.appendChild(ctrl);
+  boardCol.appendChild(ctrl);
   layout.appendChild(side);
   wrap.appendChild(layout);
   return wrap;
@@ -1503,7 +1656,7 @@ function buildBoard(game, options){
       if(piece){
         const code = piece.color==='w' ? piece.type.toUpperCase() : piece.type.toLowerCase();
         const pieceEl = document.createElement('span');
-        pieceEl.className = 'piece';
+        pieceEl.className = `piece ${piece.color==='w'?'white':'black'}`;
         pieceEl.innerHTML = PIECE_SVG[code] || '';
         cell.appendChild(pieceEl);
       }
