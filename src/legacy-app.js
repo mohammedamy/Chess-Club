@@ -67,6 +67,7 @@ const State = {
   sharedClubs: [],
   openingLevel: 'All', tacticLevel: 'All',
   preferences: loadPreferences(),
+  training: loadTrainingProgress(), puzzleSolvedThisRun: false,
 };
 const sharedClub = window.CHESS_CLUB_SHARED === true;
 
@@ -98,6 +99,43 @@ function applyPreferences(){
 function savePreferences(){
   localStorage.setItem('eis_board_preferences', JSON.stringify(State.preferences));
   applyPreferences();
+}
+
+function loadTrainingProgress(){
+  try{ return {...{openings:{},traps:{},tactics:{},streak:0,bestStreak:0}, ...JSON.parse(localStorage.getItem('eis_training_progress')||'{}')}; }
+  catch(e){ return {openings:{},traps:{},tactics:{},streak:0,bestStreak:0}; }
+}
+function saveTrainingProgress(){ localStorage.setItem('eis_training_progress', JSON.stringify(State.training)); }
+function recordLessonStep(ctx, kind, step, total){
+  const collection = kind==='trap' ? State.training.traps : State.training.openings;
+  const previous = collection[ctx.id] || {step:0,complete:false};
+  collection[ctx.id] = {step:Math.max(previous.step||0,step),complete:previous.complete||step>=total,updatedAt:Date.now()};
+  saveTrainingProgress();
+}
+function recordTacticAttempt(ctx, correct){
+  const progress = State.training.tactics[ctx.id] || {attempts:0,correct:0,solved:false};
+  progress.attempts += 1;
+  if(correct){
+    progress.correct += 1; progress.solved = true; progress.solvedAt = Date.now();
+    if(!State.puzzleSolvedThisRun){ State.training.streak += 1; State.training.bestStreak = Math.max(State.training.bestStreak||0,State.training.streak); }
+    State.puzzleSolvedThisRun = true;
+  } else { State.training.streak = 0; }
+  State.training.tactics[ctx.id] = progress;
+  saveTrainingProgress();
+}
+function trainingSummary(){
+  const completedOpenings = Object.values(State.training.openings).filter(p=>p.complete).length;
+  const solvedTactics = Object.values(State.training.tactics).filter(p=>p.solved).length;
+  const tacticProgress = Object.values(State.training.tactics);
+  const attempts = tacticProgress.reduce((sum,p)=>sum+(p.attempts||0),0);
+  const correct = tacticProgress.reduce((sum,p)=>sum+(p.correct||0),0);
+  return {completedOpenings,solvedTactics,attempts,accuracy:attempts?Math.round(correct/attempts*100):0};
+}
+function nextTactic(){
+  const index = Math.max(0,TACTICS.findIndex(t=>t.id===State.studyContext?.id));
+  const next = TACTICS[(index+1)%TACTICS.length];
+  State.puzzleFeedback=null; State.puzzleSolvedThisRun=false; State.game=null; State.selectedSquare=null; State.legalDests=[]; State.lastMove=null;
+  navigate('tactics-puzzle',next);
 }
 
 // =========================================================
@@ -901,6 +939,7 @@ function renderSharedLogin(){
 function renderHome(){
   const wrap = document.createElement('div');
   const memberCount = Object.keys(State.members).length;
+  const training = trainingSummary();
   const hero = el(`<div class="hero">
     <div class="sub">Edugates Chess Club · Reading Room</div>
     <h1>Welcome, <em>${escapeHtml(State.user.name)}</em>.</h1>
@@ -912,6 +951,17 @@ function renderHome(){
     </div>
   </div>`);
   wrap.appendChild(hero);
+  const progress = el(`<section class="training-dashboard" aria-label="Training progress">
+    <div class="training-dashboard-copy"><div class="eyebrow">Your training</div><h2>Keep your momentum</h2><p>Continue a lesson or solve the next tactical position. Progress is saved automatically on this device.</p></div>
+    <div class="training-metrics">
+      <button type="button" data-go="openings"><strong>${training.completedOpenings}<span>/${OPENINGS.length}</span></strong><small>Openings mastered</small></button>
+      <button type="button" data-go="tactics"><strong>${training.solvedTactics}<span>/${TACTICS.length}</span></strong><small>Tactics solved</small></button>
+      <button type="button" data-go="tactics"><strong>${State.training.streak||0}</strong><small>Current streak</small></button>
+      <button type="button" data-go="tactics"><strong>${training.accuracy}%</strong><small>Accuracy</small></button>
+    </div>
+  </section>`);
+  progress.querySelectorAll('button').forEach(button=>button.onclick=()=>navigate(button.dataset.go));
+  wrap.appendChild(progress);
   if(sharedClub && State.sharedClubs.length===0){
     const setup = el(`<div class="card ornate" style="margin:1.5rem 0"><div class="eyebrow">First-time setup</div><h2>Create the shared club</h2><p>Set up the club once. You will become its administrator and can add coaches and students after Firebase Functions are deployed.</p><button class="btn gold" type="button">Create Edugates Chess Club</button></div>`);
     setup.querySelector('button').onclick = async ()=>{
@@ -954,11 +1004,13 @@ function renderOpenings(){
   OPENINGS.forEach((o,index)=>{
     const level=o.level||(index<4?'Foundation':index<10?'Club':'Advanced');
     if(State.openingLevel!=='All'&&State.openingLevel!==level) return;
+    const progress=State.training.openings[o.id]||{step:0,complete:false};
+    const percent=Math.min(100,Math.round((progress.step||0)/o.line.length*100));
     const item = el(`<div class="list-item">
       <div class="meta"><div class="lesson-kicker">${level} · ${o.line.length} guided plies</div><h4>${o.name}</h4><div class="small">${escapeHtml(o.summary.split('.')[0])}.</div></div>
-      <div class="lesson-tags"><span class="tag">${o.eco}</span><span class="tag ${o.color==='White'?'gold':'green'}">${o.color}</span><span class="lesson-arrow">Study →</span></div>
+      <div class="lesson-tags"><span class="lesson-progress ${progress.complete?'complete':''}" style="--progress:${percent}%"><b>${progress.complete?'✓':percent+'%'}</b></span><span class="tag">${o.eco}</span><span class="tag ${o.color==='White'?'gold':'green'}">${o.color}</span><span class="lesson-arrow">${progress.step?'Continue':'Study'} →</span></div>
     </div>`);
-    item.onclick = ()=>navigate('study-opening', o);
+    item.onclick = ()=>{ State.studyStep=Math.min(progress.step||0,o.line.length); navigate('study-opening', o); };
     list.appendChild(item);
   });
   wrap.appendChild(list);
@@ -1028,7 +1080,7 @@ function renderStudyView(ctx, kind){
   prev.onclick = ()=>{ State.studyStep = Math.max(0, State.studyStep-1); render(); };
   const next = el(`<button class="btn gold sm">Next ▶</button>`);
   next.disabled = step>=totalSteps;
-  next.onclick = ()=>{ State.studyStep = Math.min(totalSteps, State.studyStep+1); render(); };
+  next.onclick = ()=>{ State.studyStep = Math.min(totalSteps, State.studyStep+1); recordLessonStep(ctx,kind,State.studyStep,totalSteps); render(); };
   const reset = el(`<button class="btn ghost sm">Restart</button>`);
   reset.onclick = ()=>{ State.studyStep=0; render(); };
   const flip = el(`<button class="btn ghost sm">Flip</button>`);
@@ -1036,6 +1088,14 @@ function renderStudyView(ctx, kind){
   ctrl.appendChild(prev); ctrl.appendChild(next); ctrl.appendChild(reset); ctrl.appendChild(flip);
   boardWrap.appendChild(ctrl);
   side.appendChild(tut);
+  if(step===totalSteps){
+    const collection=kind==='opening'?OPENINGS:TRAPS;
+    const index=collection.findIndex(item=>item.id===ctx.id);
+    const following=collection[(index+1)%collection.length];
+    const complete=el(`<div class="lesson-complete"><div class="completion-mark">✓</div><div><strong>Lesson complete</strong><span>${kind==='opening'?'Opening knowledge added to your repertoire.':'You now know the warning pattern and the escape.'}</span></div><button class="btn gold sm">Next lesson →</button></div>`);
+    complete.querySelector('button').onclick=()=>{ State.studyStep=0; navigate(kind==='opening'?'study-opening':'study-trap',following); };
+    side.appendChild(complete);
+  }
   const mp = document.createElement('div'); mp.className='moves-panel';
   mp.innerHTML = '<h4>Move List</h4>';
   const ml = document.createElement('div'); ml.className='moves-list';
@@ -1045,8 +1105,8 @@ function renderStudyView(ctx, kind){
     ml.appendChild(el(`<div class="num">${num}.</div>`));
     const wEl = el(`<div class="move ${i+1===step?'current':''}">${w}</div>`);
     const bEl = el(`<div class="move ${i+2===step?'current':''}">${b||''}</div>`);
-    wEl.onclick = ()=>{ State.studyStep=i+1; render(); };
-    if(b) bEl.onclick = ()=>{ State.studyStep=i+2; render(); };
+    wEl.onclick = ()=>{ State.studyStep=i+1; recordLessonStep(ctx,kind,State.studyStep,totalSteps); render(); };
+    if(b) bEl.onclick = ()=>{ State.studyStep=i+2; recordLessonStep(ctx,kind,State.studyStep,totalSteps); render(); };
     ml.appendChild(wEl); ml.appendChild(bEl);
   }
   mp.appendChild(ml);
@@ -1070,11 +1130,13 @@ function renderTactics(){
   TACTICS.forEach(t=>{
     if(State.tacticLevel!=='All'&&State.tacticLevel!==t.difficulty) return;
     const diffColor = {Easy:'green',Medium:'gold',Advanced:'burg',Expert:'burg',Hard:'burg'}[t.difficulty]||'';
+    const progress=State.training.tactics[t.id]||{attempts:0,correct:0,solved:false};
+    const accuracy=progress.attempts?Math.round(progress.correct/progress.attempts*100):0;
     const item = el(`<div class="list-item">
       <div class="meta"><div class="lesson-kicker">${t.rating?`Target ${t.rating} Elo`:'Pattern training'}</div><h4>${t.theme}</h4><div class="small">${escapeHtml(t.prompt)}</div></div>
-      <div class="lesson-tags"><span class="tag ${diffColor}">${t.difficulty}</span><span class="lesson-arrow">Solve →</span></div>
+      <div class="lesson-tags">${progress.solved?`<span class="solved-badge">✓ Solved${progress.attempts?` · ${accuracy}%`:''}</span>`:''}<span class="tag ${diffColor}">${t.difficulty}</span><span class="lesson-arrow">${progress.solved?'Train again':'Solve'} →</span></div>
     </div>`);
-    item.onclick = ()=>{ State.puzzleStep=0; State.puzzleSolution=t.solution||[]; State.puzzleFeedback=null; navigate('tactics-puzzle', t); };
+    item.onclick = ()=>{ State.puzzleStep=0; State.puzzleSolution=t.solution||[]; State.puzzleFeedback=null; State.puzzleSolvedThisRun=false; navigate('tactics-puzzle', t); };
     list.appendChild(item);
   });
   wrap.appendChild(list);
@@ -1118,10 +1180,13 @@ function renderTacticsPuzzle(){
   showAns.onclick = ()=>{ State.puzzleFeedback={kind:'hint',text:`The intended move is: <strong>${ctx.solution[0]}</strong>. ${escapeHtml(ctx.explanation)}`}; render(); };
   if(ctx.solution.length===0) showAns.disabled = true;
   const reset = el(`<button class="btn ghost sm">Reset Position</button>`);
-  reset.onclick = ()=>{ State.game = new Chess(ctx.fen); State.selectedSquare=null; State.legalDests=[]; State.lastMove=null; State.puzzleFeedback=null; render(); };
+  reset.onclick = ()=>{ State.game = new Chess(ctx.fen); State.selectedSquare=null; State.legalDests=[]; State.lastMove=null; State.puzzleFeedback=null; State.puzzleSolvedThisRun=false; render(); };
   const flipBtn = el(`<button class="btn ghost sm">Flip</button>`);
   flipBtn.onclick = ()=>{ State.flipBoard=!State.flipBoard; render(); };
   ctrl.appendChild(showAns); ctrl.appendChild(reset); ctrl.appendChild(flipBtn);
+  if(State.puzzleFeedback?.kind==='correct'){
+    const nextPuzzle=el(`<button class="btn gold sm">Next puzzle →</button>`); nextPuzzle.onclick=nextTactic; ctrl.appendChild(nextPuzzle);
+  }
   boardCol.appendChild(ctrl);
   layout.appendChild(side);
   wrap.appendChild(layout);
@@ -1132,8 +1197,10 @@ function handlePuzzleMove(move, ctx){
   const sanClean = san.replace(/[+#]/g, '');
   const matches = ctx.solution.some(s => s===san || s.replace(/[+#]/g,'')===sanClean);
   if(matches){
+    recordTacticAttempt(ctx,true);
     State.puzzleFeedback = {kind:'correct', text:`✓ Correct! <strong>${san}</strong>. ${escapeHtml(ctx.explanation)}`};
   } else {
+    recordTacticAttempt(ctx,false);
     State.puzzleFeedback = {kind:'wrong', text:`✗ Not quite — <strong>${san}</strong> isn't the strongest move here. Try again or click "Show Answer".`};
     State.game.undo();
     State.lastMove = null;
@@ -1765,6 +1832,16 @@ function formatDate(ts){
 // =========================================================
 // INIT
 // =========================================================
+document.addEventListener('keydown',event=>{
+  if(event.target instanceof HTMLInputElement||event.target instanceof HTMLSelectElement||event.target instanceof HTMLTextAreaElement) return;
+  if(!['study-opening','study-trap'].includes(State.page)||!State.studyContext) return;
+  const total=State.studyContext.line.length;
+  if(event.key==='ArrowRight'&&State.studyStep<total){
+    State.studyStep+=1; recordLessonStep(State.studyContext,State.page==='study-trap'?'trap':'opening',State.studyStep,total); render();
+  }
+  if(event.key==='ArrowLeft'&&State.studyStep>0){ State.studyStep-=1; render(); }
+});
+
 (async ()=>{
   await loadMembers();
   await loadCurrentUser();
