@@ -1,70 +1,94 @@
-import { readFile } from 'node:fs/promises';
 import { Chess } from 'chess.js';
+import { isStockfishSafeFen } from '../src/domain/stockfish-service.js';
+import {
+  OPENINGS,
+  TRAPS,
+  MIDDLEGAME_LESSONS,
+  ENDGAMES,
+  PUZZLES,
+  QUIZZES,
+} from '../src/data/library.js';
 
-const source = await readFile(new URL('../src/legacy-app.js', import.meta.url), 'utf8');
-
-function extractArray(name) {
-  const declaration = `const ${name} = `;
-  const declarationIndex = source.indexOf(declaration);
-  if (declarationIndex === -1) throw new Error(`Missing ${name} collection.`);
-
-  const start = source.indexOf('[', declarationIndex + declaration.length);
-  let depth = 0;
-  let quote = null;
-  let escaped = false;
-
-  for (let index = start; index < source.length; index += 1) {
-    const character = source[index];
-    if (quote) {
-      if (escaped) escaped = false;
-      else if (character === '\\') escaped = true;
-      else if (character === quote) quote = null;
-      continue;
-    }
-    if (character === "'" || character === '"' || character === '`') {
-      quote = character;
-      continue;
-    }
-    if (character === '[') depth += 1;
-    if (character === ']') depth -= 1;
-    if (depth === 0) return Function(`return (${source.slice(start, index + 1)});`)();
+function assertUniqueIds(items, label) {
+  const seen = new Set();
+  for (const item of items) {
+    if (!item.id) throw new Error(`${label}: missing item id.`);
+    if (seen.has(item.id)) throw new Error(`${label}: duplicate id "${item.id}".`);
+    seen.add(item.id);
   }
-
-  throw new Error(`Unterminated ${name} collection.`);
 }
 
-function applyLine(name, line) {
-  const game = new Chess();
-  for (const step of line) {
+function validateLine(name, line, startFen = null) {
+  const game = startFen ? new Chess(startFen) : new Chess();
+  if (startFen && !isStockfishSafeFen(startFen, Chess)) {
+    throw new Error(`${name}: unsafe startFen "${startFen}".`);
+  }
+  for (const step of line || []) {
     const move = game.move(step.move);
-    if (!move) throw new Error(`${name}: illegal move ${step.move}.`);
+    if (!move) throw new Error(`${name}: illegal move "${step.move}".`);
   }
 }
 
-const openings = extractArray('OPENINGS');
-const traps = extractArray('TRAPS');
-const tactics = extractArray('TACTICS');
-const endgames = extractArray('ENDGAMES');
+assertUniqueIds(OPENINGS, 'OPENINGS');
+assertUniqueIds(TRAPS, 'TRAPS');
+assertUniqueIds(MIDDLEGAME_LESSONS, 'MIDDLEGAME_LESSONS');
+assertUniqueIds(ENDGAMES, 'ENDGAMES');
+assertUniqueIds(PUZZLES, 'PUZZLES');
+assertUniqueIds(QUIZZES, 'QUIZZES');
 
-openings.forEach((opening) => applyLine(opening.name, opening.line));
-traps.forEach((trap) => applyLine(trap.name, trap.line));
+OPENINGS.forEach((o) => validateLine(`Opening ${o.name}`, o.line));
+TRAPS.forEach((t) => validateLine(`Trap ${t.name}`, t.line));
+MIDDLEGAME_LESSONS.forEach((m) => validateLine(`Middlegame ${m.name}`, m.line, m.startFen || null));
+ENDGAMES.forEach((e) => {
+  if (!isStockfishSafeFen(e.fen, Chess)) {
+    throw new Error(`Endgame ${e.id}: unsafe Stockfish FEN "${e.fen}".`);
+  }
+});
 
-for (const puzzle of tactics) {
+const categoryCounts = {};
+for (const puzzle of PUZZLES) {
+  categoryCounts[puzzle.category] = (categoryCounts[puzzle.category] || 0) + 1;
+  if (!isStockfishSafeFen(puzzle.fen, Chess)) {
+    throw new Error(`Puzzle ${puzzle.id}: unsafe Stockfish FEN "${puzzle.fen}".`);
+  }
   const game = new Chess(puzzle.fen);
-  const legalMoves = game.moves();
-  for (const expectedMove of puzzle.solution ?? []) {
-    const normalized = expectedMove.replace(/[+#]/g, '');
-    const isLegal = legalMoves.some(
-      (legalMove) => legalMove.replace(/[+#]/g, '') === normalized,
-    );
-    if (!isLegal) {
-      throw new Error(`${puzzle.theme}: illegal solution move ${expectedMove}.`);
+  if (!Array.isArray(puzzle.moves) || puzzle.moves.length === 0) {
+    throw new Error(`Puzzle ${puzzle.id}: missing solution moves.`);
+  }
+  for (let i = 0; i < puzzle.moves.length; i += 1) {
+    const san = puzzle.moves[i];
+    const m = game.move(san);
+    if (!m) throw new Error(`Puzzle ${puzzle.id}: illegal move "${san}" at ply ${i}.`);
+  }
+  if (puzzle.moves[puzzle.moves.length - 1].endsWith('#') && !game.in_checkmate()) {
+    throw new Error(`Puzzle ${puzzle.id}: final move "${puzzle.moves.at(-1)}" claims # but is not checkmate.`);
+  }
+  if (Array.isArray(puzzle.acceptAlso)) {
+    for (const alt of puzzle.acceptAlso) {
+      const gAlt = new Chess(puzzle.fen);
+      if (!gAlt.move(alt)) throw new Error(`Puzzle ${puzzle.id}: illegal acceptAlso "${alt}".`);
     }
   }
 }
 
-for (const endgame of endgames) new Chess(endgame.fen);
+const quizCounts = {};
+for (const quiz of QUIZZES) {
+  quizCounts[quiz.category] = (quizCounts[quiz.category] || 0) + 1;
+  if (!isStockfishSafeFen(quiz.fen, Chess)) {
+    throw new Error(`Quiz ${quiz.id}: unsafe Stockfish FEN "${quiz.fen}".`);
+  }
+  if (!Array.isArray(quiz.options) || quiz.options.length !== 4) {
+    throw new Error(`Quiz ${quiz.id}: must have exactly 4 options.`);
+  }
+  if (quiz.correctIndex < 0 || quiz.correctIndex > 3) {
+    throw new Error(`Quiz ${quiz.id}: invalid correctIndex ${quiz.correctIndex}.`);
+  }
+  const gQuiz = new Chess(quiz.fen);
+  if (!gQuiz.move(quiz.recommendedSan)) {
+    throw new Error(`Quiz ${quiz.id}: illegal recommendedSan "${quiz.recommendedSan}".`);
+  }
+}
 
 console.log(
-  `Validated ${openings.length} openings, ${traps.length} traps, ${tactics.length} tactics, and ${endgames.length} endgames.`,
+  `Validated ${OPENINGS.length} openings, ${TRAPS.length} traps, ${MIDDLEGAME_LESSONS.length} middlegame lessons, ${ENDGAMES.length} endgames, ${PUZZLES.length} puzzles (${JSON.stringify(categoryCounts)}), and ${QUIZZES.length} quizzes (${JSON.stringify(quizCounts)}).`,
 );

@@ -1,93 +1,153 @@
+import { Chess } from 'chess.js';
 import { computeElo } from './domain/rating.js';
-import { completeEmailSignInLink, createClub, currentUser as currentFirebaseUser, isEmailSignInLink, listMyClubs, sendEmailSignInLink, signOut as signOutFirebase, upsertMyProfile } from './data/club-api.js';
+import {
+  completeEmailSignInLink,
+  createClub,
+  currentUser as currentFirebaseUser,
+  isEmailSignInLink,
+  listMyClubs,
+  recordPuzzleAttempt,
+  saveLessonProgress,
+  sendEmailSignInLink,
+  signOut as signOutFirebase,
+  upsertMyProfile,
+} from './data/club-api.js';
+import {
+  ENDGAMES,
+  MIDDLEGAME_LESSONS,
+  OPENINGS,
+  PUZZLES,
+  PUZZLE_CATEGORIES,
+  QUIZZES,
+  TRAPS,
+  getPuzzlesByCategory,
+} from './data/library.js';
+import {
+  ARENA_PRESETS,
+  ENGINE_PROFILE_LIST,
+  computeEvalDisagreement,
+  createArenaEngine,
+  formatEngineThought,
+  getEngineProfile,
+  getEngineTierMeta,
+} from './domain/engine-arena.js';
+import {
+  gradePlayedMove,
+  isStockfishSafeFen,
+  resolveEngineLevelConfig,
+  stockfishClient,
+} from './domain/stockfish-service.js';
+import {
+  advanceQuizSession,
+  createQuizSession,
+  evaluatePuzzleMove,
+  filterPuzzles,
+  paginateItems,
+  submitQuizAnswer,
+  summarizeQuizSession,
+} from './domain/puzzle-engine.js';
+import { iconSvg } from './ui/icons.js';
+import {
+  createBoardArrowsSvg,
+  createDualEvalStrip,
+  createEngineThoughtCard,
+  createEvalBar,
+  createStockfishPanel,
+  updateBoardArrows,
+  updateDualEvalStrip,
+  updateEngineThoughtCard,
+  updateEvalBar,
+  updateStockfishPanel,
+} from './ui/stockfish-widgets.js';
 
 /* =========================================================
    EDUGATES INTERNATIONAL SCHOOL — CHESS CLUB
-   Single-file private chess study + play platform
    ========================================================= */
 
-// =========================================================
-// CBURNETT SVG CHESS PIECES (public domain)
-// =========================================================
 const PIECE_SVG = {
-  'K': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#fff" stroke="#000" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M22.5 11.63V6" stroke-linejoin="miter"/><path d="M20 8h5" stroke-linejoin="miter"/><path d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-3.5-7.5-13-10.5-16-4-3 6 5 10 5 10V37z"/><path d="M11.5 30c5.5-3 15.5-3 21 0M11.5 33.5c5.5-3 15.5-3 21 0M11.5 37c5.5-3 15.5-3 21 0" fill="none"/></g></svg>`,
-  'Q': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#fff" stroke="#000" stroke-width="1.5" stroke-linejoin="round"><path d="M9 26c8.5-1.5 21-1.5 27 0l2-12-7 11V11l-5.5 13.5-3-15-3 15-5.5-14V25L7 14l2 12z"/><path d="M9 26c0 2 1.5 2 2.5 4 1 1.5 1 1 .5 3.5-1.5 1-1 2.5-1 2.5-1.5 1.5 0 2.5 0 2.5 6.5 1 16.5 1 23 0 0 0 1.5-1 0-2.5 0 0 .5-1.5-1-2.5-.5-2.5-.5-2 .5-3.5 1-2 2.5-2 2.5-4-8.5-1.5-18.5-1.5-27 0z"/><path d="M11 38.5a35 35 1 0 0 23 0" fill="none" stroke-linecap="butt"/><path d="M11 29a35 35 1 0 1 23 0M12.5 31.5h20M11.5 34.5a35 35 1 0 0 22 0M10.5 37.5a35 35 1 0 0 24 0" fill="none" stroke="#000"/><circle cx="6" cy="12" r="2"/><circle cx="14" cy="9" r="2"/><circle cx="22.5" cy="8" r="2"/><circle cx="31" cy="9" r="2"/><circle cx="39" cy="12" r="2"/></g></svg>`,
-  'R': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#fff" stroke="#000" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="butt"><path d="M9 39h27v-3H9v3zM12 36v-4h21v4H12zM11 14V9h4v2h5V9h5v2h5V9h4v5"/><path d="M34 14l-3 3H14l-3-3"/><path d="M31 17v12.5H14V17" stroke-linecap="round" stroke-linejoin="miter"/><path d="M31 29.5l1.5 2.5h-20l1.5-2.5"/><path d="M11 14h23" fill="none" stroke-linejoin="miter"/></g></svg>`,
-  'B': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#fff" stroke="#000" stroke-width="1.5" stroke-linejoin="round"><g stroke-linecap="butt"><path d="M9 36c3.39-.97 10.11.43 13.5-2 3.39 2.43 10.11 1.03 13.5 2 0 0 1.65.54 3 2-.68.97-1.65.99-3 .5-3.39-.97-10.11.46-13.5-1-3.39 1.46-10.11.03-13.5 1-1.354.49-2.323.47-3-.5 1.354-1.94 3-2 3-2z"/><path d="M15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2z"/><path d="M25 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 1 1 5 0z"/></g><path d="M17.5 26h10M15 30h15m-7.5-14.5v5M20 18h5" stroke-linejoin="miter"/></g></svg>`,
-  'N': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#fff" stroke="#000" stroke-width="1.5" stroke-linejoin="round"><path d="M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21" stroke-linecap="butt"/><path d="M24 18c.38 2.91-5.55 7.37-8 9-3 2-2.82 4.34-5 4-1.042-.94 1.41-3.04 0-3-1 0 .19 1.23-1 2-1 0-4.003 1-4-4 0-2 6-12 6-12s1.89-1.9 2-3.5c-.73-.994-.5-2-.5-3 1-1 3 2.5 3 2.5h2s.78-1.992 2.5-3c1 0 1 3 1 3" stroke-linecap="butt"/><path d="M9.5 25.5a.5.5 0 1 1-1 0 .5.5 0 1 1 1 0zM15 15.5a.5 1.5 30 1 1-1 0 .5 1.5 30 1 1 1 0z" fill="#000" stroke="#000" stroke-width="1.5"/></g></svg>`,
-  'P': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><path d="M22.5 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38C17.33 16.5 16 18.59 16 21c0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z" fill="#fff" stroke="#000" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  'k': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M22.5 11.63V6" stroke-linejoin="miter" fill="none"/><path d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5" fill="#000" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-3.5-7.5-13-10.5-16-4-3 6 5 10 5 10V37z" fill="#000"/><path d="M20 8h5" stroke-linejoin="miter"/><path d="M32 29.5s8.5-4 6.03-9.65C34.15 14 25 18 22.5 24.5l.01 2.1-.01-2.1C20 18 9.906 14 6.997 19.85 4.5 25.5 13 29.5 13 29.5M12.5 30c5.5-3 14.5-3 20 0m-20 3.5c5.5-3 14.5-3 20 0m-20 3.5c5.5-3 14.5-3 20 0" stroke="#fff" fill="none"/></g></svg>`,
-  'q': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round"><path d="M9 26c8.5-1.5 21-1.5 27 0l2.5-12.5L31 25l-.3-14.1-5.2 13.6-3-14.5-3 14.5-5.2-13.6L14 25 6.5 13.5 9 26z" stroke-linecap="butt"/><path d="M9 26c0 2 1.5 2 2.5 4 1 1.5 1 1 .5 3.5-1.5 1-1 2.5-1 2.5-1.5 1.5 0 2.5 0 2.5 6.5 1 16.5 1 23 0 0 0 1.5-1 0-2.5 0 0 .5-1.5-1-2.5-.5-2.5-.5-2 .5-3.5 1-2 2.5-2 2.5-4-8.5-1.5-18.5-1.5-27 0z" stroke-linecap="butt"/><path d="M11 38.5a35 35 1 0 0 23 0" fill="none" stroke-linecap="butt"/><path d="M11 29a35 35 1 0 1 23 0M12.5 31.5h20M11.5 34.5a35 35 1 0 0 22 0M10.5 37.5a35 35 1 0 0 24 0" fill="none" stroke="#fff"/><circle cx="6" cy="12" r="2" stroke="#fff"/><circle cx="14" cy="9" r="2" stroke="#fff"/><circle cx="22.5" cy="8" r="2" stroke="#fff"/><circle cx="31" cy="9" r="2" stroke="#fff"/><circle cx="39" cy="12" r="2" stroke="#fff"/></g></svg>`,
-  'r': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="butt"><path d="M9 39h27v-3H9v3zM12.5 32l1.5-2.5h17l1.5 2.5h-20zM12 36v-4h21v4H12z"/><path d="M14 29.5v-13h17v13H14z" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M14 16.5L11 14h23l-3 2.5H14zM11 14V9h4v2h5V9h5v2h5V9h4v5H11z" stroke-linecap="butt"/><path d="M12 35.5h21M13 31.5h19M14 29.5h17M14 16.5h17M11 14h23" fill="none" stroke="#fff" stroke-width="1" stroke-linejoin="miter"/></g></svg>`,
-  'b': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round"><g fill="#000" stroke-linecap="butt"><path d="M9 36c3.39-.97 10.11.43 13.5-2 3.39 2.43 10.11 1.03 13.5 2 0 0 1.65.54 3 2-.68.97-1.65.99-3 .5-3.39-.97-10.11.46-13.5-1-3.39 1.46-10.11.03-13.5 1-1.354.49-2.323.47-3-.5 1.354-1.94 3-2 3-2z"/><path d="M15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2z"/><path d="M25 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 1 1 5 0z"/></g><path d="M17.5 26h10M15 30h15m-7.5-14.5v5M20 18h5" fill="none" stroke="#fff" stroke-linejoin="miter"/></g></svg>`,
-  'n': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round"><path d="M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21" stroke-linecap="butt"/><path d="M24 18c.38 2.91-5.55 7.37-8 9-3 2-2.82 4.34-5 4-1.042-.94 1.41-3.04 0-3-1 0 .19 1.23-1 2-1 0-4.003 1-4-4 0-2 6-12 6-12s1.89-1.9 2-3.5c-.73-.994-.5-2-.5-3 1-1 3 2.5 3 2.5h2s.78-1.992 2.5-3c1 0 1 3 1 3" stroke-linecap="butt"/><path d="M9.5 25.5a.5.5 0 1 1-1 0 .5.5 0 1 1 1 0zM15 15.5a.5 1.5 30 1 1-1 0 .5 1.5 30 1 1 1 0z" fill="#fff" stroke="#fff"/><path d="M24.55 10.4l-.45 1.45.5.15c3.15 1 5.65 2.49 7.9 6.75S35.75 29.06 35.25 39l-.05.5h2.25l.05-.5c.5-10.06-.88-16.85-3.25-21.34-2.37-4.49-5.79-6.64-9.19-7.16l-.51-.1z" fill="#fff" stroke="none"/></g></svg>`,
-  'p': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><path d="M22.5 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38C17.33 16.5 16 18.59 16 21c0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z" fill="#000" stroke="#000" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  K: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#fff" stroke="#000" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M22.5 11.63V6" stroke-linejoin="miter"/><path d="M20 8h5" stroke-linejoin="miter"/><path d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-3.5-7.5-13-10.5-16-4-3 6 5 10 5 10V37z"/><path d="M11.5 30c5.5-3 15.5-3 21 0M11.5 33.5c5.5-3 15.5-3 21 0M11.5 37c5.5-3 15.5-3 21 0" fill="none"/></g></svg>`,
+  Q: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#fff" stroke="#000" stroke-width="1.5" stroke-linejoin="round"><path d="M9 26c8.5-1.5 21-1.5 27 0l2-12-7 11V11l-5.5 13.5-3-15-3 15-5.5-14V25L7 14l2 12z"/><path d="M9 26c0 2 1.5 2 2.5 4 1 1.5 1 1 .5 3.5-1.5 1-1 2.5-1 2.5-1.5 1.5 0 2.5 0 2.5 6.5 1 16.5 1 23 0 0 0 1.5-1 0-2.5 0 0 .5-1.5-1-2.5-.5-2.5-.5-2 .5-3.5 1-2 2.5-2 2.5-4-8.5-1.5-18.5-1.5-27 0z"/><path d="M11 38.5a35 35 1 0 0 23 0" fill="none" stroke-linecap="butt"/><path d="M11 29a35 35 1 0 1 23 0M12.5 31.5h20M11.5 34.5a35 35 1 0 0 22 0M10.5 37.5a35 35 1 0 0 24 0" fill="none" stroke="#000"/><circle cx="6" cy="12" r="2"/><circle cx="14" cy="9" r="2"/><circle cx="22.5" cy="8" r="2"/><circle cx="31" cy="9" r="2"/><circle cx="39" cy="12" r="2"/></g></svg>`,
+  R: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#fff" stroke="#000" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="butt"><path d="M9 39h27v-3H9v3zM12 36v-4h21v4H12zM11 14V9h4v2h5V9h5v2h5V9h4v5"/><path d="M34 14l-3 3H14l-3-3"/><path d="M31 17v12.5H14V17" stroke-linecap="round" stroke-linejoin="miter"/><path d="M31 29.5l1.5 2.5h-20l1.5-2.5"/><path d="M11 14h23" fill="none" stroke-linejoin="miter"/></g></svg>`,
+  B: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#fff" stroke="#000" stroke-width="1.5" stroke-linejoin="round"><g stroke-linecap="butt"><path d="M9 36c3.39-.97 10.11.43 13.5-2 3.39 2.43 10.11 1.03 13.5 2 0 0 1.65.54 3 2-.68.97-1.65.99-3 .5-3.39-.97-10.11.46-13.5-1-3.39 1.46-10.11.03-13.5 1-1.354.49-2.323.47-3-.5 1.354-1.94 3-2 3-2z"/><path d="M15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2z"/><path d="M25 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 1 1 5 0z"/></g><path d="M17.5 26h10M15 30h15m-7.5-14.5v5M20 18h5" stroke-linejoin="miter"/></g></svg>`,
+  N: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#fff" stroke="#000" stroke-width="1.5" stroke-linejoin="round"><path d="M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21" stroke-linecap="butt"/><path d="M24 18c.38 2.91-5.55 7.37-8 9-3 2-2.82 4.34-5 4-1.042-.94 1.41-3.04 0-3-1 0 .19 1.23-1 2-1 0-4.003 1-4-4 0-2 6-12 6-12s1.89-1.9 2-3.5c-.73-.994-.5-2-.5-3 1-1 3 2.5 3 2.5h2s.78-1.992 2.5-3c1 0 1 3 1 3" stroke-linecap="butt"/><path d="M9.5 25.5a.5.5 0 1 1-1 0 .5.5 0 1 1 1 0zM15 15.5a.5 1.5 30 1 1-1 0 .5 1.5 30 1 1 1 0z" fill="#000" stroke="#000" stroke-width="1.5"/></g></svg>`,
+  P: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><path d="M22.5 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38C17.33 16.5 16 18.59 16 21c0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z" fill="#fff" stroke="#000" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  k: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M22.5 11.63V6" stroke-linejoin="miter" fill="none"/><path d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5" fill="#000" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-3.5-7.5-13-10.5-16-4-3 6 5 10 5 10V37z" fill="#000"/><path d="M20 8h5" stroke-linejoin="miter"/><path d="M32 29.5s8.5-4 6.03-9.65C34.15 14 25 18 22.5 24.5l.01 2.1-.01-2.1C20 18 9.906 14 6.997 19.85 4.5 25.5 13 29.5 13 29.5M12.5 30c5.5-3 14.5-3 20 0m-20 3.5c5.5-3 14.5-3 20 0m-20 3.5c5.5-3 14.5-3 20 0" stroke="#fff" fill="none"/></g></svg>`,
+  q: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round"><path d="M9 26c8.5-1.5 21-1.5 27 0l2.5-12.5L31 25l-.3-14.1-5.2 13.6-3-14.5-3 14.5-5.2-13.6L14 25 6.5 13.5 9 26z" stroke-linecap="butt"/><path d="M9 26c0 2 1.5 2 2.5 4 1 1.5 1 1 .5 3.5-1.5 1-1 2.5-1 2.5-1.5 1.5 0 2.5 0 2.5 6.5 1 16.5 1 23 0 0 0 1.5-1 0-2.5 0 0 .5-1.5-1-2.5-.5-2.5-.5-2 .5-3.5 1-2 2.5-2 2.5-4-8.5-1.5-18.5-1.5-27 0z" stroke-linecap="butt"/><path d="M11 38.5a35 35 1 0 0 23 0" fill="none" stroke-linecap="butt"/><path d="M11 29a35 35 1 0 1 23 0M12.5 31.5h20M11.5 34.5a35 35 1 0 0 22 0M10.5 37.5a35 35 1 0 0 24 0" fill="none" stroke="#fff"/><circle cx="6" cy="12" r="2" stroke="#fff"/><circle cx="14" cy="9" r="2" stroke="#fff"/><circle cx="22.5" cy="8" r="2" stroke="#fff"/><circle cx="31" cy="9" r="2" stroke="#fff"/><circle cx="39" cy="12" r="2" stroke="#fff"/></g></svg>`,
+  r: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="butt"><path d="M9 39h27v-3H9v3zM12.5 32l1.5-2.5h17l1.5 2.5h-20zM12 36v-4h21v4H12z"/><path d="M14 29.5v-13h17v13H14z" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M14 16.5L11 14h23l-3 2.5H14zM11 14V9h4v2h5V9h5v2h5V9h4v5H11z" stroke-linecap="butt"/><path d="M12 35.5h21M13 31.5h19M14 29.5h17M14 16.5h17M11 14h23" fill="none" stroke="#fff" stroke-width="1" stroke-linejoin="miter"/></g></svg>`,
+  b: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round"><g fill="#000" stroke-linecap="butt"><path d="M9 36c3.39-.97 10.11.43 13.5-2 3.39 2.43 10.11 1.03 13.5 2 0 0 1.65.54 3 2-.68.97-1.65.99-3 .5-3.39-.97-10.11.46-13.5-1-3.39 1.46-10.11.03-13.5 1-1.354.49-2.323.47-3-.5 1.354-1.94 3-2 3-2z"/><path d="M15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2z"/><path d="M25 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 1 1 5 0z"/></g><path d="M17.5 26h10M15 30h15m-7.5-14.5v5M20 18h5" fill="none" stroke="#fff" stroke-linejoin="miter"/></g></svg>`,
+  n: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round"><path d="M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21" stroke-linecap="butt"/><path d="M24 18c.38 2.91-5.55 7.37-8 9-3 2-2.82 4.34-5 4-1.042-.94 1.41-3.04 0-3-1 0 .19 1.23-1 2-1 0-4.003 1-4-4 0-2 6-12 6-12s1.89-1.9 2-3.5c-.73-.994-.5-2-.5-3 1-1 3 2.5 3 2.5h2s.78-1.992 2.5-3c1 0 1 3 1 3" stroke-linecap="butt"/><path d="M9.5 25.5a.5.5 0 1 1-1 0 .5.5 0 1 1 1 0zM15 15.5a.5 1.5 30 1 1-1 0 .5 1.5 30 1 1 1 0z" fill="#fff" stroke="#fff"/><path d="M24.55 10.4l-.45 1.45.5.15c3.15 1 5.65 2.49 7.9 6.75S35.75 29.06 35.25 39l-.05.5h2.25l.05-.5c.5-10.06-.88-16.85-3.25-21.34-2.37-4.49-5.79-6.64-9.19-7.16l-.51-.1z" fill="#fff" stroke="none"/></g></svg>`,
+  p: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><path d="M22.5 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38C17.33 16.5 16 18.59 16 21c0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z" fill="#000" stroke="#000" stroke-width="1.5" stroke-linecap="round"/></svg>`,
 };
 
-// =========================================================
-// STORAGE (window.storage shared if available, else localStorage)
-// =========================================================
+const SANDBOX_PRESETS = [
+  { label: 'Starting Position', fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1' },
+  { label: 'Greek Gift Setup', fen: 'r1bq1rk1/pppn1ppp/4p3/3pP3/1b1P4/2NB1N2/PPP2PPP/R1BQ1RK1 w - - 0 1' },
+  { label: 'Sicilian Najdorf', fen: 'r1bqkb1r/1p2pppp/p1np1n2/8/3NP3/2N1B3/PPP2PPP/R2QKB1R w KQkq - 0 6' },
+  { label: 'Carlsbad Minority Structure', fen: 'r2q1rk1/pp1n1ppp/2p1pb2/3p4/3P4/2NBPN2/PPQ2PPP/R4RK1 w - - 0 11' },
+  { label: 'Lucena Rook Endgame', fen: '3K4/3P1k2/8/8/8/8/4R3/3r4 w - - 0 1' },
+  { label: 'King Opposition Study', fen: '4k3/8/4K3/4P3/8/8/8/8 w - - 0 1' },
+];
+
 const storage = {
-  async get(key, shared=true){
-    try{ if(window.storage){ const r = await window.storage.get(key, shared); return r ? r.value : null; } }catch(e){}
+  async get(key, shared = true) {
+    try {
+      if (window.storage) {
+        const r = await window.storage.get(key, shared);
+        return r ? r.value : null;
+      }
+    } catch {}
     return localStorage.getItem(key);
   },
-  async set(key, value, shared=true){
-    try{ if(window.storage) return await window.storage.set(key, value, shared); }catch(e){}
+  async set(key, value, shared = true) {
+    try {
+      if (window.storage) return await window.storage.set(key, value, shared);
+    } catch {}
     return localStorage.setItem(key, value);
   },
-  async list(prefix='', shared=true){
-    try{ if(window.storage){ const r = await window.storage.list(prefix, shared); return r ? r.keys : []; } }catch(e){}
-    const out=[];
-    for(let i=0;i<localStorage.length;i++){
+  async list(prefix = '', shared = true) {
+    try {
+      if (window.storage) {
+        const r = await window.storage.list(prefix, shared);
+        return r ? r.keys : [];
+      }
+    } catch {}
+    const out = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
       const k = localStorage.key(i);
-      if(k && k.startsWith(prefix)) out.push(k);
+      if (k && k.startsWith(prefix)) out.push(k);
     }
     return out;
-  }
+  },
 };
 
-// =========================================================
-// APP STATE
-// =========================================================
-const State = {
-  user: null, members: {}, page: 'home',
-  flipBoard: false, game: null,
-  selectedSquare: null, legalDests: [], lastMove: null,
-  studyContext: null, studyStep: 0,
-  vsMode: null, engineLevel: null, engineCustomElo: 1500,
-  playerColor: 'w',
-  variant: 'standard',
-  gameRated: false, gameWhite: null, gameBlack: null,
-  gameMoveHistory: [], gameOver: false, lastResult: null,
-  promotionPending: null,
-  engine: null, engineThinking: false,
-  puzzleSolution: [], puzzleStep: 0, puzzleFeedback: null,
-  authError: null, completingEmailLink: false,
-  sharedClubs: [],
-  openingLevel: 'All', tacticLevel: 'All',
-  preferences: loadPreferences(),
-  training: loadTrainingProgress(), puzzleSolvedThisRun: false,
-  studyMode: 'learn', practiceFeedback: null,
-};
 const sharedClub = window.CHESS_CLUB_SHARED === true;
 
 const BOARD_THEMES = {
-  walnut: { name:'Classic Walnut', light:'#ead7ad', dark:'#8b5a2b', frame:'#4a2c0e', accent:'#d4a943' },
-  midnight: { name:'Midnight Blue', light:'#f0eadb', dark:'#263b5f', frame:'#13213a', accent:'#65a7d8' },
-  forest: { name:'Forest Green', light:'#f3ead1', dark:'#356246', frame:'#193c2a', accent:'#d7b75b' },
-};
-const PIECE_STYLES = {
-  classic: { name:'Classic Staunton', note:'Traditional ivory and charcoal' },
-  warm: { name:'Warm Wood', note:'Soft carved-wood finish' },
-  contrast: { name:'High Contrast', note:'Maximum clarity on small screens' },
+  walnut: { name: 'Classic Walnut', light: '#ead7ad', dark: '#8b5a2b', frame: '#4a2c0e', accent: '#d4a943' },
+  midnight: { name: 'Midnight Blue', light: '#f0eadb', dark: '#263b5f', frame: '#13213a', accent: '#65a7d8' },
+  forest: { name: 'Forest Green', light: '#f3ead1', dark: '#356246', frame: '#193c2a', accent: '#d7b75b' },
 };
 
-function loadPreferences(){
-  try{ return {...{board:'walnut', pieces:'classic', coordinates:true}, ...JSON.parse(localStorage.getItem('eis_board_preferences')||'{}')}; }
-  catch(e){ return {board:'walnut', pieces:'classic', coordinates:true}; }
+const PIECE_STYLES = {
+  classic: { name: 'Classic Staunton', note: 'Traditional ivory and charcoal' },
+  warm: { name: 'Warm Wood', note: 'Soft carved-wood finish' },
+  contrast: { name: 'High Contrast', note: 'Crisp high-legibility silhouettes' },
+};
+
+function loadPreferences() {
+  try {
+    return {
+      board: 'walnut',
+      pieces: 'classic',
+      coordinates: true,
+      ...JSON.parse(localStorage.getItem('eis_board_preferences') || '{}'),
+    };
+  } catch {
+    return { board: 'walnut', pieces: 'classic', coordinates: true };
+  }
 }
-function applyPreferences(){
+
+function applyPreferences() {
   const theme = BOARD_THEMES[State.preferences.board] || BOARD_THEMES.walnut;
   const root = document.documentElement;
   root.style.setProperty('--board-light', theme.light);
@@ -97,1764 +157,1057 @@ function applyPreferences(){
   document.body.dataset.pieceStyle = State.preferences.pieces;
   document.body.classList.toggle('hide-coordinates', !State.preferences.coordinates);
 }
-function savePreferences(){
+
+function savePreferences() {
   localStorage.setItem('eis_board_preferences', JSON.stringify(State.preferences));
   applyPreferences();
 }
 
-function loadTrainingProgress(){
-  try{ return {...{openings:{},traps:{},tactics:{},streak:0,bestStreak:0}, ...JSON.parse(localStorage.getItem('eis_training_progress')||'{}')}; }
-  catch(e){ return {openings:{},traps:{},tactics:{},streak:0,bestStreak:0}; }
-}
-function saveTrainingProgress(){ localStorage.setItem('eis_training_progress', JSON.stringify(State.training)); }
-function recordLessonStep(ctx, kind, step, total){
-  const collection = kind==='trap' ? State.training.traps : State.training.openings;
-  const previous = collection[ctx.id] || {step:0,complete:false};
-  collection[ctx.id] = {...previous,step:Math.max(previous.step||0,step),complete:previous.complete||step>=total,updatedAt:Date.now()};
-  saveTrainingProgress();
-}
-function recordPracticeComplete(ctx,kind){
-  const collection=kind==='trap'?State.training.traps:State.training.openings;
-  collection[ctx.id]={...(collection[ctx.id]||{}),step:ctx.line.length,complete:true,practiced:true,practicedAt:Date.now()};
-  saveTrainingProgress();
-}
-function continueTraining(){
-  const lesson=OPENINGS.find(item=>!State.training.openings[item.id]?.practiced)||OPENINGS[0];
-  const progress=State.training.openings[lesson.id]||{};
-  State.studyMode=progress.complete?'practice':'learn';
-  State.studyStep=State.studyMode==='practice'?0:Math.min(progress.step||0,lesson.line.length);
-  State.practiceFeedback=null;
-  navigate('study-opening',lesson);
-}
-function recordTacticAttempt(ctx, correct){
-  const progress = State.training.tactics[ctx.id] || {attempts:0,correct:0,solved:false};
-  progress.attempts += 1;
-  if(correct){
-    progress.correct += 1; progress.solved = true; progress.solvedAt = Date.now();
-    if(!State.puzzleSolvedThisRun){ State.training.streak += 1; State.training.bestStreak = Math.max(State.training.bestStreak||0,State.training.streak); }
-    State.puzzleSolvedThisRun = true;
-  } else { State.training.streak = 0; }
-  State.training.tactics[ctx.id] = progress;
-  saveTrainingProgress();
-}
-function trainingSummary(){
-  const completedOpenings = Object.values(State.training.openings).filter(p=>p.complete).length;
-  const solvedTactics = Object.values(State.training.tactics).filter(p=>p.solved).length;
-  const tacticProgress = Object.values(State.training.tactics);
-  const attempts = tacticProgress.reduce((sum,p)=>sum+(p.attempts||0),0);
-  const correct = tacticProgress.reduce((sum,p)=>sum+(p.correct||0),0);
-  return {completedOpenings,solvedTactics,attempts,accuracy:attempts?Math.round(correct/attempts*100):0};
-}
-function nextTactic(){
-  const index = Math.max(0,TACTICS.findIndex(t=>t.id===State.studyContext?.id));
-  const next = TACTICS[(index+1)%TACTICS.length];
-  State.puzzleFeedback=null; State.puzzleSolvedThisRun=false; State.game=null; State.selectedSquare=null; State.legalDests=[]; State.lastMove=null;
-  navigate('tactics-puzzle',next);
+function loadTrainingProgress() {
+  try {
+    return {
+      openings: {},
+      traps: {},
+      middlegame: {},
+      endgames: {},
+      tactics: {},
+      quizzes: { completedSprints: 0, bestAccuracy: 0, totalCorrect: 0, totalAnswered: 0 },
+      streak: 0,
+      bestStreak: 0,
+      ...JSON.parse(localStorage.getItem('eis_training_progress') || '{}'),
+    };
+  } catch {
+    return {
+      openings: {},
+      traps: {},
+      middlegame: {},
+      endgames: {},
+      tactics: {},
+      quizzes: { completedSprints: 0, bestAccuracy: 0, totalCorrect: 0, totalAnswered: 0 },
+      streak: 0,
+      bestStreak: 0,
+    };
+  }
 }
 
-// =========================================================
-// ELO
-// =========================================================
-// =========================================================
-// MEMBERS
-// =========================================================
-async function loadMembers(){
-  if(sharedClub){ State.members = {}; return; }
-  const raw = await storage.get('eis_members', true);
-  if(raw){ try{ State.members = JSON.parse(raw); }catch(e){ State.members = {}; } }
-  else State.members = {};
+function saveTrainingProgress() {
+  localStorage.setItem('eis_training_progress', JSON.stringify(State.training));
 }
-async function saveMembers(){ await storage.set('eis_members', JSON.stringify(State.members), true); }
-async function registerMember(name){
-  const id = 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
-  State.members[id] = { id, name, rating:1200, wins:0, losses:0, draws:0, joined:Date.now() };
+
+const State = {
+  user: null,
+  members: {},
+  page: 'home',
+  flipBoard: false,
+  game: null,
+  selectedSquare: null,
+  legalDests: [],
+  lastMove: null,
+  promotionPending: null,
+
+  // Master-detail curriculum state
+  openingsTab: 'openings',
+  openingsSearch: '',
+  selectedOpeningId: OPENINGS[0]?.id || null,
+  selectedTrapId: TRAPS[0]?.id || null,
+  selectedStrategyId: MIDDLEGAME_LESSONS[0]?.id || null,
+  selectedEndgameId: ENDGAMES[0]?.id || null,
+  studyContext: null,
+  studyStep: 0,
+  studyMode: 'learn',
+  practiceFeedback: null,
+  endgameSparring: false,
+  endgameSparThinking: false,
+  showStudyStockfish: true,
+
+  // Puzzles & Quiz Sprint state
+  puzzleView: 'catalog', // 'catalog' | 'solver' | 'quiz'
+  puzzleCategory: 'All',
+  puzzleDifficulty: 'All',
+  puzzleQuery: '',
+  puzzleUnsolvedOnly: false,
+  puzzlePage: 1,
+  activePuzzle: PUZZLES[0] || null,
+  puzzlePly: 0,
+  puzzleFeedback: null,
+  puzzleSolvedThisRun: false,
+  puzzleAutoReplying: false,
+  showPuzzleStockfish: true,
+  quizCategory: 'All',
+  quizSession: createQuizSession(QUIZZES, { category: 'All', count: 10 }),
+  showQuizStockfish: false,
+
+  // Stockfish 19 Live Coach & Engine state
+  coachMode: 'guided', // 'guided' | 'sandbox' | 'blunder-check'
+  coachEngineLevel: 3,
+  coachPlayerColor: 'w',
+  coachGame: null,
+  coachHistory: [],
+  coachThinking: false,
+  coachLastGrade: null,
+  coachPendingBlunder: null,
+  coachFenInput: '',
+  coachFenError: null,
+  coachPausedOnMateOrDraw: null,
+  showCoachArrows: true,
+
+  // Live Stockfish snapshot & widget refs
+  sfSnapshot: null,
+  sfTargetFen: null,
+  boardMaximized: false,
+  studySidebarCollapsed: false,
+  mobileStudyListOpen: false,
+  dom: {
+    evalBar: null,
+    arrowsSvg: null,
+    sfPanel: null,
+    arenaDualStrip: null,
+    arenaWhiteCard: null,
+    arenaBlackCard: null,
+  },
+
+  // Dual Engine Arena state
+  arenaWhiteProfileId: 'sf19-nnue',
+  arenaWhiteTier: 4,
+  arenaBlackProfileId: 'tal-hce',
+  arenaBlackTier: 3,
+  arenaPresetIdx: 0,
+  arenaPaceMs: 1200,
+  arenaTab: 'both', // 'both' | 'white' | 'black' | 'log'
+  arenaGame: null,
+  arenaInitialFen: null,
+  arenaIsChess960: false,
+  arenaUciHistory: [],
+  arenaHistoryFens: [],
+  arenaMoveLog: [],
+  arenaPaused: false,
+  arenaThinkingSide: null,
+  arenaInspectIndex: null,
+  arenaWhiteSnap: null,
+  arenaBlackSnap: null,
+  arenaWhiteLastMeta: null,
+  arenaBlackLastMeta: null,
+  arenaEngines: { w: null, b: null },
+  arenaLoopToken: 0,
+  arenaTimerId: null,
+
+  // Play & Club state
+  variant: 'standard',
+  playEngineProfileId: 'sf19-nnue',
+  _humanVsEngineInstance: null,
+  playEngineLevel: 3,
+  playEngineCustomElo: 1500,
+  playEngineUseCustom: false,
+  playEngineColor: 'white',
+  vsMode: null,
+  playerColor: 'w',
+  gameRated: false,
+  gameWhite: null,
+  gameBlack: null,
+  gameMoveHistory: [],
+  gameOver: false,
+  lastResult: null,
+  engineThinking: false,
+  showPlayCoach: true,
+  playCoachLastGrade: null,
+  _engineConfig: null,
+  _engineLevelDisplay: '',
+  authError: null,
+  completingEmailLink: false,
+  sharedClubs: [],
+  preferences: loadPreferences(),
+  training: loadTrainingProgress(),
+};
+
+// =========================================================
+// PROGRESS & CLUB HELPERS
+// =========================================================
+function solvedPuzzleSet() {
+  const solved = new Set();
+  for (const [id, entry] of Object.entries(State.training.tactics || {})) {
+    if (entry?.solved) solved.add(id);
+  }
+  return solved;
+}
+
+function trainingSummary() {
+  const completedOpenings = Object.values(State.training.openings || {}).filter((p) => p?.complete).length;
+  const completedTraps = Object.values(State.training.traps || {}).filter((p) => p?.complete).length;
+  const completedStrategy = Object.values(State.training.middlegame || {}).filter((p) => p?.complete).length;
+  const completedEndgames = Object.values(State.training.endgames || {}).filter((p) => p?.complete).length;
+  const solvedPuzzles = solvedPuzzleSet().size;
+  const tacticVals = Object.values(State.training.tactics || {});
+  const attempts = tacticVals.reduce((s, p) => s + (p?.attempts || 0), 0);
+  const correct = tacticVals.reduce((s, p) => s + (p?.correct || 0), 0);
+  return {
+    completedOpenings,
+    completedTraps,
+    completedStrategy,
+    completedEndgames,
+    solvedPuzzles,
+    attempts,
+    accuracy: attempts ? Math.round((correct / attempts) * 100) : 0,
+  };
+}
+
+function recordStudyProgress(kind, item, step, total) {
+  if (!item?.id) return;
+  if (!State.training[kind]) State.training[kind] = {};
+  const prev = State.training[kind][item.id] || { step: 0, complete: false };
+  const completedNow = prev.complete || step >= total;
+  State.training[kind][item.id] = {
+    ...prev,
+    step: Math.max(prev.step || 0, step),
+    complete: completedNow,
+    updatedAt: Date.now(),
+  };
+  saveTrainingProgress();
+  if (sharedClub && State.sharedClubs[0]?.id) {
+    saveLessonProgress({
+      clubId: State.sharedClubs[0].id,
+      lessonId: `${kind}:${item.id}`,
+      completedSteps: step,
+      completedAt: completedNow ? new Date().toISOString() : null,
+    }).catch(() => {});
+  }
+}
+
+function recordPracticeMastery(kind, item) {
+  if (!item?.id) return;
+  if (!State.training[kind]) State.training[kind] = {};
+  State.training[kind][item.id] = {
+    ...(State.training[kind][item.id] || {}),
+    step: (item.line || []).length,
+    complete: true,
+    practiced: true,
+    practicedAt: Date.now(),
+  };
+  saveTrainingProgress();
+}
+
+function recordPuzzleResult(puzzle, correct, usedHint = false) {
+  if (!puzzle?.id) return;
+  const prev = State.training.tactics[puzzle.id] || { attempts: 0, correct: 0, solved: false };
+  prev.attempts += 1;
+  if (correct) {
+    prev.correct += 1;
+    prev.solved = true;
+    prev.solvedAt = Date.now();
+    if (!State.puzzleSolvedThisRun) {
+      State.training.streak = (State.training.streak || 0) + 1;
+      State.training.bestStreak = Math.max(State.training.bestStreak || 0, State.training.streak);
+    }
+    State.puzzleSolvedThisRun = true;
+  } else {
+    State.training.streak = 0;
+  }
+  State.training.tactics[puzzle.id] = prev;
+  saveTrainingProgress();
+
+  if (sharedClub && State.sharedClubs[0]?.id) {
+    recordPuzzleAttempt({
+      clubId: State.sharedClubs[0].id,
+      puzzleId: puzzle.id,
+      correct,
+      usedHint,
+      elapsedSeconds: 0,
+    }).catch(() => {});
+  }
+}
+
+async function loadMembers() {
+  if (sharedClub) {
+    State.members = {};
+    return;
+  }
+  const raw = await storage.get('eis_members', true);
+  if (raw) {
+    try {
+      State.members = JSON.parse(raw);
+    } catch {
+      State.members = {};
+    }
+  } else {
+    State.members = {};
+  }
+}
+async function saveMembers() {
+  await storage.set('eis_members', JSON.stringify(State.members), true);
+}
+async function registerMember(name) {
+  const id = 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  State.members[id] = { id, name, rating: 1200, wins: 0, losses: 0, draws: 0, joined: Date.now() };
   await saveMembers();
   return id;
 }
-async function setUser(id){ State.user = State.members[id]; await storage.set('eis_currentUser', id, true); }
-async function loadCurrentUser(){
-  if(sharedClub){
-    try{
+async function setUser(id) {
+  State.user = State.members[id];
+  await storage.set('eis_currentUser', id, true);
+}
+async function loadCurrentUser() {
+  if (sharedClub) {
+    try {
       State.completingEmailLink = await isEmailSignInLink();
       const savedEmail = localStorage.getItem('chess-club:email-for-sign-in');
-      if(State.completingEmailLink && savedEmail) await completeEmailSignInLink(savedEmail);
+      if (State.completingEmailLink && savedEmail) await completeEmailSignInLink(savedEmail);
       const user = await currentFirebaseUser();
-      if(user){
+      if (user) {
         const name = user.displayName || (user.email ? user.email.split('@')[0] : 'Club member');
-        State.user = {id:user.uid, name, rating:1200, wins:0, losses:0, draws:0};
+        State.user = { id: user.uid, name, rating: 1200, wins: 0, losses: 0, draws: 0 };
         await upsertMyProfile(name);
         State.sharedClubs = await listMyClubs();
       }
-    }catch(error){ State.authError = error.message; }
+    } catch (error) {
+      State.authError = error.message;
+    }
     return;
   }
   const id = await storage.get('eis_currentUser', true);
-  if(id && State.members[id]) State.user = State.members[id];
+  if (id && State.members[id]) State.user = State.members[id];
 }
-async function logoutUser(){ State.user = null; await storage.set('eis_currentUser', '', true); }
-
-// =========================================================
-// GAME RECORDS
-// =========================================================
-async function saveGameRecord(record){
-  const key = 'eis_game_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+async function logoutUser() {
+  State.user = null;
+  await storage.set('eis_currentUser', '', true);
+}
+async function saveGameRecord(record) {
+  const key = 'eis_game_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
   await storage.set(key, JSON.stringify(record), true);
 }
-async function loadGameRecords(){
+async function loadGameRecords() {
   const keys = await storage.list('eis_game_', true);
   const items = [];
-  for(const k of keys){
+  for (const k of keys) {
     const raw = await storage.get(k, true);
-    if(raw){ try{ items.push(JSON.parse(raw)); }catch(e){} }
-  }
-  return items.sort((a,b)=>b.ts-a.ts);
-}
-
-// =========================================================
-// STOCKFISH ENGINE
-// =========================================================
-let stockfishLoading = null;
-async function initStockfish(){
-  if(State.engine) return State.engine;
-  if(stockfishLoading) return stockfishLoading;
-  stockfishLoading = (async()=>{
-    const url = 'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js';
-    const resp = await fetch(url);
-    if(!resp.ok) throw new Error('Failed to fetch Stockfish');
-    const code = await resp.text();
-    const blob = new Blob([code], {type:'application/javascript'});
-    const blobUrl = URL.createObjectURL(blob);
-    const w = new Worker(blobUrl);
-    State.engine = w;
-    w.postMessage('uci'); w.postMessage('isready');
-    return w;
-  })();
-  return stockfishLoading;
-}
-function configureEngine(level){
-  const w = State.engine; if(!w) return {depth:10};
-  if(level && level.custom){
-    w.postMessage('setoption name UCI_LimitStrength value true');
-    w.postMessage('setoption name UCI_Elo value ' + Math.max(1320, Math.min(2850, level.custom)));
-    return { depth: 14, movetime: 800 };
-  }
-  w.postMessage('setoption name UCI_LimitStrength value false');
-  const presets = {
-    1:{skill:0, depth:1, movetime:200, label:'Novice'},
-    2:{skill:5, depth:4, movetime:300, label:'Apprentice'},
-    3:{skill:10, depth:8, movetime:500, label:'Journeyman'},
-    4:{skill:15, depth:12, movetime:800, label:'Expert'},
-    5:{skill:20, depth:18, movetime:1500, label:'Grandmaster'},
-  };
-  const p = presets[level] || presets[3];
-  w.postMessage('setoption name Skill Level value ' + p.skill);
-  return p;
-}
-function askEngineForMove(fen, opts, callback){
-  const w = State.engine; if(!w) return;
-  State.engineThinking = true;
-  const handler = (e)=>{
-    const line = e.data;
-    if(typeof line !== 'string') return;
-    if(line.startsWith('bestmove')){
-      const parts = line.split(/\s+/);
-      State.engineThinking = false;
-      w.removeEventListener('message', handler);
-      callback(parts[1]);
+    if (raw) {
+      try {
+        items.push(JSON.parse(raw));
+      } catch {}
     }
+  }
+  return items.sort((a, b) => b.ts - a.ts);
+}
+
+// =========================================================
+// STOCKFISH 19 LIVE ENGINE WIRING (Non-flickering)
+// =========================================================
+function applyStockfishDom(snap, grade = null) {
+  if (State.dom.evalBar) {
+    updateEvalBar(State.dom.evalBar, {
+      whiteCp: snap?.whiteCp ?? 0,
+      whiteMate: snap?.whiteMate ?? null,
+      flipped: State.flipBoard,
+    });
+  }
+  if (State.dom.arrowsSvg) {
+    updateBoardArrows(State.dom.arrowsSvg, snap?.lines || [], {
+      flipped: State.flipBoard,
+      show: State.showCoachArrows,
+    });
+  }
+  if (State.dom.sfPanel) {
+    updateStockfishPanel(State.dom.sfPanel, snap, grade, {
+      showArrows: State.showCoachArrows,
+    });
+  }
+}
+
+function triggerLiveAnalysis(fen, { depth = 13, multiPv = 3, grade = null } = {}) {
+  State.sfTargetFen = fen;
+  if (State.sfSnapshot && State.sfSnapshot.fen === fen && !State.sfSnapshot.evaluating) {
+    applyStockfishDom(State.sfSnapshot, grade);
+    return Promise.resolve(State.sfSnapshot);
+  }
+  const initial = {
+    fen,
+    engineFlavor: stockfishClient.engineFlavor,
+    depth: 0,
+    nps: 0,
+    lines: [],
+    whiteCp: 0,
+    whiteMate: null,
+    evaluating: true,
   };
-  w.addEventListener('message', handler);
-  w.postMessage('position fen ' + fen);
-  if(opts.movetime) w.postMessage('go depth ' + (opts.depth||10) + ' movetime ' + opts.movetime);
-  else w.postMessage('go depth ' + (opts.depth||10));
+  applyStockfishDom(initial, grade);
+
+  return stockfishClient
+    .analyze(fen, {
+      depth,
+      multiPv,
+      chess960: false,
+      onUpdate: (snap) => {
+        if (!snap || State.sfTargetFen !== fen) return;
+        State.sfSnapshot = snap;
+        applyStockfishDom(snap, grade);
+      },
+    })
+    .then((snap) => {
+      if (snap && State.sfTargetFen === fen) {
+        State.sfSnapshot = snap;
+        applyStockfishDom(snap, grade);
+      }
+      return snap;
+    })
+    .catch(() => null);
+}
+
+function stopArenaLoop() {
+  State.arenaLoopToken += 1;
+  if (State.arenaTimerId) {
+    clearTimeout(State.arenaTimerId);
+    State.arenaTimerId = null;
+  }
+  if (State.arenaEngines.w) State.arenaEngines.w.stop();
+  if (State.arenaEngines.b) State.arenaEngines.b.stop();
+  State.arenaThinkingSide = null;
+}
+
+function disposeArenaEngines() {
+  stopArenaLoop();
+  if (State.arenaEngines.w) {
+    State.arenaEngines.w.dispose();
+    State.arenaEngines.w = null;
+  }
+  if (State.arenaEngines.b) {
+    State.arenaEngines.b.dispose();
+    State.arenaEngines.b = null;
+  }
+}
+
+function makeMaxBoardButton() {
+  const btn = el(`<button type="button" class="btn ghost sm ${State.boardMaximized ? 'active' : ''}" title="${State.boardMaximized ? 'Restore balanced panel' : 'Maximize board size'}">${iconSvg(State.boardMaximized ? 'compress' : 'expand', 13)} <span>${State.boardMaximized ? 'Fit' : 'Max'}</span></button>`);
+  btn.onclick = () => {
+    State.boardMaximized = !State.boardMaximized;
+    render();
+  };
+  return btn;
 }
 
 // =========================================================
-// OPENINGS DATA
+// ROUTING & SHELL
 // =========================================================
-const OPENINGS = [
-  { id:'italian', name:'The Italian Game', eco:'C50', color:'White',
-    summary:'One of the oldest opening systems in chess, dating to the 16th century. White develops the bishop to c4, eyeing the weak f7 square, and prepares natural development.',
-    keyIdeas:['Develop pieces actively','Pressure on f7 (Black\'s weakest square)','Castle kingside early','Possible d2-d4 break in the center'],
-    line:[
-      {move:'e4', text:'White takes the center and opens lines for the queen and bishop.'},
-      {move:'e5', text:'Black mirrors, contesting the center directly.'},
-      {move:'Nf3', text:'Develops a piece, attacks the e5 pawn, controls central squares.'},
-      {move:'Nc6', text:'Defends e5 and develops naturally toward the center.'},
-      {move:'Bc4', text:'The Italian Bishop! It points at f7, the only square defended by Black\'s king alone.'},
-      {move:'Bc5', text:'The Giuoco Piano ("quiet game"). Black mirrors the bishop\'s aggressive aim at f2.'},
-      {move:'c3', text:'Preparing d4. White wants to expand in the center with a big pawn duo.'},
-      {move:'Nf6', text:'Develops and immediately puts pressure on the e4 pawn.'},
-      {move:'d4', text:'White strikes! The classical center. From here many famous lines branch.'}
-    ]},
-  { id:'ruy-lopez', name:'The Ruy López (Spanish)', eco:'C60', color:'White',
-    summary:'Named for the 16th-century Spanish priest who analysed it, the Ruy López is one of the deepest and most respected openings, beloved by world champions from Steinitz to Carlsen.',
-    keyIdeas:['Pin the c6 knight indirectly','Prepare c3 and d4','Long, strategic battles','Centralize before attacking'],
-    line:[
-      {move:'e4', text:'A classical king-pawn opening.'},
-      {move:'e5', text:'Black accepts the open game.'},
-      {move:'Nf3', text:'Threatens e5 and prepares development.'},
-      {move:'Nc6', text:'Defends the pawn.'},
-      {move:'Bb5', text:'The Spanish bishop! It indirectly attacks the c6 knight, and thereby the e5 pawn.'},
-      {move:'a6', text:'The Morphy Defence — Black "asks the question" of the bishop.'},
-      {move:'Ba4', text:'White retains the bishop. (Bxc6 dxc6 is the Exchange Variation, a separate world.)'},
-      {move:'Nf6', text:'Develops and threatens e4.'},
-      {move:'O-O', text:'Castles. White is prepared to lose e4 momentarily for development tempo.'},
-      {move:'Be7', text:'A solid square — the Closed Spanish, a vast theoretical ocean.'}
-    ]},
-  { id:'sicilian', name:'The Sicilian Defence', eco:'B20', color:'Black',
-    summary:'The most popular and combative answer to 1.e4 at the highest level. Black challenges the center asymmetrically, fighting for the win from move one.',
-    keyIdeas:['Asymmetric pawn structure','Sharp counter-attacks on the queenside','Dangerous for the unprepared white player','Many sub-systems: Najdorf, Dragon, Sveshnikov'],
-    line:[
-      {move:'e4', text:'White opens classically.'},
-      {move:'c5', text:'The Sicilian! Black does not contest e4 directly, but instead fights for d4 and prepares queenside expansion.'},
-      {move:'Nf3', text:'Preparing d4.'},
-      {move:'d6', text:'A flexible move common in many Sicilian systems.'},
-      {move:'d4', text:'White strikes in the center.'},
-      {move:'cxd4', text:'Black trades to open the c-file.'},
-      {move:'Nxd4', text:'White recaptures with the knight, the Open Sicilian — the most theoretically demanding line.'},
-      {move:'Nf6', text:'Threatens e4, develops naturally.'},
-      {move:'Nc3', text:'Defends e4 and develops.'},
-      {move:'a6', text:'The Najdorf Variation — perhaps the most famous opening in chess.'}
-    ]},
-  { id:'french', name:'The French Defence', eco:'C00', color:'Black',
-    summary:'A solid, strategic reply where Black willingly accepts a slightly cramped position to build a rock-solid pawn chain and play for a counter-attack on the queenside.',
-    keyIdeas:['Closed pawn structure','Light-squared bishop is the "bad" piece','Counterattack with ...c5','Patient strategic play'],
-    line:[
-      {move:'e4', text:'White takes the center.'},
-      {move:'e6', text:'Quiet but cunning — Black prepares ...d5 to challenge the center.'},
-      {move:'d4', text:'White builds a big pawn center.'},
-      {move:'d5', text:'Black challenges! Now the central tension defines the game.'},
-      {move:'Nc3', text:'Defending e4 actively.'},
-      {move:'Nf6', text:'Pressuring e4 again.'},
-      {move:'Bg5', text:'The Classical Variation, pinning the knight.'},
-      {move:'Be7', text:'Breaking the pin and preparing castling.'},
-      {move:'e5', text:'White advances, gaining space and locking the center.'},
-      {move:'Nfd7', text:'The knight retreats; Black will counterattack with ...c5.'}
-    ]},
-  { id:'caro-kann', name:'The Caro-Kann Defence', eco:'B10', color:'Black',
-    summary:'Named after Horatio Caro and Marcus Kann, this is a sound, solid defence loved for its sturdy pawn structure. Unlike the French, Black\'s light-squared bishop gets a good diagonal.',
-    keyIdeas:['Solid structure with no weak bishop','Aim for ...dxe4 with a sound game','Excellent endgame prospects','Hard to crush'],
-    line:[
-      {move:'e4', text:'White opens with the king pawn.'},
-      {move:'c6', text:'Preparing ...d5 with a pawn — unlike the French, the queen\'s bishop will not be locked in.'},
-      {move:'d4', text:'White builds the center.'},
-      {move:'d5', text:'Black challenges directly.'},
-      {move:'Nc3', text:'Defending e4 actively.'},
-      {move:'dxe4', text:'Black resolves the tension and avoids any cramping.'},
-      {move:'Nxe4', text:'The Classical Caro-Kann — White recaptures and faces a long strategic battle.'},
-      {move:'Bf5', text:'A vital move — Black develops the bishop OUTSIDE the pawn chain.'}
-    ]},
-  { id:'queens-gambit', name:'The Queen\'s Gambit', eco:'D06', color:'White',
-    summary:'A classical 1.d4 opening where White offers a wing pawn to deflect Black\'s central pawn. Despite the "gambit" name, the pawn is rarely lost permanently.',
-    keyIdeas:['Pressure on Black\'s center','Possible minority attack on the queenside','Long strategic plans','Famous since the 15th century'],
-    line:[
-      {move:'d4', text:'A queenside opening — claims the center.'},
-      {move:'d5', text:'Black contests the center symmetrically.'},
-      {move:'c4', text:'The Queen\'s Gambit. White offers the c-pawn to deflect Black\'s d-pawn.'},
-      {move:'e6', text:'The Queen\'s Gambit Declined — solid and respected.'},
-      {move:'Nc3', text:'Develops and adds pressure to d5.'},
-      {move:'Nf6', text:'Develops and prepares to defend the center.'},
-      {move:'Bg5', text:'The Orthodox Defence — pinning the knight to add yet more pressure on d5.'},
-      {move:'Be7', text:'Breaking the pin and preparing to castle.'},
-      {move:'e3', text:'A modest but strong move, freeing the bishop and supporting d4.'}
-    ]},
-  { id:'kings-indian', name:'The King\'s Indian Defence', eco:'E60', color:'Black',
-    summary:'A hyper-modern weapon: Black allows White a big pawn center, then attacks it from the flanks with pieces. Wildly aggressive in the right hands — favored by Kasparov, Fischer, and Bronstein.',
-    keyIdeas:['Hyper-modern: let White build, then strike','Kingside attack with ...f5, ...g5','Asymmetric dynamic play','Unbalanced positions'],
-    line:[
-      {move:'d4', text:'White takes the center.'},
-      {move:'Nf6', text:'Black does not contest immediately — a hyper-modern signal.'},
-      {move:'c4', text:'Building a big center.'},
-      {move:'g6', text:'Preparing the fianchetto.'},
-      {move:'Nc3', text:'Develops and defends the center.'},
-      {move:'Bg7', text:'The fianchetto bishop — a powerful piece on the long diagonal.'},
-      {move:'e4', text:'White grabs a huge center — exactly what Black wanted!'},
-      {move:'d6', text:'Supporting an eventual ...e5 break.'},
-      {move:'Nf3', text:'Develops naturally.'},
-      {move:'O-O', text:'Black castles. The plan is now ...e5 followed by a kingside attack.'}
-    ]},
-  { id:'london', name:'The London System', eco:'D02', color:'White',
-    summary:'A highly practical opening that develops the dark-squared bishop to f4 quickly. Easy to learn, hard to refute, and beloved at all levels — even Magnus Carlsen plays it regularly.',
-    keyIdeas:['Quick development','Solid, no weaknesses','Easy to learn','Plays similarly against many setups'],
-    line:[
-      {move:'d4', text:'A queenside opening.'},
-      {move:'d5', text:'Black mirrors.'},
-      {move:'Nf3', text:'Develops.'},
-      {move:'Nf6', text:'Symmetric development.'},
-      {move:'Bf4', text:'The London Bishop! It\'s on a great diagonal before the e-pawn moves.'},
-      {move:'e6', text:'A solid setup.'},
-      {move:'e3', text:'Supports d4 and opens the f1-bishop.'},
-      {move:'Bd6', text:'Trying to challenge the strong London bishop.'},
-      {move:'Bg3', text:'Avoids the trade — the bishop stays on its excellent diagonal.'}
-    ]},
-  { id:'scandinavian', name:'The Scandinavian Defence', eco:'B01', color:'Black',
-    summary:'An active reply to 1.e4: Black challenges the center immediately and accepts an early queen move in exchange for a clear, practical structure.',
-    keyIdeas:['Challenge e4 at once','Develop with tempo against the queen','Aim for ...c6 and ...Bf5','Keep the position concrete'],
-    line:[
-      {move:'e4', text:'White claims the center.'}, {move:'d5', text:'Black challenges e4 immediately.'},
-      {move:'exd5', text:'White accepts the exchange.'}, {move:'Qxd5', text:'Black recaptures and restores material.'},
-      {move:'Nc3', text:'Developing with tempo against the queen.'}, {move:'Qa5', text:'The main practical square: the queen stays active and avoids another tempo.'},
-      {move:'d4', text:'White builds a broad center.'}, {move:'c6', text:'Black prepares ...Bf5 and a solid pawn chain.'}
-    ]},
-  { id:'english', name:'The English Opening', eco:'A10', color:'White',
-    summary:'A flexible flank opening where White controls d5 from the side and can transpose into many queen-pawn structures.',
-    keyIdeas:['Control d5 from the flank','Flexible pawn structure','Fianchetto the king bishop','Transpose when useful'],
-    line:[
-      {move:'c4', text:'White immediately influences the central d5 square.'}, {move:'e5', text:'Black stakes a claim in the center.'},
-      {move:'Nc3', text:'Developing while increasing pressure on d5.'}, {move:'Nf6', text:'Black develops naturally.'},
-      {move:'g3', text:'Preparing the king-side fianchetto.'}, {move:'d5', text:'Black builds a classical pawn center.'},
-      {move:'cxd5', text:'White clarifies the center.'}, {move:'Nxd5', text:'Black recaptures with an active knight.'}
-    ]},
-  { id:'catalan', name:'The Catalan Opening', eco:'E06', color:'White', level:'Advanced',
-    summary:'A world-championship system combining Queen’s Gambit space with long-diagonal pressure. White often invests a pawn for lasting positional control.',
-    keyIdeas:['Fianchetto pressure on the long diagonal','Restrict Black’s queenside','Recover c4 only when development is complete','Play for durable positional pressure'],
-    line:[
-      {move:'d4',text:'Claims central space.'},{move:'Nf6',text:'Black develops flexibly.'},{move:'c4',text:'White controls d5.'},{move:'e6',text:'Black prepares ...d5 or ...Bb4+.'},{move:'g3',text:'The Catalan signature: preparing Bg2.'},{move:'d5',text:'Black builds a classical center.'},{move:'Bg2',text:'The bishop becomes the strategic soul of the opening.'},{move:'Be7',text:'Black prepares to castle.'},{move:'Nf3',text:'White completes kingside development.'},{move:'O-O',text:'Black secures the king.'},{move:'O-O',text:'White is ready to pressure the queenside and central dark squares.'}
-    ]},
-  { id:'nimzo-indian', name:'The Nimzo-Indian Defence', eco:'E20', color:'Black', level:'Advanced',
-    summary:'A cornerstone of elite chess. Black gives up the bishop pair only when the resulting structure, development, or dark-square control justifies it.',
-    keyIdeas:['Pin the c3 knight','Fight e4 without occupying it','Balance bishop pair against structure','Use ...c5 or ...d5 at the right moment'],
-    line:[
-      {move:'d4',text:'White opens with the queen pawn.'},{move:'Nf6',text:'Black controls e4.'},{move:'c4',text:'White expands in the center.'},{move:'e6',text:'Black opens the diagonal for the dark bishop.'},{move:'Nc3',text:'White supports e4.'},{move:'Bb4',text:'The Nimzo-Indian pin prevents immediate e4.'},{move:'e3',text:'The Rubinstein system builds a strong center.'},{move:'O-O',text:'Black castles before clarifying the structure.'},{move:'Bd3',text:'White prepares Nge2 and e4.'},{move:'d5',text:'Black strikes in the center before White consolidates.'}
-    ]},
-  { id:'grunfeld', name:'The Grünfeld Defence', eco:'D80', color:'Black', level:'Expert',
-    summary:'An elite hypermodern defence where Black invites a broad white center, then attacks it with pieces and pawn breaks.',
-    keyIdeas:['Attack the center with ...c5','Pressure d4 with Bg7','Trade central pawns before they advance','Calculate dynamically'],
-    line:[
-      {move:'d4',text:'White claims the center.'},{move:'Nf6',text:'Black develops without committing a pawn.'},{move:'c4',text:'White builds more space.'},{move:'g6',text:'Black prepares the kingside fianchetto.'},{move:'Nc3',text:'White reinforces d5 and e4.'},{move:'d5',text:'The Grünfeld challenge.'},{move:'cxd5',text:'White opens the center.'},{move:'Nxd5',text:'Black uses a piece to contest it.'},{move:'e4',text:'White builds the imposing pawn center.'},{move:'Nxc3',text:'Black removes its main defender.'},{move:'bxc3',text:'White accepts structural weakness for space.'},{move:'Bg7',text:'The bishop immediately attacks the center.'}
-    ]},
-  { id:'petroff', name:'The Petroff Defence', eco:'C42', color:'Black', level:'Advanced',
-    summary:'A precise world-championship defence. Black meets 1.e4 symmetrically and relies on accurate timing rather than passive imitation.',
-    keyIdeas:['Counterattack e4','Do not copy blindly','Neutralize early initiative','Use central symmetry accurately'],
-    line:[
-      {move:'e4',text:'White occupies the center.'},{move:'e5',text:'Black answers classically.'},{move:'Nf3',text:'White attacks e5.'},{move:'Nf6',text:'The Petroff counterattacks e4.'},{move:'Nxe5',text:'White accepts the central challenge.'},{move:'d6',text:'Black first drives the knight away.'},{move:'Nf3',text:'The knight returns safely.'},{move:'Nxe4',text:'Only now does Black recover the pawn.'},{move:'d4',text:'White takes space and opens lines.'},{move:'d5',text:'Black stabilizes the central knight.'},{move:'Bd3',text:'White develops with tempo against e4.'}
-    ]},
-  { id:'sveshnikov', name:'The Sveshnikov Sicilian', eco:'B33', color:'Black', level:'Expert',
-    summary:'A concrete Sicilian built on dynamic imbalance. Black accepts a weak d5 square to gain time, space, and active piece play.',
-    keyIdeas:['Trade structure for activity','Control d5 tactically','Use ...f5 for kingside play','Know forcing sequences'],
-    line:[
-      {move:'e4',text:'White opens with the king pawn.'},{move:'c5',text:'Black chooses an asymmetrical fight.'},{move:'Nf3',text:'White prepares d4.'},{move:'Nc6',text:'Black develops and controls d4.'},{move:'d4',text:'The Open Sicilian.'},{move:'cxd4',text:'Black opens the c-file.'},{move:'Nxd4',text:'White centralizes the knight.'},{move:'Nf6',text:'Black attacks e4.'},{move:'Nc3',text:'White defends.'},{move:'e5',text:'The Sveshnikov thrust gains time and concedes d5.'},{move:'Ndb5',text:'White heads for d6.'},{move:'d6',text:'Black controls e5 and prepares active development.'}
-    ]},
-  { id:'reti', name:'The Réti Opening', eco:'A09', color:'White', level:'Advanced',
-    summary:'A flexible grandmaster system that controls the center from a distance and delays committing the central pawns.',
-    keyIdeas:['Invite then undermine the center','Transpose with purpose','Fianchetto the kingside bishop','Keep the pawn structure flexible'],
-    line:[
-      {move:'Nf3',text:'White controls e5 without showing the pawn structure.'},{move:'d5',text:'Black occupies the center.'},{move:'c4',text:'White attacks d5 from the flank.'},{move:'e6',text:'Black reinforces the center.'},{move:'g3',text:'White prepares a long-diagonal bishop.'},{move:'Nf6',text:'Black develops naturally.'},{move:'Bg2',text:'The bishop pressures the center from afar.'},{move:'Be7',text:'Black prepares castling.'},{move:'O-O',text:'White completes a flexible setup.'},{move:'O-O',text:'Both sides can now transform the center.'}
-    ]},
-];
+const ROUTE_ALIASES = {
+  traps: 'openings',
+  tactics: 'puzzles',
+  leaderboard: 'club',
+  history: 'club',
+  'vs-human-setup': 'play-menu',
+  'vs-engine-setup': 'play-menu',
+};
 
-// =========================================================
-// TRAPS DATA (all sequences verified legal)
-// =========================================================
-const TRAPS = [
-  { id:'scholars', name:'Scholar\'s Mate',
-    summary:'The most famous trap of all — beloved by beginners, feared in the schoolyard. Four moves to checkmate against unwary defence.',
-    line:[
-      {move:'e4', text:'A normal start.'},
-      {move:'e5', text:'Symmetric.'},
-      {move:'Bc4', text:'Aiming the bishop at f7 — the weak square.'},
-      {move:'Nc6', text:'A reasonable developing move.'},
-      {move:'Qh5', text:'⚠ The trap is set! White threatens Qxf7# (mate) AND eyes e5.'},
-      {move:'Nf6', text:'⚠ A natural move — but it ignores the mate threat!'},
-      {move:'Qxf7#', text:'Checkmate! The bishop and queen combine to deliver mate on f7. Lesson: always watch for threats on f7 in the opening!'}
-    ],
-    avoid:'Black should answer 3.Qh5 with 3...g6! pushing the queen, or 3...Qe7 / 3...Qf6 defending f7. Never play 3...Nf6?? blocking your own defence.'
-  },
-  { id:'fried-liver', name:'The Fried Liver Attack',
-    summary:'A spectacular sacrificial attack from the Italian Game where White invests a knight to expose the Black king and hunt it down.',
-    line:[
-      {move:'e4', text:'King pawn.'},
-      {move:'e5', text:'Symmetric.'},
-      {move:'Nf3', text:'Attacks e5.'},
-      {move:'Nc6', text:'Defends.'},
-      {move:'Bc4', text:'Italian Game.'},
-      {move:'Nf6', text:'The Two Knights Defence.'},
-      {move:'Ng5', text:'Aggressive — attacking f7!'},
-      {move:'d5', text:'The recommended response. Black wants to block the bishop.'},
-      {move:'exd5', text:'White captures.'},
-      {move:'Nxd5', text:'⚠ A common mistake — this allows the Fried Liver! Black should play 6...Na5 (the Polerio).'},
-      {move:'Nxf7', text:'The sacrifice! White grabs the f-pawn and pulls the king out.'},
-      {move:'Kxf7', text:'Forced.'},
-      {move:'Qf3+', text:'Check, attacking the d5 knight.'},
-      {move:'Ke6', text:'The king must move into the open — Black is in deep trouble. White has a powerful attack.'}
-    ],
-    avoid:'On move 6, instead of 6...Nxd5?, Black should play 6...Na5! attacking the bishop and avoiding the entire Fried Liver. This is the safer Polerio Variation.'
-  },
-  { id:'legal', name:'Légal\'s Mate',
-    summary:'A 250-year-old gem named after Sire de Légal, who used it against a chevalier in Paris. White sacrifices the queen for a beautiful mate with minor pieces.',
-    line:[
-      {move:'e4', text:'King pawn.'},
-      {move:'e5', text:'Symmetric.'},
-      {move:'Nf3', text:'Develops.'},
-      {move:'d6', text:'A solid but passive defence (Philidor).'},
-      {move:'Bc4', text:'Aims at f7.'},
-      {move:'Bg4', text:'Pinning the knight — but is it really pinned?'},
-      {move:'Nc3', text:'Develops and prepares the trap.'},
-      {move:'g6', text:'⚠ A careless move that ignores the looming danger.'},
-      {move:'Nxe5', text:'A queen sacrifice! The knight on f3 was supposedly pinned...'},
-      {move:'Bxd1', text:'Black takes the queen — but...'},
-      {move:'Bxf7+', text:'Check! The bishop joins the attack.'},
-      {move:'Ke7', text:'Forced.'},
-      {move:'Nd5#', text:'Checkmate! A beautiful mate by three minor pieces. Lesson: a pin only matters if breaking it is bad!'}
-    ],
-    avoid:'Black\'s mistake was 4...Bg4 followed by 7...g6 ignoring the threat. After Bg4, Black must be ready to recapture with the pawn after Nxe5, since the "pin" is fake when the unleashed knight delivers mate.'
-  },
-  { id:'englund', name:'The Englund Gambit Trap',
-    summary:'A cheeky early trap that punishes overconfident White players who try to keep the gambit pawn.',
-    line:[
-      {move:'d4', text:'Queen pawn.'},
-      {move:'e5', text:'The Englund Gambit — a dubious but tricky gambit.'},
-      {move:'dxe5', text:'White accepts.'},
-      {move:'Nc6', text:'Black develops, threatening to recover the pawn.'},
-      {move:'Nf3', text:'Defends e5.'},
-      {move:'Qe7', text:'Building pressure — eyeing the e5 pawn.'},
-      {move:'Bf4', text:'⚠ A natural-looking move that walks into the trap!'},
-      {move:'Qb4+', text:'Check! And it forks two pieces.'},
-      {move:'Bd2', text:'Most natural — and losing.'},
-      {move:'Qxb2', text:'Black hits the rook on a1 and threatens both.'},
-      {move:'Nc3', text:'Defending the rook.'},
-      {move:'Bb4', text:'Pinning the knight! Black wins material — White cannot save both the bishop and the c3 knight from devastating discoveries.'}
-    ],
-    avoid:'White should play 4.Bf4 → instead of 4.Nc3, defending b4 and developing safely. Or after 4.Bf4 Qb4+, White must play 5.Nc3 (not 5.Bd2?) accepting some discomfort but avoiding ruin.'
-  },
-  { id:'lasker', name:'The Lasker Trap (Albin Counter-Gambit)',
-    summary:'One of the very few openings where pawns underpromote on the seventh move! A classic showcase of an underpromotion to a knight saving the day.',
-    line:[
-      {move:'d4', text:'Queen pawn.'},
-      {move:'d5', text:'Symmetric.'},
-      {move:'c4', text:'Queen\'s Gambit.'},
-      {move:'e5', text:'The Albin Counter-Gambit — Black sacrifices a pawn for activity.'},
-      {move:'dxe5', text:'White accepts.'},
-      {move:'d4', text:'Black\'s key idea — the d-pawn becomes a thorn.'},
-      {move:'e3', text:'⚠ A natural-looking move that drops into the trap.'},
-      {move:'Bb4+', text:'Check!'},
-      {move:'Bd2', text:'Blocking.'},
-      {move:'dxe3', text:'A second pawn invades.'},
-      {move:'Bxb4', text:'Capturing the bishop — the natural reply.'},
-      {move:'exf2+', text:'Check! The pawn lands on f2.'},
-      {move:'Ke2', text:'Forced.'},
-      {move:'fxg1=N+', text:'⚜ Underpromotion to a knight with check! A queen would lose to Bxd8. Black wins material with a famous, beautiful trick!'}
-    ],
-    avoid:'White should avoid 4.e3 in this line and play 4.a3 or 4.Nbd2 instead. The whole Lasker Trap can be sidestepped by simply not opening the long dark diagonal so early.'
-  },
-  { id:'fishing-pole', name:'The Fishing Pole Trap',
-    summary:'A modern trap in the Ruy López popularized by IM Brian Wall. Black dangles a knight on g4 like bait — and if White bites with h3, Black sacrifices for a devastating attack.',
-    line:[
-      {move:'e4', text:'King pawn.'},
-      {move:'e5', text:'Symmetric.'},
-      {move:'Nf3', text:'Develops.'},
-      {move:'Nc6', text:'Defends.'},
-      {move:'Bb5', text:'Ruy López.'},
-      {move:'Nf6', text:'Berlin Defence.'},
-      {move:'O-O', text:'Castles.'},
-      {move:'Ng4', text:'⚜ The fishing pole — the knight dangles temptingly.'},
-      {move:'h3', text:'⚠ The bite. Most players cannot resist kicking the knight.'},
-      {move:'h5', text:'Black ignores the threat — opens the h-file.'},
-      {move:'hxg4', text:'White takes the bait.'},
-      {move:'hxg4', text:'Now the h-file is open, and Black\'s queen and rook will combine to deliver mate on the h-file!'}
-    ],
-    avoid:'White should not play 5.h3 against the fishing-pole knight. Better is 5.Re1 or simply ignoring the knight and continuing development. If you DO play h3, then h5, do NOT capture — play d3 or another quiet move.'
-  },
-  { id:'elephant-trap', name:'The Elephant Trap',
-    summary:'A classic trap in the Queen\'s Gambit Declined that punishes White for greedily grabbing a pawn while ignoring back-rank tactics.',
-    line:[
-      {move:'d4', text:'Queen pawn.'},
-      {move:'d5', text:'Symmetric.'},
-      {move:'c4', text:'Queen\'s Gambit.'},
-      {move:'e6', text:'QGD.'},
-      {move:'Nc3', text:'Develops.'},
-      {move:'Nf6', text:'Develops.'},
-      {move:'Bg5', text:'Pinning.'},
-      {move:'Nbd7', text:'⚜ Looks like a blunder — leaving d5 undefended. But it\'s a trap!'},
-      {move:'cxd5', text:'White captures.'},
-      {move:'exd5', text:'Black recaptures.'},
-      {move:'Nxd5', text:'⚠ White takes the "free" piece — but...'},
-      {move:'Nxd5', text:'Black recaptures.'},
-      {move:'Bxd8', text:'White grabs the queen — surely winning?'},
-      {move:'Bb4+', text:'Check! And it pins the bishop on d2!'},
-      {move:'Qd2', text:'Blocking.'},
-      {move:'Bxd2+', text:'Black takes — wait, the king must recapture, not the queen.'},
-      {move:'Kxd2', text:'King recaptures.'},
-      {move:'Kxd8', text:'Black has won a piece! White grabbed the queen but lost two minor pieces and the dark-squared bishop in return!'}
-    ],
-    avoid:'On move 6, after 5...Nbd7 6.cxd5 exd5, White should NOT play 7.Nxd5? Instead, simply continue developing with 7.e3 or 7.Qc2.'
-  },
-];
+function navigate(page, ctx = null) {
+  stockfishClient.stop();
+  stopArenaLoop();
+  State.selectedSquare = null;
+  State.legalDests = [];
+  State.promotionPending = null;
+  State.mobileStudyListOpen = false;
 
-// =========================================================
-// TACTICS PUZZLES (all positions and solutions verified with python-chess)
-// =========================================================
-const TACTICS = [
-  { id:'back-rank', theme:'Back-rank Mate', difficulty:'Easy',
-    fen:'6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1',
-    sideToMove:'White',
-    prompt:'White to move and mate in one.',
-    solution:['Rd8#','Rd8'],
-    explanation:'Rd8# is checkmate. The king on g8 is trapped on the back rank by its own pawns on f7, g7, and h7. The rook delivers mate from d8 along the 8th rank, with no piece able to block or capture.'
-  },
-  { id:'skewer', theme:'Skewer', difficulty:'Easy',
-    fen:'4k1q1/8/8/8/8/8/8/R3K3 w Q - 0 1',
-    sideToMove:'White',
-    prompt:'White to move. Win the queen with a skewer.',
-    solution:['Ra8+','Ra8'],
-    explanation:'Ra8+ skewers the king on e8 to the queen on g8 along the 8th rank. The king must step out of check, after which White plays Rxg8 and wins the queen.'
-  },
-  { id:'knight-fork', theme:'Knight Fork', difficulty:'Easy',
-    fen:'3r1k2/8/8/8/5N2/8/8/4K3 w - - 0 1',
-    sideToMove:'White',
-    prompt:'White to move. Win material with a knight fork.',
-    solution:['Ne6+','Ne6'],
-    explanation:'Ne6+ forks the king on f8 and the rook on d8. After the king escapes the check, White plays Nxd8 winning the rook for a clear material advantage.'
-  },
-  { id:'mate-1', theme:'Queen Mate', difficulty:'Easy',
-    fen:'7k/Q7/8/5B2/8/8/8/6K1 w - - 0 1',
-    sideToMove:'White',
-    prompt:'White to move and mate in one.',
-    solution:['Qh7#','Qh7'],
-    explanation:'Qh7# is checkmate. The queen lands beside the king, defended by the bishop on f5 — so Kxh7 is impossible. The diagonal escape g8 and the rank escape g7 are both controlled by the queen, leaving no legal move.'
-  },
-  { id:'royal-fork', theme:'Royal Fork', difficulty:'Medium',
-    fen:'8/4k1q1/8/8/3N4/8/8/4K3 w - - 0 1',
-    sideToMove:'White',
-    prompt:'White to move. Find the royal fork.',
-    solution:['Nf5+','Nf5'],
-    explanation:'Nf5+ is a royal fork: the knight gives check to the king on e7 AND simultaneously attacks the queen on g7. The king must move out of check, then White plays Nxg7 winning the queen.'
-  },
-  { id:'discovered-check', theme:'Discovered Check', difficulty:'Medium',
-    fen:'1q2k3/8/2N5/8/B7/8/8/4K3 w - - 0 1',
-    sideToMove:'White',
-    prompt:'White to move. Win the queen with a discovered check.',
-    solution:['Nxb8+','Nxb8'],
-    explanation:'Nxb8+ wins the queen with a discovered check. The knight captures the queen on b8, and as it moves it uncovers the bishop on a4 along the a4-e8 diagonal, giving check to the king on e8. Black must address the check — the queen is gone forever.'
-  },
-  { id:'pin-attack', theme:'Attack a Pinned Piece', difficulty:'Medium',
-    fen:'rnbqkb1r/ppp1pppp/3p1n2/6B1/3PP3/2N5/PPP2PPP/R2QKBNR w KQkq - 0 1',
-    sideToMove:'White',
-    prompt:'White to move. Exploit the pin on the f6 knight.',
-    solution:['e5'],
-    explanation:'e5 attacks the f6 knight, which is absolutely pinned to the queen on d8 by the bishop on g5. The knight cannot move without losing the queen. Black\'s best try is dxe5, but then Bxd8 wins the queen anyway. The pin and the attacker collaborate to win heavy material.'
-  },
-  { id:'deflection', theme:'Deflection', difficulty:'Medium',
-    fen:'4k3/8/8/8/8/8/4Q3/4K3 w - - 0 1', sideToMove:'White',
-    prompt:'White to move. Give check by placing the queen on the seventh rank.', solution:['Qe7+','Qe7'],
-    explanation:'Qe7+ puts the queen directly in front of the king. Train yourself to look for forcing checks first: they restrict the opponent’s choices and often begin a tactical sequence.'
-  },
-  { id:'queen-check', theme:'Forcing Check', difficulty:'Easy',
-    fen:'4k3/8/8/8/8/8/3Q4/4K3 w - - 0 1', sideToMove:'White',
-    prompt:'White to move. Find the most forcing queen check.', solution:['Qd7+','Qd7'],
-    explanation:'Qd7+ checks along the seventh rank while controlling key escape squares. In simple positions, name every legal check before searching for quieter moves.'
-  },
-  { id:'arabian-mate', theme:'Arabian Mate', difficulty:'Advanced', rating:1800,
-    fen:'7k/6R1/5N2/8/8/8/8/6K1 w - - 0 1', sideToMove:'White',
-    prompt:'White to move. Coordinate rook and knight for mate.', solution:['Rh7#','Rh7'],
-    explanation:'Rh7# is the classic Arabian mate. The rook checks beside the king while the knight on f6 protects h7 and covers g8.'
-  },
-  { id:'anastasia-mate', theme:'Anastasia’s Mate', difficulty:'Advanced', rating:1900,
-    fen:'7k/4N2p/8/8/8/8/8/7R w - - 0 1', sideToMove:'White',
-    prompt:'White to move. Use the knight’s control to finish on the h-file.', solution:['Rxh7#','Rxh7'],
-    explanation:'Rxh7# removes the final shield. The knight on e7 controls g8 and g6, so the king has no escape from the rook.'
-  },
-  { id:'long-range-mate', theme:'Long-range Rook Mate', difficulty:'Advanced', rating:1750,
-    fen:'7k/6pp/8/8/2B5/8/8/3R2K1 w - - 0 1', sideToMove:'White',
-    prompt:'White to move. Find the forcing back-rank finish.', solution:['Rd8#','Rd8'],
-    explanation:'Rd8# uses the full open file and eighth rank. The king’s own pawns remove every flight square.'
-  },
-  { id:'bishop-queen-battery', theme:'Bishop–Queen Battery', difficulty:'Advanced', rating:1850,
-    fen:'6k1/5ppp/8/7Q/2B5/8/8/6K1 w - - 0 1', sideToMove:'White',
-    prompt:'White to move. Break through on the weak f7 square.', solution:['Qxf7+','Qxf7'],
-    explanation:'Qxf7+ is possible because the bishop on c4 supports the queen. The forcing check draws the king into a dangerous mating net.'
-  },
-  { id:'absolute-pin-win', theme:'Absolute Pin Conversion', difficulty:'Expert', rating:2050,
-    fen:'4k3/4q3/8/8/8/8/4R3/4K3 w - - 0 1', sideToMove:'White',
-    prompt:'White to move. Convert the alignment into decisive material.', solution:['Rxe7+','Rxe7'],
-    explanation:'Rxe7+ captures the queen with check. When pieces align with the king, look for captures that also force a reply.'
-  },
-  { id:'corner-net', theme:'Corner Mating Net', difficulty:'Expert', rating:2150,
-    fen:'7k/6pp/5N2/8/8/8/8/6KR w - - 0 1', sideToMove:'White',
-    prompt:'White to move. Finish with rook and knight coordination.', solution:['Rxh7#','Rxh7'],
-    explanation:'Rxh7# works because the knight on f6 controls h7 and g8. The compact net leaves the cornered king no legal square.'
-  },
-  { id:'diagonal-entry', theme:'Diagonal Queen Entry', difficulty:'Expert', rating:2200,
-    fen:'7k/6pp/8/8/2B5/8/8/3Q2K1 w - - 0 1', sideToMove:'White',
-    prompt:'White to move. Enter on the critical diagonal with check.', solution:['Qd8+','Qd8'],
-    explanation:'Qd8+ activates the queen with tempo. Advanced calculation begins with forcing moves that improve piece placement at the same time.'
-  },
-  { id:'rook-seventh', theme:'Seventh-rank Invasion', difficulty:'Advanced', rating:1950,
-    fen:'6k1/5ppp/8/8/8/8/3R4/6K1 w - - 0 1', sideToMove:'White',
-    prompt:'White to move. Invade with check and restrict the king.', solution:['Rd8+','Rd8'],
-    explanation:'Rd8+ forces the king to respond and gives the rook complete activity. Active checks are often the bridge from advantage to conversion.'
-  },
-];
+  if (page === 'traps') State.openingsTab = 'traps';
+  if (page === 'tactics') State.puzzleCategory = 'Tactics';
+  const mapped = ROUTE_ALIASES[page] || page;
 
-// =========================================================
-// ENDGAME STUDIES
-// =========================================================
-const ENDGAMES = [
-  { id:'kp-vs-k', name:'King and Pawn vs King', difficulty:'Fundamental',
-    summary:'The most basic winning endgame — yet rich with the principle of opposition. The defender draws if the attacker cannot take the opposition.',
-    fen:'4k3/8/4K3/4P3/8/8/8/8 w - - 0 1',
-    technique:[
-      'The attacker (White) must use the king to escort the pawn forward.',
-      'The key concept is OPPOSITION: when the kings face each other on the same file/rank with one square between, whoever does NOT have to move has the opposition.',
-      'Generally, the king should be in front of its pawn — never let your own pawn block your king.',
-      'If the defending king reaches the queening square first, with proper play, the position is drawn.',
-      'Practical test: from this position, can White force the pawn to e8=Q?'
-    ]},
-  { id:'kqk', name:'King + Queen vs King mate', difficulty:'Fundamental',
-    summary:'The most common mate to know. The queen drives the king to the edge, then the friendly king gives the final shoulder.',
-    fen:'8/8/8/3k4/8/8/3K4/3Q4 w - - 0 1',
-    technique:[
-      'The queen drives the enemy king toward an edge — but be careful of stalemate!',
-      'Place the queen a knight\'s move from the enemy king to herd it without ever letting it escape.',
-      'Once the king is on the edge, bring your own king close to support.',
-      'Deliver mate by walking the queen to a square adjacent to the cornered king with your own king controlling escape squares.',
-      'Practice this until you can mate in fewer than 10 moves from any position.'
-    ]},
-  { id:'krk', name:'King + Rook vs King mate', difficulty:'Fundamental',
-    summary:'Trickier than the queen mate — the rook lacks the queen\'s diagonal power, so the kings must coordinate carefully. Use the "ladder" or "staircase" technique.',
-    fen:'8/8/8/3k4/8/8/3K4/3R4 w - - 0 1',
-    technique:[
-      'The rook controls a rank or file; the king must drive the enemy king toward it.',
-      'The KEY method is the "ladder": cut off the enemy king with the rook, then walk your king toward it, then cut off again on the next rank.',
-      'Avoid stalemate — never let the enemy king have no legal moves while not in check.',
-      'Final mate: enemy king on the edge, your king two squares away in opposition, rook delivers the killing blow on the edge.'
-    ]},
-  { id:'lucena', name:'The Lucena Position', difficulty:'Critical',
-    summary:'Named after Luis Ramírez de Lucena (1497) — though he didn\'t actually publish it! This is THE winning rook endgame technique. Memorize the "bridge" idea.',
-    fen:'1K1k4/1P6/8/8/8/8/8/2R3r1 w - - 0 1',
-    technique:[
-      'White has a passed pawn one move from queening, but the king is in the way.',
-      'The "bridge" technique: Rc1-c4! Then Kb8-c8 (waiting). When the rook checks come, the rook on c4 forms a SHIELD on the fourth rank.',
-      'After the king walks down, the rook will block any check by moving to the fourth rank.',
-      'Always set the rook on the rank where it will block checks — this is the bridge.',
-      'This is the most important endgame to master in rook-and-pawn-up territory.'
-    ]},
-  { id:'philidor', name:'The Philidor Position (defending)', difficulty:'Critical',
-    summary:'François-André Philidor (1749) showed how a SIDE down a rook+pawn can DRAW with correct technique — provided the defender has correct rook activity.',
-    fen:'5k2/8/4K3/4P3/8/r7/8/4R3 b - - 0 1',
-    technique:[
-      'The defending side keeps their rook on the third (or sixth) rank — preventing the enemy king from advancing to support its pawn.',
-      'When the pawn is finally pushed, the defending rook drops to the back rank and gives endless side-checks.',
-      'Without anywhere to hide from the checks (no shield/bridge), the attacker cannot make progress.',
-      'This is the defender\'s roadmap in any pawn-down rook ending.'
-    ]},
-  { id:'opposition', name:'The Opposition', difficulty:'Fundamental',
-    summary:'One of the most subtle yet powerful endgame ideas. Whoever has the opposition controls the game — especially in king-and-pawn endings.',
-    fen:'4k3/8/4K3/8/8/8/8/8 b - - 0 1',
-    technique:[
-      'DIRECT opposition: kings on the same file with one square between, the side NOT to move has it.',
-      'DIAGONAL opposition: same diagonal, one square between.',
-      'DISTANT opposition: kings on the same line with 3 or 5 squares between.',
-      'In K+P vs K, the attacker needs the opposition to make progress; the defender needs it to hold.',
-      'A simple test: reach a position where your opponent must move first. That\'s opposition.'
-    ]},
-];
+  if (mapped !== 'engine-arena') disposeArenaEngines();
+  if (mapped !== 'vs-engine' && State._humanVsEngineInstance) {
+    State._humanVsEngineInstance.dispose();
+    State._humanVsEngineInstance = null;
+  }
 
-// =========================================================
-// ROUTING
-// =========================================================
-function navigate(page, ctx){
-  State.page = page;
-  if(ctx) State.studyContext = ctx;
-  if(['home','openings','traps','tactics','endgames','play-menu','leaderboard','history'].includes(page)){
+  if (mapped === 'study-opening' && ctx) {
+    State.openingsTab = 'openings';
+    State.selectedOpeningId = ctx.id;
     State.studyStep = 0;
+    State.page = 'openings';
+    render();
+    return;
   }
-  if(!['vs-human','vs-engine','study-opening','study-trap','tactics-puzzle','endgame-study'].includes(page)){
-    State.game = null; State.selectedSquare = null; State.legalDests = [];
-    State.lastMove = null; State.gameOver = false; State.promotionPending = null;
+  if (mapped === 'study-trap' && ctx) {
+    State.openingsTab = 'traps';
+    State.selectedTrapId = ctx.id;
+    State.studyStep = 0;
+    State.page = 'openings';
+    render();
+    return;
   }
+  if (mapped === 'tactics-puzzle' && ctx) {
+    openPuzzleInSolver(ctx);
+    return;
+  }
+  if (mapped === 'endgame-study' && ctx) {
+    State.selectedEndgameId = ctx.id;
+    State.endgameSparring = false;
+    State.page = 'endgames';
+    render();
+    return;
+  }
+
+  State.page = mapped;
   render();
-  window.scrollTo({top:0, behavior:'smooth'});
 }
 
-// =========================================================
-// MAIN RENDER
-// =========================================================
-function render(){
+function render() {
   const app = document.getElementById('app');
+  if (!app) return;
   app.innerHTML = '';
+  State.dom = {
+    evalBar: null,
+    arrowsSvg: null,
+    sfPanel: null,
+    arenaDualStrip: null,
+    arenaWhiteCard: null,
+    arenaBlackCard: null,
+  };
+  State.sfTargetFen = null;
   applyPreferences();
-  if(!State.user){ app.appendChild(renderLogin()); return; }
+
+  if (!State.user) {
+    app.appendChild(renderLogin());
+    return;
+  }
+
   app.appendChild(renderHeader());
   const main = document.createElement('main');
-  const workspacePages = ['vs-human','vs-engine','study-opening','study-trap','tactics-puzzle','endgame-study'];
-  const isWorkspace = workspacePages.includes(State.page);
-  if(isWorkspace) main.className = 'workspace-main';
-  const container = document.createElement('div'); container.className = `container${isWorkspace?' workspace-container':''}`;
-  main.appendChild(container);
+  main.className = 'app-main';
+  const shell = document.createElement('div');
+  shell.className = 'view-shell';
+
   const pages = {
-    'home': renderHome, 'openings': renderOpenings, 'traps': renderTraps,
-    'tactics': renderTactics, 'endgames': renderEndgames,
-    'play-menu': renderPlayMenu, 'vs-human-setup': renderVsHumanSetup,
-    'vs-engine-setup': renderVsEngineSetup, 'vs-human': renderVsHuman,
-    'vs-engine': renderVsEngine, 'study-opening': renderStudyOpening,
-    'study-trap': renderStudyTrap, 'tactics-puzzle': renderTacticsPuzzle,
-    'endgame-study': renderEndgameStudy, 'leaderboard': renderLeaderboard,
-    'history': renderHistory,
+    home: renderHome,
+    coach: renderCoach,
+    puzzles: renderPuzzles,
+    openings: renderOpenings,
+    strategy: renderStrategy,
+    endgames: renderEndgames,
+    'play-menu': renderPlayMenu,
+    'vs-human': renderVsHuman,
+    'vs-engine': renderVsEngine,
+    'engine-arena': renderEngineArena,
+    club: renderClub,
   };
-  const fn = pages[State.page] || renderHome;
-  container.appendChild(fn());
+  const viewFn = pages[State.page] || renderHome;
+  shell.appendChild(viewFn());
+  main.appendChild(shell);
   app.appendChild(main);
-  app.appendChild(renderFooter());
 }
 
-// =========================================================
-// HEADER + FOOTER
-// =========================================================
-function renderHeader(){
-  const h = document.createElement('header'); h.className='site';
-  if(['vs-human','vs-engine','study-opening','study-trap','tactics-puzzle','endgame-study'].includes(State.page)) h.classList.add('compact');
-  const c = document.createElement('div'); c.className='container';
+function renderHeader() {
+  const h = document.createElement('header');
+  h.className = 'site';
+  const c = document.createElement('div');
+  c.className = 'container';
+
   const brand = el(`<div class="brand">
     <div class="seal" role="img" aria-label="Edugates International School logo"></div>
-    <div class="brand-text"><span class="title">Edugates International School</span><span class="sub">Chess Club</span></div>
+    <div class="brand-text">
+      <span class="title">Edugates International School</span>
+      <span class="sub">Chess Club</span>
+    </div>
   </div>`);
-  brand.onclick = ()=>navigate('home');
-  const navItems = [['home','Hall'],['openings','Openings'],['traps','Traps'],['tactics','Tactics'],
-    ['endgames','Endgames'],['play-menu','Play'],['leaderboard','Roll'],['history','Annals']];
-  const nav = document.createElement('nav'); nav.className='primary';
-  navItems.forEach(([p,l])=>{
-    const b = document.createElement('button'); b.textContent = l;
-    if(State.page===p || (p==='play-menu' && ['vs-human-setup','vs-engine-setup','vs-human','vs-engine'].includes(State.page))) b.classList.add('active');
-    b.onclick = ()=>navigate(p);
+  brand.onclick = () => navigate('home');
+
+  const navItems = [
+    ['home', 'Hall', 'hall'],
+    ['coach', 'Coach', 'coach'],
+    ['puzzles', 'Puzzles', 'puzzles'],
+    ['openings', 'Openings', 'openings'],
+    ['strategy', 'Strategy', 'strategy'],
+    ['endgames', 'Endgames', 'endgames'],
+    ['play-menu', 'Play', 'play'],
+    ['club', 'Club', 'club'],
+  ];
+
+  const nav = document.createElement('nav');
+  nav.className = 'primary';
+  navItems.forEach(([p, label, icon]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.innerHTML = `${iconSvg(icon, 15)} <span>${label}</span>`;
+    const isActive =
+      State.page === p ||
+      (p === 'play-menu' && ['vs-human', 'vs-engine', 'engine-arena'].includes(State.page));
+    if (isActive) b.classList.add('active');
+    b.onclick = () => navigate(p);
     nav.appendChild(b);
   });
-  const user = el(`<div class="user-pill">
-    <div class="avatar">${(State.user.name[0]||'?').toUpperCase()}</div>
-    <div><div class="name">${escapeHtml(State.user.name)}</div><div class="rating">Elo ${State.user.rating}</div></div>
-    <button id="logoutBtn">leave</button>
+
+  const actions = document.createElement('div');
+  actions.className = 'header-actions';
+  const customizeBtn = el(`<button class="customize-button" type="button" title="Board & Piece Studio">${iconSvg('spark', 14)} <span>Board</span></button>`);
+  customizeBtn.onclick = showCustomization;
+
+  const pill = el(`<div class="user-pill">
+    <div class="avatar">${(State.user.name[0] || '?').toUpperCase()}</div>
+    <div class="name">${escapeHtml(State.user.name)}</div>
+    <div class="rating tabular-nums">${State.user.rating}</div>
+    <button type="button" id="logoutBtn" title="Switch or sign out">${sharedClub ? 'Sign out' : 'Switch'}</button>
   </div>`);
-  user.querySelector('#logoutBtn').onclick = async ()=>{ if(sharedClub) await signOutFirebase(); else await logoutUser(); State.user=null; render(); };
-  const customize = el(`<button class="customize-button" type="button" aria-label="Customize board and pieces">⚙ <span>Board style</span></button>`);
-  customize.onclick = showCustomization;
-  const account = document.createElement('div'); account.className='header-actions'; account.appendChild(customize); account.appendChild(user);
-  c.appendChild(brand); c.appendChild(nav); c.appendChild(account);
+  pill.querySelector('#logoutBtn').onclick = async () => {
+    stockfishClient.stop();
+    disposeArenaEngines();
+    if (State._humanVsEngineInstance) {
+      State._humanVsEngineInstance.dispose();
+      State._humanVsEngineInstance = null;
+    }
+    if (sharedClub) {
+      await signOutFirebase();
+      State.user = null;
+    } else {
+      await logoutUser();
+    }
+    render();
+  };
+
+  actions.appendChild(customizeBtn);
+  actions.appendChild(pill);
+  c.appendChild(brand);
+  c.appendChild(nav);
+  c.appendChild(actions);
   h.appendChild(c);
   return h;
 }
 
-function showCustomization(){
-  const back = document.createElement('div'); back.className='modal-backdrop customization-backdrop';
-  const modal = document.createElement('div'); modal.className='modal customization-modal';
-  modal.innerHTML = `<button class="modal-close" aria-label="Close">×</button>
-    <div class="eyebrow">Your board, your way</div><h2>Board & piece studio</h2>
-    <p class="custom-intro">Choose a comfortable board for long games. Your choices are saved on this device.</p>
-    <div class="custom-section"><h3>Board theme</h3><div class="choice-grid board-choices"></div></div>
-    <div class="custom-section"><h3>Piece style</h3><div class="choice-grid piece-choices"></div></div>
-    <label class="coordinate-toggle"><input type="checkbox" ${State.preferences.coordinates?'checked':''}/> Show board coordinates</label>`;
+// =========================================================
+// CUSTOMIZATION MODAL
+// =========================================================
+function showCustomization() {
+  const back = document.createElement('div');
+  back.className = 'modal-backdrop';
+  const modal = document.createElement('div');
+  modal.className = 'modal customization-modal';
+  modal.innerHTML = `<button class="modal-close" type="button" aria-label="Close">×</button>
+    <h2>Board &amp; Piece Studio</h2>
+    <p class="custom-intro">Choose your board palette and piece finish. Preferences save automatically on this device.</p>
+    <div class="custom-section"><h3>Board Theme</h3><div class="choice-grid board-choices"></div></div>
+    <div class="custom-section"><h3>Piece Style</h3><div class="choice-grid piece-choices"></div></div>
+    <label class="coordinate-toggle"><input type="checkbox" ${State.preferences.coordinates ? 'checked' : ''}/> Show board coordinates</label>`;
+
   const boardChoices = modal.querySelector('.board-choices');
-  Object.entries(BOARD_THEMES).forEach(([id,t])=>{
-    const button = el(`<button class="visual-choice ${State.preferences.board===id?'selected':''}" type="button"><span class="board-swatch" style="--swatch-light:${t.light};--swatch-dark:${t.dark}"></span><strong>${t.name}</strong></button>`);
-    button.onclick=()=>{ State.preferences.board=id; savePreferences(); showCustomizationRefresh(back); };
-    boardChoices.appendChild(button);
+  Object.entries(BOARD_THEMES).forEach(([id, t]) => {
+    const btn = el(`<button class="visual-choice ${State.preferences.board === id ? 'selected' : ''}" type="button"><span class="board-swatch" style="--swatch-light:${t.light};--swatch-dark:${t.dark}"></span><strong>${t.name}</strong></button>`);
+    btn.onclick = () => {
+      State.preferences.board = id;
+      savePreferences();
+      back.remove();
+      showCustomization();
+    };
+    boardChoices.appendChild(btn);
   });
+
   const pieceChoices = modal.querySelector('.piece-choices');
-  Object.entries(PIECE_STYLES).forEach(([id,t])=>{
-    const button = el(`<button class="visual-choice piece-choice ${State.preferences.pieces===id?'selected':''}" type="button"><span class="piece-preview ${id}">${PIECE_SVG['N']}${PIECE_SVG['q']}</span><strong>${t.name}</strong><small>${t.note}</small></button>`);
-    button.onclick=()=>{ State.preferences.pieces=id; savePreferences(); showCustomizationRefresh(back); };
-    pieceChoices.appendChild(button);
+  Object.entries(PIECE_STYLES).forEach(([id, t]) => {
+    const btn = el(`<button class="visual-choice piece-choice ${State.preferences.pieces === id ? 'selected' : ''}" type="button"><span class="piece-preview ${id}">${PIECE_SVG.N}${PIECE_SVG.q}</span><strong>${t.name}</strong><small>${t.note}</small></button>`);
+    btn.onclick = () => {
+      State.preferences.pieces = id;
+      savePreferences();
+      back.remove();
+      showCustomization();
+    };
+    pieceChoices.appendChild(btn);
   });
-  modal.querySelector('input').onchange=e=>{ State.preferences.coordinates=e.target.checked; savePreferences(); };
-  modal.querySelector('.modal-close').onclick=()=>back.remove();
-  back.onclick=e=>{ if(e.target===back) back.remove(); };
-  back.appendChild(modal); document.getElementById('app').appendChild(back);
-}
-function showCustomizationRefresh(current){ current.remove(); showCustomization(); }
-function renderFooter(){
-  return el(`<footer class="site"><div class="container"><div class="quote">Chess is the gymnasium of the mind. — Blaise Pascal</div></div></footer>`);
+
+  modal.querySelector('input').onchange = (e) => {
+    State.preferences.coordinates = e.target.checked;
+    savePreferences();
+  };
+  modal.querySelector('.modal-close').onclick = () => back.remove();
+  back.onclick = (e) => {
+    if (e.target === back) back.remove();
+  };
+  back.appendChild(modal);
+  document.getElementById('app').appendChild(back);
 }
 
 // =========================================================
 // LOGIN
 // =========================================================
-function renderLogin(){
-  if(sharedClub) return renderSharedLogin();
-  const wrap = document.createElement('div');
-  const stage = document.createElement('div'); stage.className='login-stage';
-  const card = document.createElement('div'); card.className='card ornate login-card';
+function renderLogin() {
+  if (sharedClub) return renderSharedLogin();
+  const stage = document.createElement('div');
+  stage.className = 'login-stage';
+  const card = document.createElement('div');
+  card.className = 'card ornate login-card';
   const memberCount = Object.keys(State.members).length;
   card.innerHTML = `
     <div class="crest" role="img" aria-label="Edugates International School logo"></div>
-    <div class="eyebrow">A Private Club</div>
     <h1>Edugates International School</h1>
-    <div style="font-family:'EB Garamond',serif;font-style:italic;color:var(--gold);letter-spacing:.3em;text-transform:uppercase;font-size:.78rem;margin-top:.2rem;margin-bottom:.4rem">Chess Club</div>
+    <div style="font-family:'JetBrains Mono',monospace;color:var(--gold);letter-spacing:.22em;text-transform:uppercase;font-size:.76rem;margin-top:.15rem">Chess Club</div>
     <div class="ornament"></div>
-    <p class="italic" style="color:var(--ink-soft)">Welcome to the school's official chess study chamber.<br/>Choose your seat at the table or take a new one.</p>
-    <div style="text-align:left;margin-top:1.4rem">
-      <label for="newName">Join the club</label>
+    <p class="italic" style="color:var(--ink-soft)">Study 70 masterclasses, solve 310 verified puzzles &amp; 80 quizzes, and train live with Stockfish 19.</p>
+    <div style="text-align:left;margin-top:.9rem">
+      <label for="newName">Take a Seat</label>
       <div style="display:flex;gap:.5rem">
-        <input id="newName" name="newName" autocomplete="name" placeholder="Your name (e.g. Ana Pavlova)" />
-        <button class="btn gold" id="joinBtn" type="button">Take a Seat</button>
+        <input id="newName" name="newName" autocomplete="name" placeholder="Student name (e.g. Layla Al-Mansoor)" />
+        <button class="btn gold" id="joinBtn" type="button">Enter Club</button>
       </div>
     </div>
-    ${memberCount>0 ? `<hr class="fancy" />
+    ${memberCount > 0 ? `<hr class="fancy" />
     <div style="text-align:left">
-      <div class="eyebrow">Existing members</div>
+      <label>Returning Club Members</label>
       <div class="members-grid" id="memberGrid"></div>
     </div>` : ''}
   `;
-  card.querySelector('#joinBtn').onclick = async ()=>{
+  card.querySelector('#joinBtn').onclick = async () => {
     const name = card.querySelector('#newName').value.trim();
-    if(!name){ card.querySelector('#newName').focus(); return; }
-    if(name.length>30){ alert('Name too long'); return; }
+    if (!name) {
+      card.querySelector('#newName').focus();
+      return;
+    }
+    if (name.length > 30) {
+      alert('Name must be 30 characters or fewer.');
+      return;
+    }
     const id = await registerMember(name);
     await setUser(id);
-    State.page='home'; render();
+    State.page = 'home';
+    render();
   };
-  card.querySelector('#newName')?.addEventListener('keydown', e=>{ if(e.key==='Enter') card.querySelector('#joinBtn').click(); });
-  if(memberCount>0){
+  card.querySelector('#newName').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') card.querySelector('#joinBtn').click();
+  });
+  if (memberCount > 0) {
     const grid = card.querySelector('#memberGrid');
-    Object.values(State.members).sort((a,b)=>b.rating-a.rating).forEach(m=>{
-      const t = el(`<div class="member-tile">
-        <div class="avatar">${(m.name[0]||'?').toUpperCase()}</div>
-        <div class="nm">${escapeHtml(m.name)}</div>
-        <div class="rt">${m.rating}</div>
-      </div>`);
-      t.onclick = async ()=>{ await setUser(m.id); render(); };
-      grid.appendChild(t);
-    });
+    Object.values(State.members)
+      .sort((a, b) => b.rating - a.rating)
+      .forEach((m) => {
+        const t = el(`<div class="member-tile">
+          <div class="avatar">${(m.name[0] || '?').toUpperCase()}</div>
+          <div class="nm">${escapeHtml(m.name)}</div>
+          <div class="rt tabular-nums">${m.rating}</div>
+        </div>`);
+        t.onclick = async () => {
+          await setUser(m.id);
+          State.page = 'home';
+          render();
+        };
+        grid.appendChild(t);
+      });
   }
   stage.appendChild(card);
-  wrap.appendChild(stage);
-  return wrap;
+  return stage;
 }
 
-function renderSharedLogin(){
-  const wrap = document.createElement('div');
-  const stage = document.createElement('div'); stage.className='login-stage';
-  const card = document.createElement('div'); card.className='card ornate login-card';
+function renderSharedLogin() {
+  const stage = document.createElement('div');
+  stage.className = 'login-stage';
+  const card = document.createElement('div');
+  card.className = 'card ornate login-card';
   const action = State.completingEmailLink ? 'Complete sign-in' : 'Send link';
   card.innerHTML = `
     <div class="crest" role="img" aria-label="Edugates International School logo"></div>
-    <div class="eyebrow">A private club</div><h1>Edugates International School</h1><div class="ornament"></div>
-    <p class="italic" style="color:var(--ink-soft)">${State.completingEmailLink ? 'Enter the email address that received the sign-in link.' : 'Enter your school email and we will send a secure sign-in link.'}</p>
+    <h1>Edugates International School</h1>
+    <div class="ornament"></div>
+    <p class="italic" style="color:var(--ink-soft)">${State.completingEmailLink ? 'Enter the school email address that received the sign-in link.' : 'Enter your school email and we will send a secure sign-in link.'}</p>
     ${State.authError ? `<p role="alert" style="color:var(--burgundy)">${escapeHtml(State.authError)}</p>` : ''}
-    <div style="text-align:left;margin-top:1.4rem"><label for="email">School email</label><div style="display:flex;gap:.5rem"><input id="email" type="email" autocomplete="email" required placeholder="you@school.edu" /><button class="btn gold" id="emailBtn" type="button">${action}</button></div></div>`;
-  const submit = async ()=>{
-    const email = card.querySelector('#email').value.trim(); if(!email){ card.querySelector('#email').focus(); return; }
-    const button = card.querySelector('#emailBtn'); button.disabled = true;
-    try{
-      if(State.completingEmailLink){
-        const user = await completeEmailSignInLink(email);
-        const name = user.email ? user.email.split('@')[0] : 'Club member';
-        State.user={id:user.uid,name,rating:1200,wins:0,losses:0,draws:0}; await upsertMyProfile(name); State.sharedClubs=await listMyClubs(); State.completingEmailLink=false; State.authError=null; render();
-      } else { await sendEmailSignInLink(email); button.textContent='Check your email'; }
-    }catch(error){ State.authError=error.message; render(); }
-  };
-  card.querySelector('#emailBtn').onclick=submit;
-  card.querySelector('#email').addEventListener('keydown', event=>{ if(event.key==='Enter') submit(); });
-  stage.appendChild(card); wrap.appendChild(stage); return wrap;
-}
-
-// =========================================================
-// HOME
-// =========================================================
-function renderHome(){
-  const wrap = document.createElement('div');
-  const memberCount = Object.keys(State.members).length;
-  const training = trainingSummary();
-  const hero = el(`<div class="hero">
-    <div class="sub">Edugates Chess Club · Reading Room</div>
-    <h1>Welcome, <em>${escapeHtml(State.user.name)}</em>.</h1>
-    <p>"The pin is mightier than the sword." Within these halls you may study openings and their pitfalls, sharpen your tactics, master the endings, and test your hand against fellow members or the great Stockfish itself.</p>
-    <div class="hero-stats">
-      <div class="stat"><div class="num">${State.user.rating}</div><div class="lbl">Your Elo</div></div>
-      <div class="stat"><div class="num">${State.user.wins||0}–${State.user.losses||0}–${State.user.draws||0}</div><div class="lbl">Wins / Losses / Draws</div></div>
-      <div class="stat"><div class="num">${memberCount}</div><div class="lbl">Club Members</div></div>
-    </div>
-  </div>`);
-  wrap.appendChild(hero);
-  const progress = el(`<section class="training-dashboard" aria-label="Training progress">
-    <div class="training-dashboard-copy"><div class="eyebrow">Your training</div><h2>Keep your momentum</h2><p>Learn each line, then switch to Practice and recall the moves from memory.</p><button class="btn gold sm continue-training" type="button">Continue training →</button></div>
-    <div class="training-metrics">
-      <button type="button" data-go="openings"><strong>${training.completedOpenings}<span>/${OPENINGS.length}</span></strong><small>Openings mastered</small></button>
-      <button type="button" data-go="tactics"><strong>${training.solvedTactics}<span>/${TACTICS.length}</span></strong><small>Tactics solved</small></button>
-      <button type="button" data-go="tactics"><strong>${State.training.streak||0}</strong><small>Current streak</small></button>
-      <button type="button" data-go="tactics"><strong>${training.accuracy}%</strong><small>Accuracy</small></button>
-    </div>
-  </section>`);
-  progress.querySelector('.continue-training').onclick=continueTraining;
-  progress.querySelectorAll('button').forEach(button=>button.onclick=()=>navigate(button.dataset.go));
-  progress.querySelector('.continue-training').onclick=continueTraining;
-  wrap.appendChild(progress);
-  if(sharedClub && State.sharedClubs.length===0){
-    const setup = el(`<div class="card ornate" style="margin:1.5rem 0"><div class="eyebrow">First-time setup</div><h2>Create the shared club</h2><p>Set up the club once. You will become its administrator and can add coaches and students after Firebase Functions are deployed.</p><button class="btn gold" type="button">Create Edugates Chess Club</button></div>`);
-    setup.querySelector('button').onclick = async ()=>{
-      const button = setup.querySelector('button'); button.disabled=true;
-      try{ const club = await createClub({name:'Edugates Chess Club',slug:'edugates-chess'}); State.sharedClubs=[club]; render(); }
-      catch(error){ alert(error.message); button.disabled=false; }
-    };
-    wrap.appendChild(setup);
-  }
-  wrap.appendChild(el(`<div style="margin:2.4rem 0 1rem"><div class="eyebrow">Choose a Volume</div><h2>The Curriculum</h2></div>`));
-  const grid = document.createElement('div'); grid.className='grid grid-3';
-  const modules = [
-    {p:'openings', i:'♙', t:'Openings', d:'Walk through the great openings — Italian, Ruy Lopez, Sicilian, French and more.'},
-    {p:'traps', i:'♞', t:'Traps & Snares', d:'Famous traps every club player must know — both how to spring them and how to avoid them.'},
-    {p:'tactics', i:'♕', t:'Middlegame Tactics', d:'Forks, pins, skewers, and combinations. Solve curated puzzles and train your tactical eye.'},
-    {p:'endgames', i:'♔', t:'Endgame Studies', d:'King and pawn, the Lucena, opposition, basic mates — the foundations every master built upon.'},
-    {p:'play-menu', i:'⚔', t:'The Arena', d:'Face a fellow knight in a rated or friendly bout, or challenge Stockfish at any strength.'},
-    {p:'leaderboard', i:'☗', t:'The Roll', d:'See who reigns at the top of the club, with all members ordered by their current standing.'},
-  ];
-  modules.forEach(m=>{
-    const c = el(`<div class="module-card"><div class="icon">${m.i}</div><h3>${m.t}</h3><p>${m.d}</p><div class="arrow">ENTER →</div></div>`);
-    c.onclick = ()=>navigate(m.p);
-    grid.appendChild(c);
-  });
-  wrap.appendChild(grid);
-  return wrap;
-}
-
-// =========================================================
-// OPENINGS / TRAPS LIST
-// =========================================================
-function renderOpenings(){
-  const wrap = document.createElement('div');
-  wrap.appendChild(el(`<div class="catalog-hero"><div><div class="eyebrow">Pro repertoire lab</div><h1>Openings of the Masters</h1><p>Build from sound principles to tournament-level systems, with every move explained on the board.</p></div><div class="catalog-stat"><strong>${OPENINGS.length}</strong><span>masterclasses</span></div></div>`));
-  const toolbar = el(`<div class="catalog-toolbar"><div><strong>Training pathway</strong><span>Choose the depth that matches your game.</span></div><label>Level<select><option>All</option><option>Foundation</option><option>Club</option><option>Advanced</option><option>Expert</option></select></label></div>`);
-  toolbar.querySelector('select').value=State.openingLevel;
-  toolbar.querySelector('select').onchange=e=>{ State.openingLevel=e.target.value; render(); };
-  wrap.appendChild(toolbar);
-  const list = document.createElement('div'); list.className='item-list';
-  OPENINGS.forEach((o,index)=>{
-    const level=o.level||(index<4?'Foundation':index<10?'Club':'Advanced');
-    if(State.openingLevel!=='All'&&State.openingLevel!==level) return;
-    const progress=State.training.openings[o.id]||{step:0,complete:false};
-    const percent=Math.min(100,Math.round((progress.step||0)/o.line.length*100));
-    const item = el(`<div class="list-item">
-      <div class="meta"><div class="lesson-kicker">${level} · ${o.line.length} guided plies</div><h4>${o.name}</h4><div class="small">${escapeHtml(o.summary.split('.')[0])}.</div></div>
-      <div class="lesson-tags">${progress.practiced?'<span class="mastery-badge">★ Practiced</span>':''}<span class="lesson-progress ${progress.complete?'complete':''}" style="--progress:${percent}%"><b>${progress.complete?'✓':percent+'%'}</b></span><span class="tag">${o.eco}</span><span class="tag ${o.color==='White'?'gold':'green'}">${o.color}</span><span class="lesson-arrow">${progress.step?'Continue':'Study'} →</span></div>
-    </div>`);
-    item.onclick = ()=>{ State.studyMode='learn'; State.practiceFeedback=null; State.studyStep=Math.min(progress.step||0,o.line.length); navigate('study-opening', o); };
-    list.appendChild(item);
-  });
-  wrap.appendChild(list);
-  return wrap;
-}
-function renderTraps(){
-  const wrap = document.createElement('div');
-  wrap.appendChild(el(`<div style="margin-bottom:1.4rem"><div class="eyebrow">Volume II</div><h1>Traps & Snares</h1><p class="italic" style="color:var(--ink-soft);max-width:60ch">Every club player must know these. Learn to spring them — and to recognize the warning signs before you fall in.</p></div>`));
-  const list = document.createElement('div'); list.className='item-list';
-  TRAPS.forEach(t=>{
-    const item = el(`<div class="list-item">
-      <div class="meta"><h4>${t.name}</h4><div class="small italic">${escapeHtml(t.summary)}</div></div>
-      <span class="tag burg">${t.line.length} moves</span>
-    </div>`);
-    item.onclick = ()=>{ State.studyMode='learn'; State.practiceFeedback=null; State.studyStep=0; navigate('study-trap', t); };
-    list.appendChild(item);
-  });
-  wrap.appendChild(list);
-  return wrap;
-}
-
-// =========================================================
-// STUDY VIEW (openings/traps)
-// =========================================================
-function renderStudyOpening(){ return renderStudyView(State.studyContext, 'opening'); }
-function renderStudyTrap(){ return renderStudyView(State.studyContext, 'trap'); }
-function renderStudyView(ctx, kind){
-  if(State.studyMode==='practice') return renderPracticeStudy(ctx,kind);
-  const wrap = document.createElement('div'); wrap.className='game-workspace';
-  if(!ctx){ wrap.appendChild(el(`<p>Nothing selected.</p>`)); return wrap; }
-  const g = new Chess();
-  for(let i=0;i<State.studyStep;i++){ try{ g.move(ctx.line[i].move); }catch(e){} }
-  const lastMv = State.studyStep>0 ? lastMoveSquares(g) : null;
-  const top = el(`<div class="workspace-heading">
-    <button class="btn ghost sm" id="back">← Back</button>
-    <div class="eyebrow" style="margin-top:.6rem">${kind==='opening'?'Opening Study':'Trap Study'}</div>
-    <h1>${ctx.name}</h1>
-    ${ctx.eco?`<div style="margin-top:.3rem"><span class="tag">${ctx.eco}</span> <span class="tag ${ctx.color==='White'?'gold':'green'}">${ctx.color}</span></div>`:''}
-    <div class="study-mode-switch"><button class="active" type="button">Learn</button><button id="practiceMode" type="button">Practice</button></div>
-  </div>`);
-  top.querySelector('#back').onclick = ()=>navigate(kind==='opening'?'openings':'traps');
-  top.querySelector('#practiceMode').onclick=()=>{ State.studyMode='practice'; State.studyStep=0; State.practiceFeedback=null; State.selectedSquare=null; State.legalDests=[]; render(); };
-  wrap.appendChild(top);
-  const layout = document.createElement('div'); layout.className='play-layout';
-  const boardWrap = document.createElement('div'); boardWrap.className='board-column';
-  const frame = document.createElement('div'); frame.className='board-frame';
-  frame.appendChild(buildBoard(g, {flip:State.flipBoard, lastMove:lastMv, interactive:false}));
-  boardWrap.appendChild(frame);
-  layout.appendChild(boardWrap);
-  const side = document.createElement('div'); side.className='play-sidebar';
-  const step = State.studyStep, totalSteps = ctx.line.length;
-  const tut = document.createElement('div'); tut.className='tutorial-text';
-  if(step===0){
-    tut.innerHTML = `<div class="step-counter">Move 0 of ${totalSteps}</div>
-      <h3 style="margin-bottom:.4rem">Starting Position</h3>
-      <p>${escapeHtml(ctx.summary)}</p>
-      ${ctx.keyIdeas?`<hr class="fancy"/><div class="eyebrow">Key Ideas</div><ul style="margin-left:1.2rem">${ctx.keyIdeas.map(k=>`<li>${escapeHtml(k)}</li>`).join('')}</ul>`:''}`;
-  } else {
-    const cur = ctx.line[step-1];
-    tut.innerHTML = `<div class="step-counter">Move ${step} of ${totalSteps}</div>
-      <div class="move-played mono">${step}. ${cur.move}</div>
-      <p>${escapeHtml(cur.text)}</p>`;
-  }
-  if(step===totalSteps && kind==='trap' && ctx.avoid){
-    tut.innerHTML += `<hr class="fancy"/><div class="eyebrow" style="color:var(--burgundy)">How to Avoid It</div><p style="margin-top:.4rem">${escapeHtml(ctx.avoid)}</p>`;
-  }
-  const ctrl = document.createElement('div'); ctrl.className='tutorial-controls';
-  const prev = el(`<button class="btn ghost sm">◀ Previous</button>`);
-  prev.disabled = step===0;
-  prev.onclick = ()=>{ State.studyStep = Math.max(0, State.studyStep-1); render(); };
-  const next = el(`<button class="btn gold sm">Next ▶</button>`);
-  next.disabled = step>=totalSteps;
-  next.onclick = ()=>{ State.studyStep = Math.min(totalSteps, State.studyStep+1); recordLessonStep(ctx,kind,State.studyStep,totalSteps); render(); };
-  const reset = el(`<button class="btn ghost sm">Restart</button>`);
-  reset.onclick = ()=>{ State.studyStep=0; render(); };
-  const flip = el(`<button class="btn ghost sm">Flip</button>`);
-  flip.onclick = ()=>{ State.flipBoard=!State.flipBoard; render(); };
-  ctrl.appendChild(prev); ctrl.appendChild(next); ctrl.appendChild(reset); ctrl.appendChild(flip);
-  boardWrap.appendChild(ctrl);
-  side.appendChild(tut);
-  if(step===totalSteps){
-    const collection=kind==='opening'?OPENINGS:TRAPS;
-    const index=collection.findIndex(item=>item.id===ctx.id);
-    const following=collection[(index+1)%collection.length];
-    const complete=el(`<div class="lesson-complete"><div class="completion-mark">✓</div><div><strong>Lesson complete</strong><span>${kind==='opening'?'Opening knowledge added to your repertoire.':'You now know the warning pattern and the escape.'}</span></div><button class="btn gold sm">Next lesson →</button></div>`);
-    complete.querySelector('button').onclick=()=>{ State.studyMode='learn'; State.studyStep=0; navigate(kind==='opening'?'study-opening':'study-trap',following); };
-    side.appendChild(complete);
-  }
-  const mp = document.createElement('div'); mp.className='moves-panel';
-  mp.innerHTML = '<h4>Move List</h4>';
-  const ml = document.createElement('div'); ml.className='moves-list';
-  for(let i=0;i<ctx.line.length;i+=2){
-    const num = Math.floor(i/2)+1;
-    const w = ctx.line[i]?.move || '', b = ctx.line[i+1]?.move || '';
-    ml.appendChild(el(`<div class="num">${num}.</div>`));
-    const wEl = el(`<div class="move ${i+1===step?'current':''}">${w}</div>`);
-    const bEl = el(`<div class="move ${i+2===step?'current':''}">${b||''}</div>`);
-    wEl.onclick = ()=>{ State.studyStep=i+1; recordLessonStep(ctx,kind,State.studyStep,totalSteps); render(); };
-    if(b) bEl.onclick = ()=>{ State.studyStep=i+2; recordLessonStep(ctx,kind,State.studyStep,totalSteps); render(); };
-    ml.appendChild(wEl); ml.appendChild(bEl);
-  }
-  mp.appendChild(ml);
-  side.appendChild(mp);
-  layout.appendChild(side);
-  wrap.appendChild(layout);
-  return wrap;
-}
-
-function renderPracticeStudy(ctx,kind){
-  const wrap=document.createElement('div'); wrap.className='game-workspace practice-workspace';
-  if(!ctx){ wrap.appendChild(el('<p>Nothing selected.</p>')); return wrap; }
-  const practiceColor=kind==='opening'&&ctx.color==='Black'?'b':'w';
-  const total=ctx.line.length;
-  const game=new Chess();
-  let applied=0;
-  while(applied<State.studyStep&&applied<total){ if(!game.move(ctx.line[applied].move)) break; applied+=1; }
-  State.studyStep=applied;
-  while(State.studyStep<total&&game.turn()!==practiceColor){
-    if(!game.move(ctx.line[State.studyStep].move)) break;
-    State.studyStep+=1;
-  }
-  State.lastMove=State.studyStep?lastMoveSquares(game):null;
-  const complete=State.studyStep>=total;
-  if(complete) recordPracticeComplete(ctx,kind);
-  const top=el(`<div class="workspace-heading"><button class="btn ghost sm" id="back">← Back</button><div class="eyebrow">Recall training</div><h1>${ctx.name}</h1><div class="study-mode-switch"><button id="learnMode" type="button">Learn</button><button class="active" type="button">Practice</button></div></div>`);
-  top.querySelector('#back').onclick=()=>navigate(kind==='opening'?'openings':'traps');
-  top.querySelector('#learnMode').onclick=()=>{ State.studyMode='learn'; State.studyStep=0; State.practiceFeedback=null; State.selectedSquare=null; State.legalDests=[]; render(); };
-  wrap.appendChild(top);
-  const layout=document.createElement('div'); layout.className='play-layout';
-  const boardCol=document.createElement('div'); boardCol.className='board-column';
-  const frame=document.createElement('div'); frame.className='board-frame';
-  const defaultFlip=practiceColor==='b';
-  frame.appendChild(buildBoard(game,{flip:State.flipBoard?!defaultFlip:defaultFlip,lastMove:State.lastMove,interactive:!complete,onMove:move=>handlePracticeMove(move,ctx,kind)}));
-  boardCol.appendChild(frame);
-  const ctrl=document.createElement('div'); ctrl.className='tutorial-controls';
-  const hint=el('<button class="btn ghost sm">Hint</button>');
-  hint.disabled=complete;
-  hint.onclick=()=>{ const expected=ctx.line[State.studyStep]; State.practiceFeedback={kind:'hint',text:`Look for <strong>${expected?.move||''}</strong>. ${escapeHtml(expected?.text||'')}`}; render(); };
-  const restart=el('<button class="btn ghost sm">Restart</button>');
-  restart.onclick=()=>{ State.studyStep=0; State.practiceFeedback=null; State.selectedSquare=null; State.legalDests=[]; State.lastMove=null; render(); };
-  const learn=el('<button class="btn ghost sm">Review line</button>'); learn.onclick=()=>{ State.studyMode='learn'; State.studyStep=0; State.practiceFeedback=null; render(); };
-  const flip=el('<button class="btn ghost sm">Flip</button>'); flip.onclick=()=>{ State.flipBoard=!State.flipBoard; render(); };
-  ctrl.appendChild(hint); ctrl.appendChild(restart); ctrl.appendChild(learn); ctrl.appendChild(flip); boardCol.appendChild(ctrl); layout.appendChild(boardCol);
-  const side=document.createElement('div'); side.className='play-sidebar';
-  const percent=Math.round(State.studyStep/total*100);
-  side.appendChild(el(`<div class="practice-prompt ${complete?'complete':''}"><div class="practice-progress"><span style="width:${percent}%"></span></div><div class="eyebrow">${complete?'Line mastered':`${practiceColor==='w'?'White':'Black'} to move · ${State.studyStep} of ${total}`}</div><h3>${complete?'Excellent recall.':'Find the next move from memory.'}</h3><p>${complete?'You completed the complete move sequence without the notation in front of you.':'Use the position, plans, and piece placement. Ask for a hint only when you need it.'}</p></div>`));
-  if(State.practiceFeedback) side.appendChild(el(`<div class="puzzle-feedback ${State.practiceFeedback.kind}">${State.practiceFeedback.text}</div>`));
-  if(complete){
-    const collection=kind==='opening'?OPENINGS:TRAPS; const index=collection.findIndex(item=>item.id===ctx.id); const following=collection[(index+1)%collection.length];
-    const done=el('<div class="lesson-complete"><div class="completion-mark">★</div><div><strong>Practice complete</strong><span>This line is now marked as practiced.</span></div><button class="btn gold sm">Practice next →</button></div>');
-    done.querySelector('button').onclick=()=>{ State.studyStep=0; State.practiceFeedback=null; navigate(kind==='opening'?'study-opening':'study-trap',following); };
-    side.appendChild(done);
-  } else {
-    const expected=ctx.line[State.studyStep];
-    side.appendChild(el(`<div class="card practice-plan"><div class="eyebrow">Position goal</div><p>${escapeHtml(expected?.text||ctx.summary)}</p></div>`));
-  }
-  layout.appendChild(side); wrap.appendChild(layout); return wrap;
-}
-
-function handlePracticeMove(move,ctx,kind){
-  const expected=ctx.line[State.studyStep]?.move||'';
-  const normalize=s=>s.replace(/[+#]/g,'').replace(/0/g,'O');
-  if(normalize(move.san)===normalize(expected)){
-    State.studyStep+=1;
-    recordLessonStep(ctx,kind,State.studyStep,ctx.line.length);
-    State.practiceFeedback={kind:'correct',text:`✓ Correct — <strong>${move.san}</strong>. ${escapeHtml(ctx.line[State.studyStep-1]?.text||'')}`};
-  } else {
-    State.practiceFeedback={kind:'wrong',text:`That move is legal, but it leaves the repertoire line. Recheck the position or ask for a hint.`};
-  }
-  State.selectedSquare=null; State.legalDests=[]; render();
-}
-
-// =========================================================
-// TACTICS
-// =========================================================
-function renderTactics(){
-  const wrap = document.createElement('div');
-  wrap.appendChild(el(`<div class="catalog-hero"><div><div class="eyebrow">Calculation gym</div><h1>World-class Tactics</h1><p>Train pattern recognition, forcing moves, mating nets, and advanced conversion themes.</p></div><div class="catalog-stat"><strong>${TACTICS.length}</strong><span>curated positions</span></div></div>`));
-  const toolbar = el(`<div class="catalog-toolbar"><div><strong>Difficulty ladder</strong><span>Progress from pattern fluency to expert calculation.</span></div><label>Level<select><option>All</option><option>Easy</option><option>Medium</option><option>Advanced</option><option>Expert</option></select></label></div>`);
-  toolbar.querySelector('select').value=State.tacticLevel;
-  toolbar.querySelector('select').onchange=e=>{ State.tacticLevel=e.target.value; render(); };
-  wrap.appendChild(toolbar);
-  const list = document.createElement('div'); list.className='item-list';
-  TACTICS.forEach(t=>{
-    if(State.tacticLevel!=='All'&&State.tacticLevel!==t.difficulty) return;
-    const diffColor = {Easy:'green',Medium:'gold',Advanced:'burg',Expert:'burg',Hard:'burg'}[t.difficulty]||'';
-    const progress=State.training.tactics[t.id]||{attempts:0,correct:0,solved:false};
-    const accuracy=progress.attempts?Math.round(progress.correct/progress.attempts*100):0;
-    const item = el(`<div class="list-item">
-      <div class="meta"><div class="lesson-kicker">${t.rating?`Target ${t.rating} Elo`:'Pattern training'}</div><h4>${t.theme}</h4><div class="small">${escapeHtml(t.prompt)}</div></div>
-      <div class="lesson-tags">${progress.solved?`<span class="solved-badge">✓ Solved${progress.attempts?` · ${accuracy}%`:''}</span>`:''}<span class="tag ${diffColor}">${t.difficulty}</span><span class="lesson-arrow">${progress.solved?'Train again':'Solve'} →</span></div>
-    </div>`);
-    item.onclick = ()=>{ State.puzzleStep=0; State.puzzleSolution=t.solution||[]; State.puzzleFeedback=null; State.puzzleSolvedThisRun=false; navigate('tactics-puzzle', t); };
-    list.appendChild(item);
-  });
-  wrap.appendChild(list);
-  return wrap;
-}
-function renderTacticsPuzzle(){
-  const ctx = State.studyContext;
-  const wrap = document.createElement('div'); wrap.className='game-workspace';
-  if(!ctx){ wrap.appendChild(el(`<p>No puzzle selected.</p>`)); return wrap; }
-  const top = el(`<div class="workspace-heading">
-    <button class="btn ghost sm" id="back">← Back to Puzzles</button>
-    <div class="eyebrow" style="margin-top:.6rem">Tactics · ${ctx.difficulty}</div>
-    <h1>${ctx.theme}</h1>
-  </div>`);
-  top.querySelector('#back').onclick = ()=>navigate('tactics');
-  wrap.appendChild(top);
-  if(!State.game || State.game.fen()!==ctx.fen){
-    State.game = new Chess(ctx.fen);
-    State.selectedSquare=null; State.legalDests=[]; State.lastMove=null;
-  }
-  const layout = document.createElement('div'); layout.className='play-layout';
-  const boardCol = document.createElement('div'); boardCol.className='board-column';
-  const frame = document.createElement('div'); frame.className='board-frame';
-  const flip = ctx.sideToMove==='Black' && !State.flipBoard ? true : State.flipBoard;
-  frame.appendChild(buildBoard(State.game, {flip, lastMove:State.lastMove, interactive:!!ctx.solution.length, onMove:(m)=>handlePuzzleMove(m, ctx)}));
-  boardCol.appendChild(frame);
-  layout.appendChild(boardCol);
-  const side = document.createElement('div'); side.className='play-sidebar';
-  side.appendChild(el(`<div class="puzzle-prompt">
-    <div class="turn-flag ${ctx.sideToMove==='White'?'white':''}">${ctx.sideToMove} to move</div>
-    <h4>${escapeHtml(ctx.prompt)}</h4>
-  </div>`));
-  if(State.puzzleFeedback){
-    side.appendChild(el(`<div class="puzzle-feedback ${State.puzzleFeedback.kind}">${State.puzzleFeedback.text}</div>`));
-  }
-  if(ctx.solution.length===0 || State.puzzleFeedback?.kind==='correct'){
-    side.appendChild(el(`<div class="card"><div class="eyebrow">Explanation</div><p style="margin-top:.4rem">${escapeHtml(ctx.explanation)}</p></div>`));
-  }
-  const ctrl = document.createElement('div'); ctrl.className='tutorial-controls';
-  const showAns = el(`<button class="btn ghost sm">Show Answer</button>`);
-  showAns.onclick = ()=>{ State.puzzleFeedback={kind:'hint',text:`The intended move is: <strong>${ctx.solution[0]}</strong>. ${escapeHtml(ctx.explanation)}`}; render(); };
-  if(ctx.solution.length===0) showAns.disabled = true;
-  const reset = el(`<button class="btn ghost sm">Reset Position</button>`);
-  reset.onclick = ()=>{ State.game = new Chess(ctx.fen); State.selectedSquare=null; State.legalDests=[]; State.lastMove=null; State.puzzleFeedback=null; State.puzzleSolvedThisRun=false; render(); };
-  const flipBtn = el(`<button class="btn ghost sm">Flip</button>`);
-  flipBtn.onclick = ()=>{ State.flipBoard=!State.flipBoard; render(); };
-  ctrl.appendChild(showAns); ctrl.appendChild(reset); ctrl.appendChild(flipBtn);
-  if(State.puzzleFeedback?.kind==='correct'){
-    const nextPuzzle=el(`<button class="btn gold sm">Next puzzle →</button>`); nextPuzzle.onclick=nextTactic; ctrl.appendChild(nextPuzzle);
-  }
-  boardCol.appendChild(ctrl);
-  layout.appendChild(side);
-  wrap.appendChild(layout);
-  return wrap;
-}
-function handlePuzzleMove(move, ctx){
-  const san = move.san;
-  const sanClean = san.replace(/[+#]/g, '');
-  const matches = ctx.solution.some(s => s===san || s.replace(/[+#]/g,'')===sanClean);
-  if(matches){
-    recordTacticAttempt(ctx,true);
-    State.puzzleFeedback = {kind:'correct', text:`✓ Correct! <strong>${san}</strong>. ${escapeHtml(ctx.explanation)}`};
-  } else {
-    recordTacticAttempt(ctx,false);
-    State.puzzleFeedback = {kind:'wrong', text:`✗ Not quite — <strong>${san}</strong> isn't the strongest move here. Try again or click "Show Answer".`};
-    State.game.undo();
-    State.lastMove = null;
-  }
-  render();
-}
-
-// =========================================================
-// ENDGAMES
-// =========================================================
-function renderEndgames(){
-  const wrap = document.createElement('div');
-  wrap.appendChild(el(`<div style="margin-bottom:1.4rem"><div class="eyebrow">Volume IV</div><h1>Endgame Studies</h1><p class="italic" style="color:var(--ink-soft);max-width:65ch">"To improve at chess you should study the endgame before everything else." — Capablanca.</p></div>`));
-  const list = document.createElement('div'); list.className='item-list';
-  ENDGAMES.forEach(e=>{
-    const item = el(`<div class="list-item">
-      <div class="meta"><h4>${e.name}</h4><div class="small italic">${escapeHtml(e.summary.split('.')[0])}.</div></div>
-      <span class="tag ${e.difficulty==='Critical'?'burg':'gold'}">${e.difficulty}</span>
-    </div>`);
-    item.onclick = ()=>navigate('endgame-study', e);
-    list.appendChild(item);
-  });
-  wrap.appendChild(list);
-  return wrap;
-}
-function renderEndgameStudy(){
-  const ctx = State.studyContext;
-  const wrap = document.createElement('div'); wrap.className='game-workspace';
-  if(!ctx){ wrap.appendChild(el(`<p>None.</p>`)); return wrap; }
-  const top = el(`<div class="workspace-heading">
-    <button class="btn ghost sm" id="back">← Back</button>
-    <div class="eyebrow" style="margin-top:.6rem">Endgame · ${ctx.difficulty}</div>
-    <h1>${ctx.name}</h1>
-  </div>`);
-  top.querySelector('#back').onclick = ()=>navigate('endgames');
-  wrap.appendChild(top);
-  if(!State.game || State.game.fen()!==ctx.fen){ State.game = new Chess(ctx.fen); State.lastMove = null; }
-  const layout = document.createElement('div'); layout.className='play-layout';
-  const boardWrap = document.createElement('div'); boardWrap.className='board-column';
-  const frame = document.createElement('div'); frame.className='board-frame';
-  frame.appendChild(buildBoard(State.game, {flip:State.flipBoard, lastMove:State.lastMove, interactive:true, onMove:(m)=>{ State.lastMove = lastMoveSquares(State.game); render(); }}));
-  boardWrap.appendChild(frame);
-  layout.appendChild(boardWrap);
-  const side = document.createElement('div'); side.className='play-sidebar';
-  const tech = document.createElement('div'); tech.className='card';
-  tech.innerHTML = `<div class="eyebrow">Technique</div><h4 style="margin-top:.3rem;margin-bottom:.6rem">${ctx.name}</h4>`;
-  const ul = document.createElement('ul'); ul.style.marginLeft='1.2rem';
-  ctx.technique.forEach(t=>{ const li = document.createElement('li'); li.style.marginBottom='.4rem'; li.innerHTML = escapeHtml(t); ul.appendChild(li); });
-  tech.appendChild(ul);
-  side.appendChild(tech);
-  const ctrl = document.createElement('div'); ctrl.className='tutorial-controls';
-  const reset = el(`<button class="btn ghost sm">Reset Position</button>`);
-  reset.onclick = ()=>{ State.game = new Chess(ctx.fen); State.lastMove=null; render(); };
-  const flipBtn = el(`<button class="btn ghost sm">Flip Board</button>`);
-  flipBtn.onclick = ()=>{ State.flipBoard=!State.flipBoard; render(); };
-  ctrl.appendChild(reset); ctrl.appendChild(flipBtn);
-  boardWrap.appendChild(ctrl);
-  layout.appendChild(side);
-  wrap.appendChild(layout);
-  return wrap;
-}
-
-// =========================================================
-// PLAY MENU + SETUP
-// =========================================================
-function renderPlayMenu(){
-  const wrap = document.createElement('div');
-  wrap.appendChild(el(`<div style="margin-bottom:1.4rem"><div class="eyebrow">The Arena</div><h1>Take a Game</h1><p class="italic" style="color:var(--ink-soft);max-width:65ch">Test what you have learned. Play a club member for honor or rating, or face the great engine itself at any strength.</p></div>`));
-  const grid = document.createElement('div'); grid.className='grid grid-2';
-  const c1 = el(`<div class="module-card"><div class="icon">⚔</div><h3>Member vs Member</h3><p>Two players on this device. Choose rated (affects your Elo) or a friendly (no rating change). The board flips between turns for fairness.</p><div class="arrow">CHOOSE OPPONENT →</div></div>`);
-  c1.onclick = ()=>navigate('vs-human-setup');
-  grid.appendChild(c1);
-  const c2 = el(`<div class="module-card"><div class="icon">♛</div><h3>Versus Stockfish</h3><p>Five preset levels from Novice (~800) to Grandmaster (~2500), or set a custom Elo of your choosing.</p><div class="arrow">CHALLENGE THE ENGINE →</div></div>`);
-  c2.onclick = ()=>navigate('vs-engine-setup');
-  grid.appendChild(c2);
-  wrap.appendChild(grid);
-  return wrap;
-}
-
-function chess960Fen(){
-  const squares=Array(8).fill(null); const pick=options=>options[Math.floor(Math.random()*options.length)];
-  squares[pick([0,2,4,6])]='B'; squares[pick([1,3,5,7])]='B';
-  let free=()=>squares.map((v,i)=>v?null:i).filter(i=>i!==null);
-  squares[pick(free())]='Q'; for(let i=0;i<2;i++) squares[pick(free())]='N';
-  const rest=free(); squares[rest[0]]='R'; squares[rest[1]]='K'; squares[rest[2]]='R';
-  const rank=squares.join(''); return `${rank.toLowerCase()}/pppppppp/8/8/8/8/PPPPPPPP/${rank} w - - 0 1`;
-}
-
-function addVariantPicker(card){
-  const row=document.createElement('div'); row.style.marginBottom='1rem'; row.innerHTML='<label>Starting position</label>';
-  const tog=document.createElement('div'); tog.className='toggle-row';
-  [['standard','Standard'],['chess960','Chess960']].forEach(([value,label])=>{const b=document.createElement('button');b.className='toggle-btn';b.textContent=label;if(State.variant===value)b.classList.add('active');b.onclick=()=>{[...tog.children].forEach(x=>x.classList.remove('active'));b.classList.add('active');State.variant=value;};tog.appendChild(b);});
-  row.appendChild(tog); card.appendChild(row);
-}
-
-function renderVsHumanSetup(){
-  const wrap = document.createElement('div');
-  wrap.appendChild(el(`<button class="btn ghost sm" id="back" style="margin-bottom:1rem">← Back</button>`));
-  wrap.querySelector('#back').onclick = ()=>navigate('play-menu');
-  wrap.appendChild(el(`<div style="margin-bottom:1.4rem"><div class="eyebrow">Member vs Member</div><h1>Choose Opponent</h1></div>`));
-  if(Object.keys(State.members).length<2){
-    wrap.appendChild(el(`<div class="card"><p>You'll need at least one other club member to play. Have your friend register from the home screen first, then come back.</p></div>`));
-    return wrap;
-  }
-  const card = document.createElement('div'); card.className='card';
-  card.innerHTML = `<div class="eyebrow">Setup</div><h3 style="margin-bottom:.8rem">Choose your opponent and colours</h3>`;
-  const opponentRow = document.createElement('div'); opponentRow.style.marginBottom='1rem';
-  opponentRow.innerHTML = `<label>Opponent</label>`;
-  const oppSel = document.createElement('select');
-  Object.values(State.members).filter(m=>m.id!==State.user.id).forEach(m=>{
-    const opt = document.createElement('option'); opt.value = m.id; opt.textContent = `${m.name}  (${m.rating})`;
-    oppSel.appendChild(opt);
-  });
-  opponentRow.appendChild(oppSel);
-  card.appendChild(opponentRow);
-  const colorRow = document.createElement('div'); colorRow.style.marginBottom='1rem';
-  colorRow.innerHTML = `<label>Your colour</label>`;
-  const colorTog = document.createElement('div'); colorTog.className='toggle-row';
-  ['white','black','random'].forEach(c=>{
-    const b = document.createElement('button'); b.className='toggle-btn'; b.textContent=c;
-    if(c==='white') b.classList.add('active');
-    b.onclick=()=>{[...colorTog.children].forEach(x=>x.classList.remove('active'));b.classList.add('active');colorRow.dataset.color=c;};
-    colorTog.appendChild(b);
-  });
-  colorRow.dataset.color='white';
-  colorRow.appendChild(colorTog);
-  card.appendChild(colorRow);
-  const ratedRow = document.createElement('div'); ratedRow.style.marginBottom='1rem';
-  ratedRow.innerHTML = `<label>Type</label>`;
-  const ratedTog = document.createElement('div'); ratedTog.className='toggle-row';
-  ['rated','friendly'].forEach(c=>{
-    const b = document.createElement('button'); b.className='toggle-btn'; b.textContent=c;
-    if(c==='rated') b.classList.add('active');
-    b.onclick=()=>{[...ratedTog.children].forEach(x=>x.classList.remove('active'));b.classList.add('active');ratedRow.dataset.type=c;};
-    ratedTog.appendChild(b);
-  });
-  ratedRow.dataset.type='rated';
-  ratedRow.appendChild(ratedTog);
-  card.appendChild(ratedRow);
-  addVariantPicker(card);
-  const start = el(`<button class="btn gold full">Begin the Game</button>`);
-  start.onclick = ()=>{
-    let myColor = colorRow.dataset.color;
-    if(myColor==='random') myColor = Math.random()<.5?'white':'black';
-    const opp = State.members[oppSel.value];
-    if(myColor==='white'){ State.gameWhite=State.user.id; State.gameBlack=opp.id; }
-    else { State.gameWhite=opp.id; State.gameBlack=State.user.id; }
-    State.gameRated = ratedRow.dataset.type==='rated';
-    State.vsMode = State.gameRated?'human-rated':'human-unrated';
-    State.game = new Chess(State.variant==='chess960'?chess960Fen():undefined); State.gameMoveHistory=[]; State.gameOver=false;
-    State.lastMove=null; State.selectedSquare=null; State.flipBoard=false;
-    navigate('vs-human');
-  };
-  card.appendChild(start);
-  wrap.appendChild(card);
-  return wrap;
-}
-
-function renderVsEngineSetup(){
-  const wrap = document.createElement('div');
-  wrap.appendChild(el(`<button class="btn ghost sm" id="back" style="margin-bottom:1rem">← Back</button>`));
-  wrap.querySelector('#back').onclick = ()=>navigate('play-menu');
-  wrap.appendChild(el(`<div style="margin-bottom:1.4rem"><div class="eyebrow">Versus Stockfish</div><h1>Set Engine Strength</h1></div>`));
-  const card = document.createElement('div'); card.className='card';
-  card.innerHTML = `<div class="eyebrow">Preset Levels</div><h3 style="margin:.3rem 0 1rem">Choose a difficulty</h3>`;
-  const grid = document.createElement('div'); grid.className='level-grid';
-  const presets = [
-    {n:1,name:'Novice',elo:'~800'},{n:2,name:'Apprentice',elo:'~1200'},{n:3,name:'Journeyman',elo:'~1600'},
-    {n:4,name:'Expert',elo:'~2000'},{n:5,name:'Grandmaster',elo:'~2500'}
-  ];
-  let selectedLevel = State.engineLevel || 2, useCustom = false;
-  presets.forEach(p=>{
-    const c = el(`<div class="level-card"><div class="lvl-num">${p.n}</div><div class="lvl-name">${p.name}</div><div class="lvl-elo">${p.elo}</div></div>`);
-    if(p.n===selectedLevel) c.classList.add('selected');
-    c.onclick = ()=>{ useCustom=false; [...grid.children].forEach(x=>x.classList.remove('selected')); c.classList.add('selected'); selectedLevel=p.n; customCard.classList.remove('selected'); };
-    grid.appendChild(c);
-  });
-  card.appendChild(grid);
-  card.appendChild(el(`<hr class="fancy"/>`));
-  card.appendChild(el(`<div class="eyebrow">Or set a Custom Elo</div>`));
-  const customWrap = document.createElement('div'); customWrap.style.cssText='display:flex;gap:1rem;align-items:center;margin-top:.7rem';
-  const customCard = el(`<div class="level-card" style="flex:0 0 140px"><div class="lvl-num"><span id="customDisp">${State.engineCustomElo}</span></div><div class="lvl-name">Custom Elo</div><div class="lvl-elo">1320–2850</div></div>`);
-  const slider = el(`<input type="range" min="1320" max="2850" value="${State.engineCustomElo}" step="20" style="flex:1" />`);
-  slider.oninput = ()=>{ customCard.querySelector('#customDisp').textContent = slider.value; State.engineCustomElo = +slider.value; [...grid.children].forEach(x=>x.classList.remove('selected')); customCard.classList.add('selected'); useCustom=true; };
-  customCard.onclick = ()=>{ [...grid.children].forEach(x=>x.classList.remove('selected')); customCard.classList.add('selected'); useCustom=true; };
-  customWrap.appendChild(customCard); customWrap.appendChild(slider);
-  card.appendChild(customWrap);
-  card.appendChild(el(`<hr class="fancy"/>`));
-  const colorRow = document.createElement('div');
-  colorRow.innerHTML = `<label>Your colour</label>`;
-  const tog = document.createElement('div'); tog.className='toggle-row';
-  let myColor='white';
-  ['white','black','random'].forEach(c=>{
-    const b = document.createElement('button'); b.className='toggle-btn'; b.textContent=c;
-    if(c==='white') b.classList.add('active');
-    b.onclick=()=>{[...tog.children].forEach(x=>x.classList.remove('active'));b.classList.add('active');myColor=c;};
-    tog.appendChild(b);
-  });
-  colorRow.appendChild(tog);
-  card.appendChild(colorRow);
-  addVariantPicker(card);
-  const start = el(`<button class="btn gold full" style="margin-top:1.4rem">Load Engine & Begin</button>`);
-  start.onclick = async ()=>{
-    start.disabled=true; start.innerHTML = '<span class="spinner"></span> Summoning the engine...';
-    try{
-      await initStockfish();
-      const lvl = useCustom ? {custom:State.engineCustomElo} : selectedLevel;
-      State.engineLevel = useCustom ? null : selectedLevel;
-      State.engineThinking = false; State.gameOver = false;
-      State.gameMoveHistory = []; State.lastMove = null;
-      State.selectedSquare=null; State.legalDests=[];
-      let pc = myColor; if(pc==='random') pc = Math.random()<.5?'white':'black';
-      State.playerColor = pc==='white'?'w':'b';
-      State.flipBoard = State.playerColor==='b';
-      State.game = new Chess(State.variant==='chess960'?chess960Fen():undefined); State.vsMode = 'engine';
-      State._engineConfig = configureEngine(lvl);
-      State._engineLevelDisplay = useCustom ? `Custom Elo ${State.engineCustomElo}` : `Level ${selectedLevel} (${presets[selectedLevel-1].name})`;
-      navigate('vs-engine');
-      if(State.playerColor==='b') setTimeout(()=>engineMakeMove(), 300);
-    }catch(e){
-      start.disabled=false; start.textContent='Load Engine & Begin';
-      alert('Could not load Stockfish: '+e.message+'\nThis app needs internet access to fetch the engine on first use.');
-    }
-  };
-  card.appendChild(start);
-  wrap.appendChild(card);
-  return wrap;
-}
-
-// =========================================================
-// VS HUMAN GAME
-// =========================================================
-function renderVsHuman(){
-  const wrap = document.createElement('div'); wrap.className='game-workspace';
-  if(!State.game) State.game = new Chess();
-  const game = State.game, turn = game.turn();
-  const w = State.members[State.gameWhite], b = State.members[State.gameBlack];
-  const shouldFlip = State.flipBoard ? turn!=='b' : turn==='b';
-  wrap.appendChild(el(`<div class="workspace-heading">
-    <button class="btn ghost sm" id="back">⟵ Resign / Leave</button>
-    <div class="eyebrow" style="margin-top:.6rem">${State.gameRated?'Rated · Member vs Member':'Friendly · Member vs Member'}</div>
-    <h1>${escapeHtml(w.name)} <span style="color:var(--gold);font-style:italic">vs</span> ${escapeHtml(b.name)}</h1>
-  </div>`));
-  wrap.querySelector('#back').onclick = ()=>{
-    if(!State.gameOver && State.gameMoveHistory.length>0){
-      if(!confirm('Resign and leave the game?')) return;
-      finishHumanGame(turn==='w'?'0-1':'1-0', 'resign');
-    }
-    navigate('play-menu');
-  };
-  const layout = document.createElement('div'); layout.className='play-layout';
-  const boardCol = document.createElement('div'); boardCol.className='board-column';
-  const frame = document.createElement('div'); frame.className='board-frame';
-  frame.appendChild(buildBoard(game, {flip:shouldFlip, lastMove:State.lastMove, interactive:!State.gameOver && !State.promotionPending,
-    onMove:(m)=>{ State.gameMoveHistory.push(m.san); State.lastMove = lastMoveSquares(game); checkHumanGameEnd(); render(); }
-  }));
-  boardCol.appendChild(frame);
-  layout.appendChild(boardCol);
-  const side = document.createElement('div'); side.className='play-sidebar';
-  if(State.gameOver){
-    side.appendChild(el(`<div class="status-banner ${State.lastResult?.kind||'draw'}">${escapeHtml(State.lastResult?.text||'Game over')}</div>`));
-  } else {
-    const checkStr = game.in_check()?' (check!)':'';
-    side.appendChild(el(`<div class="status-banner">${turn==='w'?escapeHtml(w.name):escapeHtml(b.name)} to move${checkStr}</div>`));
-  }
-  const info = document.createElement('div'); info.className='game-info';
-  info.innerHTML = `
-    <div class="player-row ${turn==='b'?'active':''}"><div><span class="turn-marker"></span><span class="pname">${escapeHtml(b.name)}</span> <span class="badge elo">${b.rating}</span></div></div>
-    <div class="player-row ${turn==='w'?'active':''}"><div><span class="turn-marker"></span><span class="pname">${escapeHtml(w.name)}</span> <span class="badge elo">${w.rating}</span></div></div>
-  `;
-  side.appendChild(info);
-  side.appendChild(buildMovesPanel(State.gameMoveHistory));
-  const ctrl = document.createElement('div'); ctrl.className='tutorial-controls';
-  const undo = el(`<button class="btn ghost sm">↶ Undo</button>`);
-  undo.disabled = State.gameMoveHistory.length===0 || State.gameOver;
-  undo.onclick = ()=>{ State.game.undo(); State.gameMoveHistory.pop(); State.lastMove=lastMoveSquares(State.game); render(); };
-  const flipBtn = el(`<button class="btn ghost sm">Flip</button>`);
-  flipBtn.onclick = ()=>{ State.flipBoard=!State.flipBoard; render(); };
-  const drawBtn = el(`<button class="btn ghost sm">Agree Draw</button>`);
-  drawBtn.disabled = State.gameOver;
-  drawBtn.onclick = ()=>{ if(confirm('Agree to a draw?')) finishHumanGame('1/2-1/2','agreement'); };
-  ctrl.appendChild(undo); ctrl.appendChild(drawBtn); ctrl.appendChild(flipBtn);
-  boardCol.appendChild(ctrl);
-  const resignRow = document.createElement('div'); resignRow.className='tutorial-controls';
-  const rW = el(`<button class="btn danger sm">${escapeHtml(w.name)} resigns</button>`);
-  rW.disabled = State.gameOver;
-  rW.onclick = ()=>{ if(confirm(w.name+' resigns?')) finishHumanGame('0-1','resign'); };
-  const rB = el(`<button class="btn danger sm">${escapeHtml(b.name)} resigns</button>`);
-  rB.disabled = State.gameOver;
-  rB.onclick = ()=>{ if(confirm(b.name+' resigns?')) finishHumanGame('1-0','resign'); };
-  resignRow.appendChild(rW); resignRow.appendChild(rB);
-  side.appendChild(resignRow);
-  layout.appendChild(side);
-  wrap.appendChild(layout);
-  return wrap;
-}
-function checkHumanGameEnd(){
-  if(State.gameOver) return;
-  const g = State.game;
-  if(g.in_checkmate()){ finishHumanGame(g.turn()==='w'?'0-1':'1-0','checkmate'); }
-  else if(g.in_draw()||g.in_stalemate()||g.in_threefold_repetition()||g.insufficient_material()){
-    let r='draw';
-    if(g.in_stalemate()) r='stalemate';
-    else if(g.in_threefold_repetition()) r='threefold';
-    else if(g.insufficient_material()) r='insufficient material';
-    else if(g.in_draw()) r='50-move rule';
-    finishHumanGame('1/2-1/2', r);
-  }
-}
-async function finishHumanGame(result, reason){
-  State.gameOver = true;
-  const w = State.members[State.gameWhite], b = State.members[State.gameBlack];
-  let scoreW = 0.5, kind='draw', text=`Drawn by ${reason}.`;
-  if(result==='1-0'){ scoreW=1; kind='win'; text=`${w.name} wins by ${reason}!`; }
-  else if(result==='0-1'){ scoreW=0; kind='loss'; text=`${b.name} wins by ${reason}!`; }
-  let newW=w.rating, newB=b.rating;
-  if(State.gameRated){
-    newW = computeElo(w.rating, b.rating, scoreW);
-    newB = computeElo(b.rating, w.rating, 1-scoreW);
-    State.members[State.gameWhite].rating = newW;
-    State.members[State.gameBlack].rating = newB;
-    if(scoreW===1){ State.members[State.gameWhite].wins++; State.members[State.gameBlack].losses++; }
-    else if(scoreW===0){ State.members[State.gameWhite].losses++; State.members[State.gameBlack].wins++; }
-    else { State.members[State.gameWhite].draws++; State.members[State.gameBlack].draws++; }
-    await saveMembers();
-    if(State.user.id===w.id) State.user.rating=newW;
-    if(State.user.id===b.id) State.user.rating=newB;
-    text += ` Elo: ${w.name} ${w.rating}→${newW} | ${b.name} ${b.rating}→${newB}.`;
-  } else { text += ' (Friendly — no rating change.)'; }
-  State.lastResult = {kind, text};
-  await saveGameRecord({
-    ts:Date.now(), type:State.gameRated?'rated':'friendly',
-    white:{id:w.id,name:w.name,ratingBefore:w.rating,ratingAfter:newW},
-    black:{id:b.id,name:b.name,ratingBefore:b.rating,ratingAfter:newB},
-    result, reason, moves:State.gameMoveHistory.slice(), pgn:State.game.pgn(),
-  });
-  render();
-}
-
-// =========================================================
-// VS ENGINE GAME
-// =========================================================
-function renderVsEngine(){
-  const wrap = document.createElement('div'); wrap.className='game-workspace';
-  if(!State.game) State.game = new Chess();
-  const game = State.game, turn = game.turn();
-  wrap.appendChild(el(`<div class="workspace-heading">
-    <button class="btn ghost sm" id="back">⟵ Leave Game</button>
-    <div class="eyebrow" style="margin-top:.6rem">${State._engineLevelDisplay||'Stockfish'}</div>
-    <h1>${escapeHtml(State.user.name)} <span style="color:var(--gold);font-style:italic">vs</span> Stockfish</h1>
-  </div>`));
-  wrap.querySelector('#back').onclick = ()=>{
-    if(!State.gameOver && State.gameMoveHistory.length>0){ if(!confirm('Leave the game? Stockfish games are not recorded.')) return; }
-    navigate('play-menu');
-  };
-  const layout = document.createElement('div'); layout.className='play-layout';
-  const boardCol = document.createElement('div'); boardCol.className='board-column';
-  const frame = document.createElement('div'); frame.className='board-frame';
-  frame.appendChild(buildBoard(game, {flip:State.flipBoard, lastMove:State.lastMove,
-    interactive:!State.gameOver && !State.promotionPending && !State.engineThinking && turn===State.playerColor,
-    onMove:(m)=>{ State.gameMoveHistory.push(m.san); State.lastMove=lastMoveSquares(game); checkEngineGameEnd(); render(); if(!State.gameOver) setTimeout(()=>engineMakeMove(),200); }
-  }));
-  boardCol.appendChild(frame);
-  layout.appendChild(boardCol);
-  const side = document.createElement('div'); side.className='play-sidebar';
-  if(State.gameOver) side.appendChild(el(`<div class="status-banner ${State.lastResult?.kind||'draw'}">${escapeHtml(State.lastResult?.text||'Game over')}</div>`));
-  else if(State.engineThinking) side.appendChild(el(`<div class="status-banner">Stockfish is thinking… <span class="spinner"></span></div>`));
-  else side.appendChild(el(`<div class="status-banner">${turn===State.playerColor?escapeHtml(State.user.name):'Stockfish'} to move</div>`));
-  const info = document.createElement('div'); info.className='game-info';
-  info.innerHTML = `
-    <div class="player-row ${turn!==State.playerColor?'active':''}"><div><span class="turn-marker"></span><span class="pname">Stockfish</span> <span class="badge elo">${State._engineLevelDisplay||''}</span></div></div>
-    <div class="player-row ${turn===State.playerColor?'active':''}"><div><span class="turn-marker"></span><span class="pname">${escapeHtml(State.user.name)} (${State.playerColor==='w'?'White':'Black'})</span> <span class="badge elo">${State.user.rating}</span></div></div>
-  `;
-  side.appendChild(info);
-  side.appendChild(buildMovesPanel(State.gameMoveHistory));
-  const ctrl = document.createElement('div'); ctrl.className='tutorial-controls';
-  const undo = el(`<button class="btn ghost sm">↶ Take Back</button>`);
-  undo.disabled = State.gameMoveHistory.length<2 || State.gameOver || State.engineThinking;
-  undo.onclick = ()=>{ State.game.undo(); State.gameMoveHistory.pop(); State.game.undo(); State.gameMoveHistory.pop(); State.lastMove=lastMoveSquares(State.game); render(); };
-  const flipBtn = el(`<button class="btn ghost sm">Flip</button>`);
-  flipBtn.onclick = ()=>{ State.flipBoard=!State.flipBoard; render(); };
-  const resign = el(`<button class="btn danger sm">Resign</button>`);
-  resign.disabled = State.gameOver;
-  resign.onclick = ()=>{ if(!confirm('Resign?')) return; State.gameOver=true; State.lastResult={kind:'loss',text:'You resigned. Stockfish wins.'}; render(); };
-  const newG = el(`<button class="btn ghost sm">New Game</button>`);
-  newG.onclick = ()=>navigate('vs-engine-setup');
-  ctrl.appendChild(undo); ctrl.appendChild(flipBtn); ctrl.appendChild(resign); ctrl.appendChild(newG);
-  boardCol.appendChild(ctrl);
-  layout.appendChild(side);
-  wrap.appendChild(layout);
-  return wrap;
-}
-function checkEngineGameEnd(){
-  const g = State.game;
-  if(g.in_checkmate()){
-    const winner = g.turn()==='w'?'b':'w';
-    const youWon = winner === State.playerColor;
-    State.gameOver = true;
-    State.lastResult = {kind:youWon?'win':'loss', text:youWon?'Checkmate! You defeated the engine!':'Checkmate. Stockfish wins.'};
-  } else if(g.in_draw()||g.in_stalemate()||g.in_threefold_repetition()||g.insufficient_material()){
-    State.gameOver = true;
-    let r='draw';
-    if(g.in_stalemate()) r='stalemate';
-    else if(g.in_threefold_repetition()) r='threefold repetition';
-    else if(g.insufficient_material()) r='insufficient material';
-    State.lastResult = {kind:'draw', text:`Drawn by ${r}.`};
-  }
-}
-function engineMakeMove(){
-  if(State.gameOver) return;
-  const g = State.game;
-  if(g.turn()===State.playerColor) return;
-  const opts = State._engineConfig || {depth:10};
-  askEngineForMove(g.fen(), opts, (uci)=>{
-    if(!uci || uci==='(none)') return;
-    const from = uci.slice(0,2), to = uci.slice(2,4);
-    const promotion = uci.length>4 ? uci.slice(4,5) : undefined;
-    const m = g.move({from, to, promotion});
-    if(m){ State.gameMoveHistory.push(m.san); State.lastMove = {from:m.from, to:m.to}; checkEngineGameEnd(); }
-    render();
-  });
-}
-
-// =========================================================
-// LEADERBOARD + HISTORY
-// =========================================================
-function renderLeaderboard(){
-  const wrap = document.createElement('div');
-  wrap.appendChild(el(`<div style="margin-bottom:1.4rem"><div class="eyebrow">The Roll</div><h1>Club Leaderboard</h1><p class="italic" style="color:var(--ink-soft);max-width:65ch">Members ordered by current Elo rating. Win rated games to climb.</p></div>`));
-  const table = document.createElement('table'); table.className='leaderboard';
-  table.innerHTML = `<thead><tr><th>#</th><th>Name</th><th>Elo</th><th>W</th><th>L</th><th>D</th><th>Joined</th></tr></thead>`;
-  const tbody = document.createElement('tbody');
-  Object.values(State.members).sort((a,b)=>b.rating-a.rating).forEach((m,i)=>{
-    const tr = document.createElement('tr');
-    if(m.id===State.user.id) tr.className='you';
-    tr.innerHTML = `<td class="rank">${i+1}</td><td>${escapeHtml(m.name)}${m.id===State.user.id?' <span class="badge">you</span>':''}</td><td class="rating">${m.rating}</td><td>${m.wins||0}</td><td>${m.losses||0}</td><td>${m.draws||0}</td><td class="small">${formatDate(m.joined)}</td>`;
-    tbody.appendChild(tr);
-  });
-  table.appendChild(tbody);
-  wrap.appendChild(table);
-  return wrap;
-}
-
-function renderHistory(){
-  const wrap = document.createElement('div');
-  wrap.appendChild(el(`<div style="margin-bottom:1.4rem"><div class="eyebrow">The Annals</div><h1>Recorded Games</h1><p class="italic" style="color:var(--ink-soft);max-width:65ch">Every rated and friendly game between members is preserved here for posterity.</p></div>`));
-  const list = document.createElement('div'); list.className='item-list';
-  list.innerHTML = '<div class="card"><span class="spinner"></span> Loading the annals…</div>';
-  loadGameRecords().then(records=>{
-    list.innerHTML = '';
-    if(records.length===0){
-      list.innerHTML = `<div class="card"><p class="italic" style="color:var(--ink-soft)">No games yet. Be the first to take a seat at the board.</p></div>`;
+    <div style="text-align:left;margin-top:1rem"><label for="email">School email</label><div style="display:flex;gap:.5rem"><input id="email" type="email" autocomplete="email" required placeholder="you@school.edu" /><button class="btn gold" id="emailBtn" type="button">${action}</button></div></div>`;
+  const submit = async () => {
+    const email = card.querySelector('#email').value.trim();
+    if (!email) {
+      card.querySelector('#email').focus();
       return;
     }
-    records.forEach(r=>{
-      const item = el(`<div class="list-item">
-        <div class="meta"><h4>${escapeHtml(r.white.name)} vs ${escapeHtml(r.black.name)}</h4><div class="small">${r.moves.length} moves · ${r.reason} · <span class="italic">${formatDate(r.ts)}</span></div></div>
-        <div style="display:flex;gap:.4rem;align-items:center"><span class="tag ${r.type==='rated'?'gold':''}">${r.type}</span><span class="mono" style="font-weight:600">${r.result}</span></div>
-      </div>`);
-      item.onclick = ()=>showGameModal(r);
-      list.appendChild(item);
-    });
+    const button = card.querySelector('#emailBtn');
+    button.disabled = true;
+    try {
+      if (State.completingEmailLink) {
+        const user = await completeEmailSignInLink(email);
+        const name = user.email ? user.email.split('@')[0] : 'Club member';
+        State.user = { id: user.uid, name, rating: 1200, wins: 0, losses: 0, draws: 0 };
+        await upsertMyProfile(name);
+        State.sharedClubs = await listMyClubs();
+        State.completingEmailLink = false;
+        State.authError = null;
+        render();
+      } else {
+        await sendEmailSignInLink(email);
+        button.textContent = 'Check your email';
+      }
+    } catch (error) {
+      State.authError = error.message;
+      render();
+    }
+  };
+  card.querySelector('#emailBtn').onclick = submit;
+  card.querySelector('#email').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submit();
   });
-  wrap.appendChild(list);
-  return wrap;
-}
-function showGameModal(r){
-  const back = el(`<div class="modal-backdrop"></div>`);
-  const m = el(`<div class="modal">
-    <button class="modal-close">×</button>
-    <div class="eyebrow">${r.type}</div>
-    <h2>${escapeHtml(r.white.name)} vs ${escapeHtml(r.black.name)}</h2>
-    <p class="small">${formatDate(r.ts)} · ${r.reason} · <span class="mono"><strong>${r.result}</strong></span></p>
-    ${r.type==='rated'?`<p class="small">Elo: ${r.white.name} ${r.white.ratingBefore}→${r.white.ratingAfter} · ${r.black.name} ${r.black.ratingBefore}→${r.black.ratingAfter}</p>`:''}
-    <hr class="fancy"/>
-    <div class="mono" style="background:var(--paper-dim);padding:.8rem;font-size:.9rem;line-height:1.7;max-height:300px;overflow-y:auto">${formatPGN(r.moves)}</div>
-  </div>`);
-  m.querySelector('.modal-close').onclick = ()=>back.remove();
-  back.onclick = (e)=>{ if(e.target===back) back.remove(); };
-  back.appendChild(m);
-  document.getElementById('app').appendChild(back);
-}
-function formatPGN(moves){
-  let s='';
-  for(let i=0;i<moves.length;i+=2) s += `${i/2+1}. ${moves[i]||''} ${moves[i+1]||''} `;
-  return s.trim() || '<em>(no moves)</em>';
+  stage.appendChild(card);
+  return stage;
 }
 
 // =========================================================
-// BOARD BUILDER (renders SVG pieces)
+// HALL (Zero-Scroll Bento Dashboard)
 // =========================================================
-function buildBoard(game, options){
-  const {flip, lastMove, interactive, onMove} = options;
-  const board = document.createElement('div'); board.className='board';
-  const ranks = flip ? [1,2,3,4,5,6,7,8] : [8,7,6,5,4,3,2,1];
-  const files = flip ? ['h','g','f','e','d','c','b','a'] : ['a','b','c','d','e','f','g','h'];
+function dailyPuzzle() {
+  const dayIndex = Math.floor(Date.now() / 86400000);
+  return PUZZLES[dayIndex % PUZZLES.length] || PUZZLES[0];
+}
+
+function renderHome() {
+  const grid = document.createElement('div');
+  grid.className = 'hall-grid';
+  const sum = trainingSummary();
+  const daily = dailyPuzzle();
+  const quizMeta = State.training.quizzes || {};
+
+  // Card 1: Student Welcome + Stats
+  const welcome = el(`<section class="bento-card bento-welcome">
+    <div>
+      <h1>Welcome, <em>${escapeHtml(State.user.name)}</em></h1>
+      <p style="margin-top:.3rem">Edugates Study Hall — every opening line, tactic, strategic plan, and Stockfish 19 insight fits at a glance.</p>
+    </div>
+    <div class="welcome-stats">
+      <div class="stat-box"><strong class="tabular-nums">${State.user.rating}</strong><span>Club Elo</span></div>
+      <div class="stat-box"><strong class="tabular-nums">${State.training.streak || 0}</strong><span>Puzzle Streak</span></div>
+      <div class="stat-box"><strong class="tabular-nums">${sum.solvedPuzzles}/${PUZZLES.length}</strong><span>Solved</span></div>
+    </div>
+    <div style="display:flex;gap:.45rem;flex-wrap:wrap">
+      <button type="button" class="btn gold sm" id="hallCoach">${iconSvg('coach', 14)} Open Coach</button>
+      <button type="button" class="btn ghost sm" style="color:var(--cream);border-color:var(--gold)" id="hallArena">${iconSvg('duel', 14)} Engine Duel</button>
+      <button type="button" class="btn ghost sm" style="color:var(--cream);border-color:var(--gold)" id="hallPlay">${iconSvg('play', 14)} Play Game</button>
+    </div>
+  </section>`);
+  welcome.querySelector('#hallCoach').onclick = () => navigate('coach');
+  welcome.querySelector('#hallArena').onclick = () => startEngineArenaMatch();
+  welcome.querySelector('#hallPlay').onclick = () => navigate('play-menu');
+  grid.appendChild(welcome);
+
+  // Card 2: Stockfish 19 Coach Launcher
+  const coachCard = el(`<section class="bento-card coach-launch">
+    <div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:.4rem">
+        <h3>${iconSvg('coach', 16)} Stockfish 19 Coach</h3>
+        <span class="tag green">MultiPV 3</span>
+      </div>
+      <p class="small" style="margin-top:.25rem">Live evaluation bar, suggested candidate arrows on the board, SAN coaching tags, and blunder protection.</p>
+    </div>
+    <div style="display:flex;gap:.35rem;flex-wrap:wrap">
+      <button type="button" class="btn sm" id="goGuided">Guided Sparring</button>
+      <button type="button" class="btn ghost sm" id="goSandbox">FEN Lab</button>
+      <button type="button" class="btn ghost sm" id="goBlunder">Blunder Check</button>
+    </div>
+  </section>`);
+  coachCard.querySelector('#goGuided').onclick = () => {
+    State.coachMode = 'guided';
+    navigate('coach');
+  };
+  coachCard.querySelector('#goSandbox').onclick = () => {
+    State.coachMode = 'sandbox';
+    navigate('coach');
+  };
+  coachCard.querySelector('#goBlunder').onclick = () => {
+    State.coachMode = 'blunder-check';
+    navigate('coach');
+  };
+  grid.appendChild(coachCard);
+
+  // Card 3: Daily Puzzle + Quiz Sprint Launcher
+  const dailyCard = el(`<section class="bento-card quiz-launch">
+    <div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:.4rem">
+        <h3>${iconSvg('spark', 16)} Daily Training</h3>
+        <span class="tag gold tabular-nums">${daily.rating} Elo</span>
+      </div>
+      <p class="small" style="margin-top:.2rem"><strong>${escapeHtml(daily.theme)}</strong> (${escapeHtml(daily.category)} · ${escapeHtml(daily.sideToMove)})</p>
+      <p class="small">Quiz Sprints completed: <strong class="tabular-nums">${quizMeta.completedSprints || 0}</strong> · Best accuracy: <strong class="tabular-nums">${quizMeta.bestAccuracy || 0}%</strong></p>
+    </div>
+    <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+      <button type="button" class="btn gold sm" id="solveDaily">${iconSvg('puzzles', 14)} Solve Daily</button>
+      <button type="button" class="btn ghost sm" id="startSprint">${iconSvg('trophy', 14)} 10-Quiz Sprint</button>
+    </div>
+  </section>`);
+  dailyCard.querySelector('#solveDaily').onclick = () => openPuzzleInSolver(daily);
+  dailyCard.querySelector('#startSprint').onclick = () => {
+    State.puzzleView = 'quiz';
+    State.quizCategory = 'All';
+    State.quizSession = createQuizSession(QUIZZES, { category: 'All', count: 10, offset: quizMeta.completedSprints || 0 });
+    navigate('puzzles');
+  };
+  grid.appendChild(dailyCard);
+
+  // Card 4: Complete Library Tracks
+  const tracks = el(`<section class="bento-card library-tracks">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3>Study &amp; Training Library</h3>
+      <span class="small tabular-nums">70 Studies · 310 Puzzles · 80 Quizzes</span>
+    </div>
+    <div class="track-strip">
+      <button type="button" class="track-tile" id="trkOpenings">
+        <div class="track-top"><span>${iconSvg('openings', 15)} Openings &amp; Traps</span><span class="track-count tabular-nums">${sum.completedOpenings + sum.completedTraps}/${OPENINGS.length + TRAPS.length}</span></div>
+        <small>${OPENINGS.length} opening repertoires &amp; ${TRAPS.length} tactical traps with interactive drill mode.</small>
+      </button>
+      <button type="button" class="track-tile" id="trkPuzzles">
+        <div class="track-top"><span>${iconSvg('puzzles', 15)} Puzzle Vault &amp; Quizzes</span><span class="track-count tabular-nums">${sum.solvedPuzzles}/${PUZZLES.length}</span></div>
+        <small>Openings (55), Tactics (90), Strategy (55), Middlegame (55), Endgame (55) + 80 Quizzes.</small>
+      </button>
+      <button type="button" class="track-tile" id="trkMastery">
+        <div class="track-top"><span>${iconSvg('strategy', 15)} Strategy &amp; Endgames</span><span class="track-count tabular-nums">${sum.completedStrategy + sum.completedEndgames}/${MIDDLEGAME_LESSONS.length + ENDGAMES.length}</span></div>
+        <small>${MIDDLEGAME_LESSONS.length} middlegame masterclasses &amp; ${ENDGAMES.length} playable endgames.</small>
+      </button>
+    </div>
+  </section>`);
+  tracks.querySelector('#trkOpenings').onclick = () => navigate('openings');
+  tracks.querySelector('#trkPuzzles').onclick = () => {
+    State.puzzleView = 'catalog';
+    navigate('puzzles');
+  };
+  tracks.querySelector('#trkMastery').onclick = () => navigate('strategy');
+  grid.appendChild(tracks);
+
+  return grid;
+}
+
+// =========================================================
+// BOARD STAGE & CHESS INTERACTION
+// =========================================================
+function buildBoardStage(game, {
+  flip = false,
+  lastMove = null,
+  interactive = false,
+  onMove = null,
+  showEvalBar = false,
+  showArrows = false,
+} = {}) {
+  const frame = document.createElement('div');
+  frame.className = 'board-frame';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'board-wrap';
+  const board = buildBoard(game, { flip, lastMove, interactive, onMove });
+  wrap.appendChild(board);
+
+  let arrowsSvg = null;
+  if (showArrows) {
+    arrowsSvg = createBoardArrowsSvg();
+    wrap.appendChild(arrowsSvg);
+  }
+
+  let evalBar = null;
+  if (showEvalBar) {
+    evalBar = createEvalBar();
+    frame.appendChild(evalBar);
+  }
+  frame.appendChild(wrap);
+  return { frame, evalBar, arrowsSvg };
+}
+
+function buildBoard(game, options) {
+  const { flip, lastMove, interactive, onMove } = options;
+  const board = document.createElement('div');
+  board.className = 'board';
+  const ranks = flip ? [1, 2, 3, 4, 5, 6, 7, 8] : [8, 7, 6, 5, 4, 3, 2, 1];
+  const files = flip ? ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'] : ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
   const checkSq = game.in_check() ? findKingSquare(game, game.turn()) : null;
-  for(const r of ranks){
-    for(const f of files){
-      const sq = f+r;
-      const fIdx = 'abcdefgh'.indexOf(f), rIdx = r-1;
+
+  for (const r of ranks) {
+    for (const f of files) {
+      const sq = f + r;
+      const fIdx = 'abcdefgh'.indexOf(f);
+      const rIdx = r - 1;
       const isLightSq = (fIdx + rIdx) % 2 === 1;
       const cell = document.createElement('div');
-      cell.className = 'square ' + (isLightSq?'light':'dark');
+      cell.className = 'square ' + (isLightSq ? 'light' : 'dark');
       cell.dataset.square = sq;
-      if(r===1 && (flip?true:true)){
-        const c = document.createElement('span'); c.className='coord file'; c.textContent=f; cell.appendChild(c);
+
+      if ((flip && r === 8) || (!flip && r === 1)) {
+        const c = document.createElement('span');
+        c.className = 'coord file';
+        c.textContent = f;
+        cell.appendChild(c);
       }
-      if((flip && f==='h') || (!flip && f==='a')){
-        const c = document.createElement('span'); c.className='coord rank'; c.textContent=r; cell.appendChild(c);
+      if ((flip && f === 'h') || (!flip && f === 'a')) {
+        const c = document.createElement('span');
+        c.className = 'coord rank';
+        c.textContent = r;
+        cell.appendChild(c);
       }
-      if(lastMove && (lastMove.from===sq || lastMove.to===sq)) cell.classList.add('last-move');
-      if(State.selectedSquare===sq) cell.classList.add('selected');
-      if(State.legalDests.includes(sq)){
-        if(game.get(sq)) cell.classList.add('legal-capture');
+
+      if (lastMove && (lastMove.from === sq || lastMove.to === sq)) cell.classList.add('last-move');
+      if (State.selectedSquare === sq) cell.classList.add('selected');
+      if (State.legalDests.includes(sq)) {
+        if (game.get(sq)) cell.classList.add('legal-capture');
         else cell.classList.add('legal');
       }
-      if(checkSq===sq) cell.classList.add('check');
+      if (checkSq === sq) cell.classList.add('check');
+
       const piece = game.get(sq);
-      if(piece){
-        const code = piece.color==='w' ? piece.type.toUpperCase() : piece.type.toLowerCase();
+      if (piece) {
+        const code = piece.color === 'w' ? piece.type.toUpperCase() : piece.type.toLowerCase();
         const pieceEl = document.createElement('span');
-        pieceEl.className = `piece ${piece.color==='w'?'white':'black'}`;
+        pieceEl.className = `piece ${piece.color === 'w' ? 'white' : 'black'}`;
         pieceEl.innerHTML = PIECE_SVG[code] || '';
         cell.appendChild(pieceEl);
       }
-      if(interactive){ cell.onclick = ()=>handleSquareClick(sq, game, onMove); }
+
+      if (interactive) {
+        cell.onclick = () => handleSquareClick(sq, game, onMove);
+      }
       board.appendChild(cell);
     }
   }
   return board;
 }
 
-function handleSquareClick(sq, game, onMove){
-  if(State.promotionPending) return;
+function handleSquareClick(sq, game, onMove) {
+  if (State.promotionPending) return;
   const piece = game.get(sq);
-  if(State.selectedSquare && State.legalDests.includes(sq)){
+  if (State.selectedSquare && State.legalDests.includes(sq)) {
     const movingPiece = game.get(State.selectedSquare);
-    if(movingPiece && movingPiece.type==='p' && (sq[1]==='8'||sq[1]==='1')){
-      State.promotionPending = {from:State.selectedSquare, to:sq, color:movingPiece.color, onComplete:onMove};
-      State.selectedSquare=null; State.legalDests=[];
-      render();
+    if (movingPiece && movingPiece.type === 'p' && (sq[1] === '8' || sq[1] === '1')) {
+      State.promotionPending = {
+        from: State.selectedSquare,
+        to: sq,
+        color: movingPiece.color,
+        game,
+        onComplete: onMove,
+      };
+      State.selectedSquare = null;
+      State.legalDests = [];
       showPromotionPicker();
       return;
     }
-    const result = game.move({from:State.selectedSquare, to:sq});
-    State.selectedSquare = null; State.legalDests = [];
-    if(result){ State.lastMove = {from:result.from, to:result.to}; onMove(result); }
-    else render();
+    const result = game.move({ from: State.selectedSquare, to: sq });
+    State.selectedSquare = null;
+    State.legalDests = [];
+    if (result) {
+      State.lastMove = { from: result.from, to: result.to };
+      onMove(result);
+    } else {
+      render();
+    }
     return;
   }
-  if(piece && piece.color===game.turn()){
+  if (piece && piece.color === game.turn()) {
     State.selectedSquare = sq;
-    State.legalDests = game.moves({square:sq, verbose:true}).map(m=>m.to);
+    State.legalDests = game.moves({ square: sq, verbose: true }).map((m) => m.to);
     render();
-  } else { State.selectedSquare = null; State.legalDests = []; render(); }
+  } else {
+    State.selectedSquare = null;
+    State.legalDests = [];
+    render();
+  }
 }
 
-function showPromotionPicker(){
-  const p = State.promotionPending; if(!p) return;
-  const overlay = document.createElement('div'); overlay.className='promo-picker';
-  const card = document.createElement('div'); card.className='promo-card';
-  ['q','r','b','n'].forEach(t=>{
-    const code = p.color==='w' ? t.toUpperCase() : t.toLowerCase();
+function showPromotionPicker() {
+  const p = State.promotionPending;
+  if (!p) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'promo-picker';
+  const card = document.createElement('div');
+  card.className = 'promo-card';
+  ['q', 'r', 'b', 'n'].forEach((t) => {
+    const code = p.color === 'w' ? t.toUpperCase() : t.toLowerCase();
     const piece = el(`<div class="promo-piece" data-t="${t}">${PIECE_SVG[code]}</div>`);
-    piece.onclick = ()=>{
-      const result = State.game.move({from:p.from, to:p.to, promotion:t});
+    piece.onclick = () => {
+      const targetGame = p.game || State.game;
+      const result = targetGame.move({ from: p.from, to: p.to, promotion: t });
       State.promotionPending = null;
       overlay.remove();
-      if(result){ State.lastMove = {from:result.from, to:result.to}; if(p.onComplete) p.onComplete(result); else render(); }
-      else render();
+      if (result) {
+        State.lastMove = { from: result.from, to: result.to };
+        if (p.onComplete) p.onComplete(result);
+        else render();
+      } else {
+        render();
+      }
     };
     card.appendChild(piece);
   });
@@ -1862,70 +1215,2779 @@ function showPromotionPicker(){
   document.getElementById('app').appendChild(overlay);
 }
 
-function lastMoveSquares(game){
-  const h = game.history({verbose:true});
-  if(h.length===0) return null;
-  const m = h[h.length-1];
-  return {from:m.from, to:m.to};
+function lastMoveSquares(game) {
+  const h = game.history({ verbose: true });
+  if (h.length === 0) return null;
+  const m = h[h.length - 1];
+  return { from: m.from, to: m.to };
 }
-function findKingSquare(game, color){
+
+function findKingSquare(game, color) {
   const board = game.board();
-  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
-    const p = board[r][c];
-    if(p && p.type==='k' && p.color===color) return 'abcdefgh'[c] + (8-r);
+  for (let r = 0; r < 8; r += 1) {
+    for (let c = 0; c < 8; c += 1) {
+      const p = board[r][c];
+      if (p && p.type === 'k' && p.color === color) return 'abcdefgh'[c] + (8 - r);
+    }
   }
   return null;
 }
-function buildMovesPanel(moves){
-  const panel = document.createElement('div'); panel.className='moves-panel';
+
+function buildMovesPanel(moves) {
+  const panel = document.createElement('div');
+  panel.className = 'moves-panel';
   panel.innerHTML = '<h4>Moves</h4>';
-  const ml = document.createElement('div'); ml.className='moves-list';
-  if(moves.length===0){
+  const ml = document.createElement('div');
+  ml.className = 'moves-list tabular-nums';
+  if (moves.length === 0) {
     ml.appendChild(el(`<div class="small italic" style="grid-column:span 3;color:var(--ink-soft)">No moves yet.</div>`));
   } else {
-    for(let i=0;i<moves.length;i+=2){
-      const num = i/2+1;
-      ml.appendChild(el(`<div class="num">${num}.</div>`));
-      ml.appendChild(el(`<div class="move">${moves[i]||''}</div>`));
-      ml.appendChild(el(`<div class="move">${moves[i+1]||''}</div>`));
+    for (let i = 0; i < moves.length; i += 2) {
+      ml.appendChild(el(`<div class="num">${i / 2 + 1}.</div>`));
+      ml.appendChild(el(`<div class="move">${moves[i] || ''}</div>`));
+      ml.appendChild(el(`<div class="move">${moves[i + 1] || ''}</div>`));
     }
   }
   panel.appendChild(ml);
-  setTimeout(()=>{ panel.scrollTop = panel.scrollHeight; },0);
+  setTimeout(() => {
+    panel.scrollTop = panel.scrollHeight;
+  }, 0);
   return panel;
 }
 
 // =========================================================
-// UTIL
+// STOCKFISH 19 LIVE COACH WORKSPACE
 // =========================================================
-function el(html){
+function ensureCoachGame() {
+  if (!State.coachGame) {
+    State.coachGame = new Chess();
+    State.coachHistory = [];
+    State.coachLastGrade = null;
+    State.coachPendingBlunder = null;
+    State.coachFenInput = State.coachGame.fen();
+  }
+}
+
+function startNewCoachSession(startFen = null) {
+  stockfishClient.stop();
+  State.coachGame = startFen ? new Chess(startFen) : new Chess();
+  State.coachHistory = [];
+  State.coachLastGrade = null;
+  State.coachPendingBlunder = null;
+  State.coachThinking = false;
+  State.selectedSquare = null;
+  State.legalDests = [];
+  State.lastMove = null;
+  State.coachFenError = null;
+  State.coachFenInput = State.coachGame.fen();
+  if (State.coachMode !== 'sandbox' && State.coachPlayerColor === 'b' && State.coachGame.turn() === 'w') {
+    setTimeout(() => coachEngineReply(), 200);
+  }
+  render();
+}
+
+async function coachEngineReply() {
+  const g = State.coachGame;
+  if (!g || g.game_over() || State.coachPendingBlunder) return;
+  if (State.coachMode === 'sandbox') return;
+  if (g.turn() === State.coachPlayerColor) return;
+
+  State.coachThinking = true;
+  render();
+  const uci = await stockfishClient.playMove(g.fen(), State.coachEngineLevel);
+  State.coachThinking = false;
+  if (!uci || uci === '(none)' || State.page !== 'coach' || State.coachGame !== g) {
+    render();
+    return;
+  }
+  const m = g.move({
+    from: uci.slice(0, 2),
+    to: uci.slice(2, 4),
+    promotion: uci.length > 4 ? uci.slice(4, 5) : undefined,
+  });
+  if (m) {
+    State.coachHistory.push(m.san);
+    State.lastMove = { from: m.from, to: m.to };
+  }
+  render();
+}
+
+async function handleCoachHumanMove(moveObj) {
+  const g = State.coachGame;
+  if (!g) return;
+  const playedUci = moveObj.from + moveObj.to + (moveObj.promotion || '');
+  const prevSnap = State.sfSnapshot?.fen && State.sfSnapshot.fen !== g.fen() ? State.sfSnapshot : null;
+  const topLine = prevSnap?.lines?.[0] || null;
+  const afterFen = g.fen();
+
+  State.coachHistory.push(moveObj.san);
+  State.coachFenInput = afterFen;
+  State.coachPendingBlunder = null;
+
+  render();
+
+  // Grade played move via Stockfish 19 post-move analysis
+  const nextSnap = await triggerLiveAnalysis(afterFen, { depth: 12, multiPv: 3 });
+  if (prevSnap && topLine && nextSnap && State.page === 'coach') {
+    const grade = gradePlayedMove({
+      prevWhiteCp: prevSnap.whiteCp,
+      prevWhiteMate: prevSnap.whiteMate,
+      nextWhiteCp: nextSnap.whiteCp,
+      nextWhiteMate: nextSnap.whiteMate,
+      moverColor: moveObj.color,
+      playedUci,
+      bestUci: topLine.uci,
+      bestSan: topLine.bestMoveSan,
+    });
+    State.coachLastGrade = grade;
+
+    if (
+      State.coachMode === 'blunder-check' &&
+      !g.game_over() &&
+      ['mistake', 'blunder'].includes(grade.grade)
+    ) {
+      State.coachPendingBlunder = grade;
+      render();
+      return;
+    }
+    applyStockfishDom(nextSnap, grade);
+  }
+
+  if (!g.game_over() && State.coachMode !== 'sandbox' && g.turn() !== State.coachPlayerColor) {
+    coachEngineReply();
+  }
+}
+
+function renderCoach() {
+  ensureCoachGame();
+  const g = State.coachGame;
+  const wrap = document.createElement('div');
+  wrap.className = 'view-shell';
+
+  // Top Header Bar
+  const bar = el(`<div class="view-bar">
+    <div style="display:flex;align-items:center;gap:.55rem;flex-wrap:wrap">
+      <h1>${iconSvg('coach', 18)} Stockfish 19 Coach</h1>
+      <div class="pill-switch" id="coachModes">
+        <button type="button" data-mode="guided" class="${State.coachMode === 'guided' ? 'active' : ''}">Guided Sparring</button>
+        <button type="button" data-mode="sandbox" class="${State.coachMode === 'sandbox' ? 'active' : ''}">FEN Sandbox</button>
+        <button type="button" data-mode="blunder-check" class="${State.coachMode === 'blunder-check' ? 'active' : ''}">Blunder Check</button>
+      </div>
+    </div>
+    <div class="view-bar-meta">
+      <select id="coachLvl" aria-label="Coach sparring strength" style="width:auto;padding:.24rem .5rem;font-size:.84rem">
+        ${[1, 2, 3, 4, 5]
+          .map((n) => {
+            const cfg = resolveEngineLevelConfig(n);
+            return `<option value="${n}" ${State.coachEngineLevel === n ? 'selected' : ''}>Lvl ${n}: ${cfg.label}</option>`;
+          })
+          .join('')}
+      </select>
+      <div class="pill-switch" id="coachSide">
+        <button type="button" data-c="w" class="${State.coachPlayerColor === 'w' ? 'active' : ''}">White</button>
+        <button type="button" data-c="b" class="${State.coachPlayerColor === 'b' ? 'active' : ''}">Black</button>
+      </div>
+      <button type="button" class="btn gold sm" id="coachNew">${iconSvg('refresh', 14)} New</button>
+    </div>
+  </div>`);
+
+  bar.querySelectorAll('#coachModes button').forEach((b) => {
+    b.onclick = () => {
+      State.coachMode = b.dataset.mode;
+      if (State.coachMode !== 'sandbox' && State.coachGame.game_over()) {
+        startNewCoachSession();
+      } else {
+        State.coachPendingBlunder = null;
+        render();
+      }
+    };
+  });
+  bar.querySelector('#coachLvl').onchange = (e) => {
+    State.coachEngineLevel = Number(e.target.value);
+  };
+  bar.querySelectorAll('#coachSide button').forEach((b) => {
+    b.onclick = () => {
+      State.coachPlayerColor = b.dataset.c;
+      State.flipBoard = State.coachPlayerColor === 'b';
+      startNewCoachSession();
+    };
+  });
+  bar.querySelector('#coachNew').onclick = () => startNewCoachSession();
+  wrap.appendChild(bar);
+
+  const layout = document.createElement('div');
+  layout.className = `play-layout${State.boardMaximized ? ' board-maximized' : ''}`;
+
+  const canMoveNow =
+    !g.game_over() &&
+    !State.promotionPending &&
+    !State.coachThinking &&
+    !State.coachPendingBlunder &&
+    (State.coachMode === 'sandbox' || g.turn() === State.coachPlayerColor);
+
+  const boardCol = document.createElement('div');
+  boardCol.className = 'board-column';
+  const stage = buildBoardStage(g, {
+    flip: State.flipBoard,
+    lastMove: State.lastMove,
+    interactive: canMoveNow,
+    onMove: (m) => handleCoachHumanMove(m),
+    showEvalBar: true,
+    showArrows: true,
+  });
+  State.dom.evalBar = stage.evalBar;
+  State.dom.arrowsSvg = stage.arrowsSvg;
+  boardCol.appendChild(stage.frame);
+
+  const ctrl = document.createElement('div');
+  ctrl.className = 'board-controls';
+  const undoBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('prev', 14)} Undo</button>`);
+  undoBtn.disabled = State.coachHistory.length === 0 || State.coachThinking;
+  undoBtn.onclick = () => {
+    g.undo();
+    State.coachHistory.pop();
+    if (State.coachMode !== 'sandbox' && !State.coachPendingBlunder && g.turn() !== State.coachPlayerColor && State.coachHistory.length > 0) {
+      g.undo();
+      State.coachHistory.pop();
+    }
+    State.coachPendingBlunder = null;
+    State.coachLastGrade = null;
+    State.coachFenInput = g.fen();
+    State.lastMove = lastMoveSquares(g);
+    render();
+  };
+  const flipBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 14)} Flip</button>`);
+  flipBtn.onclick = () => {
+    State.flipBoard = !State.flipBoard;
+    render();
+  };
+  ctrl.appendChild(undoBtn);
+  ctrl.appendChild(flipBtn);
+  ctrl.appendChild(makeMaxBoardButton());
+  boardCol.appendChild(ctrl);
+  layout.appendChild(boardCol);
+
+  // Sidebar: Status + FEN Sandbox (in sandbox mode) + Live Stockfish Panel + Moves
+  const side = document.createElement('div');
+  side.className = 'play-sidebar';
+
+  if (State.coachPendingBlunder) {
+    const alert = el(`<div class="puzzle-feedback wrong">
+      <div><strong>${State.coachPendingBlunder.label} (${State.coachPendingBlunder.symbol})</strong> — ${escapeHtml(State.coachPendingBlunder.summary)}</div>
+      <div style="display:flex;gap:.4rem;margin-top:.4rem">
+        <button type="button" class="btn sm" id="retryBlunder">${iconSvg('refresh', 13)} Retry Move</button>
+        <button type="button" class="btn ghost sm" id="playAnyway">Play On Anyway</button>
+      </div>
+    </div>`);
+    alert.querySelector('#retryBlunder').onclick = () => {
+      g.undo();
+      State.coachHistory.pop();
+      State.coachPendingBlunder = null;
+      State.coachLastGrade = null;
+      State.lastMove = lastMoveSquares(g);
+      render();
+    };
+    alert.querySelector('#playAnyway').onclick = () => {
+      State.coachPendingBlunder = null;
+      coachEngineReply();
+    };
+    side.appendChild(alert);
+  } else if (g.game_over()) {
+    const outcome = g.in_checkmate()
+      ? `Checkmate! ${g.turn() === 'w' ? 'Black' : 'White'} wins.`
+      : 'Draw reached (stalemate / insufficient material / repetition).';
+    side.appendChild(el(`<div class="status-banner">${outcome}</div>`));
+  } else if (State.coachThinking) {
+    side.appendChild(el(`<div class="status-banner">Stockfish 19 is replying... <span class="spinner"></span></div>`));
+  } else {
+    const modeNote =
+      State.coachMode === 'sandbox'
+        ? `${g.turn() === 'w' ? 'White' : 'Black'} to move — click any Stockfish chip to step forward`
+        : `${g.turn() === State.coachPlayerColor ? 'Your turn' : 'Engine turn'} — live MultiPV 3 & move grading active`;
+    side.appendChild(el(`<div class="status-banner">${modeNote}</div>`));
+  }
+
+  if (State.coachMode === 'sandbox') {
+    const fenBox = document.createElement('div');
+    fenBox.className = 'card';
+    fenBox.style.padding = '.55rem .7rem';
+    fenBox.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:.4rem;margin-bottom:.35rem">
+        <strong style="font-size:.9rem">Position Sandbox / FEN Lab</strong>
+        <select id="presetSel" style="width:auto;padding:.2rem .4rem;font-size:.82rem">
+          <option value="">Load Study Preset...</option>
+          ${SANDBOX_PRESETS.map((p, idx) => `<option value="${idx}">${escapeHtml(p.label)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="fen-bar">
+        <input id="fenIn" value="${escapeHtml(g.fen())}" aria-label="FEN string" />
+        <button type="button" class="btn sm" id="loadFen">Load FEN</button>
+      </div>
+      ${State.coachFenError ? `<div class="small" style="color:var(--burgundy);margin-top:.25rem">${escapeHtml(State.coachFenError)}</div>` : ''}
+    `;
+    fenBox.querySelector('#presetSel').onchange = (e) => {
+      if (e.target.value === '') return;
+      const preset = SANDBOX_PRESETS[Number(e.target.value)];
+      if (preset) startNewCoachSession(preset.fen);
+    };
+    fenBox.querySelector('#loadFen').onclick = () => {
+      const candidate = fenBox.querySelector('#fenIn').value.trim();
+      if (!isStockfishSafeFen(candidate, Chess)) {
+        State.coachFenError = 'FEN is invalid or unsupported (must have both kings, legal pawn ranks, and opponent not already in check).';
+        render();
+        return;
+      }
+      startNewCoachSession(candidate);
+    };
+    side.appendChild(fenBox);
+  }
+
+  const sfPanel = createStockfishPanel({
+    title: 'Stockfish 19 MultiPV 3',
+    showArrows: State.showCoachArrows,
+    onToggleArrows: () => {
+      State.showCoachArrows = !State.showCoachArrows;
+      applyStockfishDom(State.sfSnapshot, State.coachLastGrade);
+    },
+    onApplyMove: (uci) => {
+      if (!canMoveNow || !uci || uci.length < 4) return;
+      const m = g.move({
+        from: uci.slice(0, 2),
+        to: uci.slice(2, 4),
+        promotion: uci.length > 4 ? uci.slice(4, 5) : 'q',
+      });
+      if (m) {
+        State.lastMove = { from: m.from, to: m.to };
+        handleCoachHumanMove(m);
+      }
+    },
+    onRetryMove: () => {
+      if (State.coachHistory.length === 0) return;
+      g.undo();
+      State.coachHistory.pop();
+      if (State.coachMode !== 'sandbox' && g.turn() !== State.coachPlayerColor && State.coachHistory.length > 0) {
+        g.undo();
+        State.coachHistory.pop();
+      }
+      State.coachPendingBlunder = null;
+      State.coachLastGrade = null;
+      State.lastMove = lastMoveSquares(g);
+      render();
+    },
+  });
+  State.dom.sfPanel = sfPanel;
+  side.appendChild(sfPanel);
+  side.appendChild(buildMovesPanel(State.coachHistory));
+
+  layout.appendChild(side);
+  wrap.appendChild(layout);
+
+  triggerLiveAnalysis(g.fen(), { depth: 14, multiPv: 3, grade: State.coachLastGrade });
+  return wrap;
+}
+
+// =========================================================
+// PUZZLES CATALOG (310), SOLVER & QUIZ SPRINT (80)
+// =========================================================
+function openPuzzleInSolver(puzzle) {
+  State.activePuzzle = puzzle;
+  State.puzzleView = 'solver';
+  State.page = 'puzzles';
+  State.puzzlePly = 0;
+  State.puzzleFeedback = null;
+  State.puzzleSolvedThisRun = false;
+  State.puzzleAutoReplying = false;
+  State.game = new Chess(puzzle.fen);
+  State.selectedSquare = null;
+  State.legalDests = [];
+  State.lastMove = null;
+  State.flipBoard = puzzle.sideToMove === 'Black';
+  render();
+}
+
+function getFilteredPuzzles() {
+  return filterPuzzles(PUZZLES, {
+    category: State.puzzleCategory,
+    difficulty: State.puzzleDifficulty,
+    query: State.puzzleQuery,
+    unsolvedOnly: State.puzzleUnsolvedOnly,
+    solvedSet: solvedPuzzleSet(),
+  });
+}
+
+function renderPuzzles() {
+  const wrap = document.createElement('div');
+  wrap.className = 'view-shell';
+
+  const solvedCount = solvedPuzzleSet().size;
+  const bar = el(`<div class="view-bar">
+    <div style="display:flex;align-items:center;gap:.55rem;flex-wrap:wrap">
+      <h1>${iconSvg('puzzles', 18)} Puzzles &amp; Quizzes</h1>
+      <div class="pill-switch" id="pzModeSwitch">
+        <button type="button" data-v="catalog" class="${State.puzzleView === 'catalog' ? 'active' : ''}">Catalog (${PUZZLES.length})</button>
+        <button type="button" data-v="solver" class="${State.puzzleView === 'solver' ? 'active' : ''}">Active Solver</button>
+        <button type="button" data-v="quiz" class="${State.puzzleView === 'quiz' ? 'active' : ''}">Quiz Sprint (${QUIZZES.length})</button>
+      </div>
+    </div>
+    <div class="view-bar-meta">
+      <span class="badge elo tabular-nums">${solvedCount}/${PUZZLES.length} Solved</span>
+      <span class="badge tabular-nums">Streak ${State.training.streak || 0}</span>
+    </div>
+  </div>`);
+
+  bar.querySelectorAll('#pzModeSwitch button').forEach((b) => {
+    b.onclick = () => {
+      stockfishClient.stop();
+      if (b.dataset.v === 'solver' && (!State.activePuzzle || !State.game)) {
+        openPuzzleInSolver(State.activePuzzle || PUZZLES[0]);
+        return;
+      }
+      State.puzzleView = b.dataset.v;
+      render();
+    };
+  });
+  wrap.appendChild(bar);
+
+  if (State.puzzleView === 'quiz') {
+    wrap.appendChild(renderQuizSprint());
+    return wrap;
+  }
+  if (State.puzzleView === 'solver') {
+    wrap.appendChild(renderPuzzleSolver());
+    return wrap;
+  }
+  wrap.appendChild(renderPuzzleCatalog());
+  return wrap;
+}
+
+function renderPuzzleCatalog() {
+  const box = document.createElement('div');
+  box.style.cssText = 'flex:1;min-height:0;display:flex;flex-direction:column;gap:.5rem;overflow:hidden';
+
+  const solved = solvedPuzzleSet();
+  const filtered = getFilteredPuzzles();
+  const paged = paginateItems(filtered, State.puzzlePage, 9);
+  State.puzzlePage = paged.page;
+
+  const filterBar = el(`<div class="filter-bar">
+    <div class="toggle-row" id="catTabs">
+      ${PUZZLE_CATEGORIES.map((cat) => {
+        const count = cat === 'All' ? PUZZLES.length : getPuzzlesByCategory(cat).length;
+        return `<button type="button" class="toggle-btn ${State.puzzleCategory === cat ? 'active' : ''}" data-cat="${cat}">${cat} <span class="tabular-nums">(${count})</span></button>`;
+      }).join('')}
+    </div>
+    <div style="display:flex;gap:.35rem;margin-left:auto;flex-wrap:wrap;align-items:center">
+      <input id="pzSearch" placeholder="Search theme..." value="${escapeHtml(State.puzzleQuery)}" />
+      <select id="pzDiff" aria-label="Filter difficulty">
+        ${['All', 'Easy', 'Medium', 'Advanced', 'Expert']
+          .map((d) => `<option value="${d}" ${State.puzzleDifficulty === d ? 'selected' : ''}>${d}</option>`)
+          .join('')}
+      </select>
+      <label style="display:inline-flex;align-items:center;gap:.25rem;margin:0;text-transform:none;font-size:.84rem;cursor:pointer">
+        <input type="checkbox" id="pzUnsolved" style="width:auto" ${State.puzzleUnsolvedOnly ? 'checked' : ''} /> Unsolved
+      </label>
+      <button type="button" class="btn gold sm" id="pzRandom">${iconSvg('spark', 13)} Random</button>
+    </div>
+  </div>`);
+
+  filterBar.querySelectorAll('#catTabs button').forEach((btn) => {
+    btn.onclick = () => {
+      State.puzzleCategory = btn.dataset.cat;
+      State.puzzlePage = 1;
+      render();
+    };
+  });
+  const searchEl = filterBar.querySelector('#pzSearch');
+  searchEl.oninput = (e) => {
+    State.puzzleQuery = e.target.value;
+    State.puzzlePage = 1;
+    render();
+    const fresh = document.getElementById('pzSearch');
+    if (fresh) {
+      fresh.focus();
+      fresh.setSelectionRange(fresh.value.length, fresh.value.length);
+    }
+  };
+  filterBar.querySelector('#pzDiff').onchange = (e) => {
+    State.puzzleDifficulty = e.target.value;
+    State.puzzlePage = 1;
+    render();
+  };
+  filterBar.querySelector('#pzUnsolved').onchange = (e) => {
+    State.puzzleUnsolvedOnly = e.target.checked;
+    State.puzzlePage = 1;
+    render();
+  };
+  filterBar.querySelector('#pzRandom').onclick = () => {
+    const pool = filtered.length ? filtered : PUZZLES;
+    const chosen = pool[Math.floor(Math.random() * pool.length)];
+    if (chosen) openPuzzleInSolver(chosen);
+  };
+  box.appendChild(filterBar);
+
+  const grid = document.createElement('div');
+  grid.className = 'puzzle-grid';
+  if (paged.items.length === 0) {
+    grid.innerHTML = `<div class="card" style="grid-column:1/-1"><p class="italic">No puzzles match those filters.</p></div>`;
+  } else {
+    paged.items.forEach((p) => {
+      const isSolved = solved.has(p.id);
+      const plies = Math.ceil((p.moves?.length || 1) / 2);
+      const tile = el(`<button type="button" class="puzzle-tile ${isSolved ? 'solved' : ''}">
+        <div class="puzzle-tile-top">
+          <span class="tag ${p.category === 'Tactics' ? 'burg' : p.category === 'Endgame' ? 'green' : 'gold'}">${escapeHtml(p.category)}</span>
+          <span class="mono tabular-nums" style="font-size:.74rem;color:var(--ink-soft)">${p.rating} · ${plies}m</span>
+        </div>
+        <h4>${escapeHtml(p.theme)}</h4>
+        <p>${escapeHtml(p.prompt)}</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto">
+          <span class="small">${escapeHtml(p.difficulty)} · ${escapeHtml(p.sideToMove)}</span>
+          ${isSolved ? '<span class="solved-badge">Solved</span>' : '<span class="small" style="color:var(--gold)">Solve →</span>'}
+        </div>
+      </button>`);
+      tile.onclick = () => openPuzzleInSolver(p);
+      grid.appendChild(tile);
+    });
+  }
+  box.appendChild(grid);
+
+  const pager = el(`<div class="pager-bar">
+    <span class="small tabular-nums">Showing ${paged.totalItems === 0 ? 0 : paged.startIndex + 1}–${paged.endIndex} of ${paged.totalItems} puzzles</span>
+    <div style="display:flex;gap:.35rem;align-items:center">
+      <button type="button" class="btn ghost sm" id="pgPrev" ${paged.page <= 1 ? 'disabled' : ''}>${iconSvg('prev', 13)} Prev</button>
+      <span class="mono tabular-nums" style="font-size:.8rem">Page ${paged.page}/${paged.totalPages}</span>
+      <button type="button" class="btn ghost sm" id="pgNext" ${paged.page >= paged.totalPages ? 'disabled' : ''}>Next ${iconSvg('next', 13)}</button>
+    </div>
+  </div>`);
+  pager.querySelector('#pgPrev').onclick = () => {
+    State.puzzlePage = Math.max(1, paged.page - 1);
+    render();
+  };
+  pager.querySelector('#pgNext').onclick = () => {
+    State.puzzlePage = Math.min(paged.totalPages, paged.page + 1);
+    render();
+  };
+  box.appendChild(pager);
+
+  return box;
+}
+
+function renderPuzzleSolver() {
+  const ctx = State.activePuzzle || PUZZLES[0];
+  if (!State.game || State.activePuzzle?.id !== ctx.id) {
+    State.game = new Chess(ctx.fen);
+    State.puzzlePly = 0;
+    State.puzzleFeedback = null;
+    State.flipBoard = ctx.sideToMove === 'Black';
+  }
+  const g = State.game;
+  const totalPlies = ctx.moves.length;
+  const solvedNow = State.puzzlePly >= totalPlies;
+
+  const layout = document.createElement('div');
+  layout.className = `play-layout${State.boardMaximized ? ' board-maximized' : ''}`;
+
+  const boardCol = document.createElement('div');
+  boardCol.className = 'board-column';
+  const onPuzzleMove = (playedMove) => {
+    g.undo();
+    const preFen = g.fen();
+    const res = evaluatePuzzleMove({
+      fen: preFen,
+      solutionMoves: ctx.moves,
+      plyIndex: State.puzzlePly,
+      playedMoveObj: {
+        from: playedMove.from,
+        to: playedMove.to,
+        promotion: playedMove.promotion,
+      },
+      acceptAlso: ctx.acceptAlso || [],
+      ChessCtor: Chess,
+    });
+
+    if (!res.correct) {
+      State.puzzleFeedback = { kind: 'wrong', text: res.statusMessage };
+      State.lastMove = null;
+      recordPuzzleResult(ctx, false, false);
+      render();
+      return;
+    }
+
+    // First advance to user's played move cleanly so user sees their move right away
+    g.move(res.playedSan);
+    State.lastMove = { from: playedMove.from, to: playedMove.to };
+
+    if (res.finished) {
+      State.puzzlePly = ctx.moves.length;
+      State.puzzleFeedback = { kind: 'correct', text: `${res.statusMessage} ${ctx.explanation}` };
+      recordPuzzleResult(ctx, true, false);
+      render();
+      return;
+    }
+
+    // Multi-ply sequence: auto-play opponent forced reply after 240ms
+    State.puzzlePly = res.nextPly;
+    State.puzzleAutoReplying = true;
+    State.puzzleFeedback = { kind: 'hint', text: `Strong find (${res.playedSan})! Opponent replies ${res.oppAutoMove}...` };
+    render();
+    setTimeout(() => {
+      if (State.page !== 'puzzles' || State.activePuzzle?.id !== ctx.id) return;
+      const oppObj = g.move(res.oppAutoMove);
+      if (oppObj) State.lastMove = { from: oppObj.from, to: oppObj.to };
+      State.puzzleAutoReplying = false;
+      State.puzzleFeedback = { kind: 'hint', text: `Opponent played ${res.oppAutoMove}. Find the next winning move!` };
+      render();
+    }, 240);
+  };
+  const stage = buildBoardStage(g, {
+    flip: State.flipBoard,
+    lastMove: State.lastMove,
+    interactive: !solvedNow && !State.puzzleAutoReplying && !State.promotionPending,
+    onMove: onPuzzleMove,
+    showEvalBar: State.showPuzzleStockfish,
+    showArrows: State.showPuzzleStockfish,
+  });
+
+  State.dom.evalBar = stage.evalBar;
+  State.dom.arrowsSvg = stage.arrowsSvg;
+  boardCol.appendChild(stage.frame);
+
+  const ctrl = document.createElement('div');
+  ctrl.className = 'board-controls';
+  const backCat = el(`<button type="button" class="btn ghost sm">${iconSvg('prev', 14)} Catalog</button>`);
+  backCat.onclick = () => {
+    stockfishClient.stop();
+    State.puzzleView = 'catalog';
+    render();
+  };
+  const hintBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('hint', 14)} Hint</button>`);
+  hintBtn.disabled = solvedNow || State.puzzleAutoReplying;
+  hintBtn.onclick = () => {
+    const nextSan = ctx.moves[State.puzzlePly];
+    const tmp = new Chess(g.fen());
+    const m = tmp.move(nextSan);
+    if (m) {
+      State.selectedSquare = m.from;
+      State.legalDests = [m.to];
+      State.puzzleFeedback = { kind: 'hint', text: `Look at the ${m.piece.toUpperCase()} on ${m.from} — calculate forcing checks and targets.` };
+    }
+    render();
+  };
+  const solBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('check', 14)} Solution</button>`);
+  solBtn.disabled = State.puzzleAutoReplying;
+  solBtn.onclick = () => {
+    const remaining = ctx.moves.slice(State.puzzlePly);
+    remaining.forEach((san) => g.move(san));
+    State.puzzlePly = ctx.moves.length;
+    State.lastMove = lastMoveSquares(g);
+    State.puzzleFeedback = { kind: 'correct', text: `Solution (${ctx.moves.join(' ')}) — ${ctx.explanation}` };
+    render();
+  };
+  const resetBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('refresh', 14)} Retry</button>`);
+  resetBtn.onclick = () => openPuzzleInSolver(ctx);
+  const nextBtn = el(`<button type="button" class="btn gold sm">Next ${iconSvg('next', 14)}</button>`);
+  nextBtn.onclick = () => {
+    const pool = getFilteredPuzzles();
+    const list = pool.length ? pool : PUZZLES;
+    const idx = Math.max(0, list.findIndex((p) => p.id === ctx.id));
+    openPuzzleInSolver(list[(idx + 1) % list.length]);
+  };
+  ctrl.appendChild(backCat);
+  ctrl.appendChild(hintBtn);
+  ctrl.appendChild(solBtn);
+  ctrl.appendChild(resetBtn);
+  ctrl.appendChild(nextBtn);
+  ctrl.appendChild(makeMaxBoardButton());
+  boardCol.appendChild(ctrl);
+  layout.appendChild(boardCol);
+
+  const side = document.createElement('div');
+  side.className = 'play-sidebar';
+
+  const sfToggle = el(`<div style="display:flex;justify-content:space-between;align-items:center;gap:.4rem">
+    <span class="tag gold">${escapeHtml(ctx.category)} · ${escapeHtml(ctx.difficulty)} · <span class="tabular-nums">${ctx.rating}</span></span>
+    <button type="button" class="toggle-btn ${State.showPuzzleStockfish ? 'active' : ''}" id="pzSfBtn">${iconSvg('coach', 14)} Stockfish 19: ${State.showPuzzleStockfish ? 'On' : 'Off'}</button>
+  </div>`);
+  sfToggle.querySelector('#pzSfBtn').onclick = () => {
+    State.showPuzzleStockfish = !State.showPuzzleStockfish;
+    if (!State.showPuzzleStockfish) stockfishClient.stop();
+    render();
+  };
+  side.appendChild(sfToggle);
+
+  const promptCard = el(`<div class="puzzle-prompt">
+    <div class="puzzle-prompt-head">
+      <span class="turn-flag ${g.turn() === 'w' ? 'white' : ''}">${g.turn() === 'w' ? 'White to move' : 'Black to move'}</span>
+      <span class="mono tabular-nums" style="font-size:.76rem;color:var(--ink-soft)">Step ${Math.min(Math.floor(State.puzzlePly / 2) + 1, Math.ceil(totalPlies / 2))}/${Math.ceil(totalPlies / 2)}</span>
+    </div>
+    <h4>${escapeHtml(ctx.theme)}</h4>
+    <p style="margin:0;color:var(--ink-soft)">${escapeHtml(ctx.prompt)}</p>
+  </div>`);
+  side.appendChild(promptCard);
+
+  if (State.puzzleFeedback) {
+    side.appendChild(el(`<div class="puzzle-feedback ${State.puzzleFeedback.kind}">${escapeHtml(State.puzzleFeedback.text)}</div>`));
+  }
+
+  if (State.showPuzzleStockfish) {
+    const sfPanel = createStockfishPanel({
+      title: 'Stockfish 19 Verification',
+      showArrows: State.showCoachArrows,
+      onToggleArrows: () => {
+        State.showCoachArrows = !State.showCoachArrows;
+        applyStockfishDom(State.sfSnapshot);
+      },
+    });
+    State.dom.sfPanel = sfPanel;
+    side.appendChild(sfPanel);
+    triggerLiveAnalysis(g.fen(), { depth: 12, multiPv: 3 });
+  }
+
+  layout.appendChild(side);
+  return layout;
+}
+
+function renderQuizSprint() {
+  const box = document.createElement('div');
+  box.style.cssText = 'flex:1;min-height:0;display:flex;flex-direction:column;gap:.5rem;overflow:hidden';
+
+  const topControls = el(`<div class="filter-bar">
+    <div class="toggle-row" id="qzCatTabs">
+      ${PUZZLE_CATEGORIES.map((cat) => `<button type="button" class="toggle-btn ${State.quizCategory === cat ? 'active' : ''}" data-cat="${cat}">${cat}</button>`).join('')}
+    </div>
+    <div style="display:flex;gap:.4rem;margin-left:auto;align-items:center">
+      <button type="button" class="toggle-btn ${State.showQuizStockfish ? 'active' : ''}" id="qzSfBtn">${iconSvg('coach', 14)} Verify w/ Stockfish</button>
+      <button type="button" class="btn gold sm" id="qzNew">${iconSvg('refresh', 13)} New 10-Quiz Sprint</button>
+    </div>
+  </div>`);
+
+  topControls.querySelectorAll('#qzCatTabs button').forEach((b) => {
+    b.onclick = () => {
+      State.quizCategory = b.dataset.cat;
+      State.quizSession = createQuizSession(QUIZZES, {
+        category: State.quizCategory,
+        count: 10,
+        offset: State.training.quizzes?.completedSprints || 0,
+      });
+      render();
+    };
+  });
+  topControls.querySelector('#qzSfBtn').onclick = () => {
+    State.showQuizStockfish = !State.showQuizStockfish;
+    render();
+  };
+  topControls.querySelector('#qzNew').onclick = () => {
+    State.quizSession = createQuizSession(QUIZZES, {
+      category: State.quizCategory,
+      count: 10,
+      offset: Math.floor(Math.random() * 16),
+    });
+    render();
+  };
+  box.appendChild(topControls);
+
+  const session = State.quizSession;
+  if (session.completed) {
+    const summary = summarizeQuizSession(session);
+    const card = el(`<div class="card" style="max-width:720px;margin:auto;text-align:center">
+      <h2>${iconSvg('trophy', 22)} Quiz Sprint Complete!</h2>
+      <div style="display:flex;justify-content:center;gap:2rem;margin:.8rem 0">
+        <div><strong class="mono tabular-nums" style="font-size:2rem;color:var(--forest)">${summary.correct}/${summary.total}</strong><div class="small">Score</div></div>
+        <div><strong class="mono tabular-nums" style="font-size:2rem;color:var(--gold)">${summary.accuracy}%</strong><div class="small">Accuracy</div></div>
+      </div>
+      <div style="display:flex;gap:.45rem;justify-content:center;flex-wrap:wrap;margin:.6rem 0">
+        ${Object.entries(summary.byCategory)
+          .map(([k, v]) => `<span class="tag">${escapeHtml(k)}: <span class="tabular-nums">${v.correct}/${v.total}</span></span>`)
+          .join('')}
+      </div>
+      <button type="button" class="btn gold" id="restartQz" style="margin-top:.6rem">Start Fresh 10-Quiz Sprint</button>
+    </div>`);
+    card.querySelector('#restartQz').onclick = () => {
+      State.quizSession = createQuizSession(QUIZZES, {
+        category: State.quizCategory,
+        count: 10,
+        offset: (State.training.quizzes?.completedSprints || 0) * 3,
+      });
+      render();
+    };
+    box.appendChild(card);
+    return box;
+  }
+
+  const q = session.items[session.currentIndex];
+  const g = new Chess(q.fen);
+  const layout = document.createElement('div');
+  layout.className = `play-layout${State.boardMaximized ? ' board-maximized' : ''}`;
+
+  const boardCol = document.createElement('div');
+  boardCol.className = 'board-column no-controls';
+  const stage = buildBoardStage(g, {
+    flip: q.sideToMove === 'Black',
+    interactive: false,
+    showEvalBar: State.showQuizStockfish,
+    showArrows: State.showQuizStockfish,
+  });
+  State.dom.evalBar = stage.evalBar;
+  State.dom.arrowsSvg = stage.arrowsSvg;
+  boardCol.appendChild(stage.frame);
+  layout.appendChild(boardCol);
+
+  const side = document.createElement('div');
+  side.className = 'play-sidebar';
+
+  const qHeader = el(`<div class="puzzle-prompt">
+    <div class="puzzle-prompt-head">
+      <span class="turn-flag ${q.sideToMove === 'White' ? 'white' : ''}">${q.sideToMove} to move</span>
+      <span class="tag">${escapeHtml(q.category)} · ${escapeHtml(q.difficulty)}</span>
+      <span class="mono tabular-nums" style="font-size:.78rem">Q ${session.currentIndex + 1}/${session.items.length}</span>
+    </div>
+    <h4>${escapeHtml(q.theme)}</h4>
+    <p style="margin:0;color:var(--ink)">${escapeHtml(q.question)}</p>
+  </div>`);
+  side.appendChild(qHeader);
+
+  const optsWrap = document.createElement('div');
+  optsWrap.className = 'quiz-options';
+  const answered = session.lastResult !== null;
+  const letters = ['A', 'B', 'C', 'D'];
+  q.options.forEach((optText, idx) => {
+    let cls = 'quiz-opt';
+    if (answered) {
+      if (idx === q.correctIndex) cls += ' correct';
+      else if (idx === session.lastResult.chosenIndex) cls += ' wrong';
+    }
+    const btn = el(`<button type="button" class="${cls}" ${answered ? 'disabled' : ''}>
+      <span class="quiz-letter">${letters[idx]}</span>
+      <span>${escapeHtml(optText)}</span>
+    </button>`);
+    btn.onclick = () => {
+      State.quizSession = submitQuizAnswer(State.quizSession, idx);
+      render();
+    };
+    optsWrap.appendChild(btn);
+  });
+  side.appendChild(optsWrap);
+
+  if (answered) {
+    const res = session.lastResult;
+    const fb = el(`<div class="puzzle-feedback ${res.isCorrect ? 'correct' : 'wrong'}">
+      <div><strong>${res.isCorrect ? 'Correct!' : `Not quite — best is ${res.recommendedSan}.`}</strong> ${escapeHtml(q.explanation)}</div>
+      <div style="margin-top:.4rem;display:flex;justify-content:flex-end">
+        <button type="button" class="btn gold sm" id="qzNext">${session.currentIndex + 1 >= session.items.length ? 'Finish Sprint' : 'Next Question'} ${iconSvg('next', 13)}</button>
+      </div>
+    </div>`);
+    fb.querySelector('#qzNext').onclick = () => {
+      const nextSess = advanceQuizSession(State.quizSession);
+      State.quizSession = nextSess;
+      if (nextSess.completed) {
+        const s = summarizeQuizSession(nextSess);
+        const prevQ = State.training.quizzes || { completedSprints: 0, bestAccuracy: 0, totalCorrect: 0, totalAnswered: 0 };
+        State.training.quizzes = {
+          completedSprints: (prevQ.completedSprints || 0) + 1,
+          bestAccuracy: Math.max(prevQ.bestAccuracy || 0, s.accuracy),
+          totalCorrect: (prevQ.totalCorrect || 0) + s.correct,
+          totalAnswered: (prevQ.totalAnswered || 0) + s.answered,
+        };
+        saveTrainingProgress();
+      }
+      render();
+    };
+    side.appendChild(fb);
+  }
+
+  if (State.showQuizStockfish) {
+    const sfPanel = createStockfishPanel({
+      title: 'Stockfish 19 Verification',
+      showArrows: State.showCoachArrows,
+      onToggleArrows: () => {
+        State.showCoachArrows = !State.showCoachArrows;
+        applyStockfishDom(State.sfSnapshot);
+      },
+    });
+    State.dom.sfPanel = sfPanel;
+    side.appendChild(sfPanel);
+    triggerLiveAnalysis(q.fen, { depth: 11, multiPv: 3 });
+  }
+
+  layout.appendChild(side);
+  box.appendChild(layout);
+  return box;
+}
+
+// =========================================================
+// MASTER-DETAIL STUDY RENDERER (Openings, Traps, Strategy)
+// =========================================================
+function renderOpenings() {
+  const wrap = document.createElement('div');
+  wrap.className = 'view-shell';
+
+  const isTraps = State.openingsTab === 'traps';
+  const listAll = isTraps ? TRAPS : OPENINGS;
+  const query = State.openingsSearch.trim().toLowerCase();
+  const filtered = query
+    ? listAll.filter((x) => `${x.name} ${x.eco || ''} ${x.level} ${x.summary}`.toLowerCase().includes(query))
+    : listAll;
+
+  const activeId = isTraps ? State.selectedTrapId : State.selectedOpeningId;
+  const active = filtered.find((x) => x.id === activeId) || listAll.find((x) => x.id === activeId) || listAll[0];
+  if (isTraps) State.selectedTrapId = active.id;
+  else State.selectedOpeningId = active.id;
+
+  const bar = el(`<div class="view-bar">
+    <div style="display:flex;align-items:center;gap:.55rem;flex-wrap:wrap">
+      <h1>${iconSvg('openings', 18)} Openings &amp; Traps</h1>
+      <div class="pill-switch" id="opTabSwitch">
+        <button type="button" data-t="openings" class="${!isTraps ? 'active' : ''}">Repertoires (${OPENINGS.length})</button>
+        <button type="button" data-t="traps" class="${isTraps ? 'active' : ''}">Opening Traps (${TRAPS.length})</button>
+      </div>
+    </div>
+    <div class="view-bar-meta">
+      <div class="pill-switch" id="opModeSwitch">
+        <button type="button" data-m="learn" class="${State.studyMode === 'learn' ? 'active' : ''}">Learn</button>
+        <button type="button" data-m="practice" class="${State.studyMode === 'practice' ? 'active' : ''}">Practice Drill</button>
+      </div>
+      <button type="button" class="toggle-btn ${State.showStudyStockfish ? 'active' : ''}" id="opSfToggle">${iconSvg('coach', 14)} Stockfish 19: ${State.showStudyStockfish ? 'On' : 'Off'}</button>
+      <button type="button" class="btn ghost sm" id="opSidebarToggle" title="Toggle lesson sidebar">${iconSvg('sidebar', 14)} <span>Lessons</span></button>
+    </div>
+  </div>`);
+
+  bar.querySelectorAll('#opTabSwitch button').forEach((b) => {
+    b.onclick = () => {
+      State.openingsTab = b.dataset.t;
+      State.studyStep = 0;
+      State.practiceFeedback = null;
+      render();
+    };
+  });
+  bar.querySelectorAll('#opModeSwitch button').forEach((b) => {
+    b.onclick = () => {
+      State.studyMode = b.dataset.m;
+      State.studyStep = 0;
+      State.practiceFeedback = null;
+      State.lastMove = null;
+      render();
+    };
+  });
+  bar.querySelector('#opSfToggle').onclick = () => {
+    State.showStudyStockfish = !State.showStudyStockfish;
+    if (!State.showStudyStockfish) stockfishClient.stop();
+    render();
+  };
+  bar.querySelector('#opSidebarToggle').onclick = () => {
+    State.studySidebarCollapsed = !State.studySidebarCollapsed;
+    render();
+  };
+  wrap.appendChild(bar);
+
+  wrap.appendChild(
+    buildLineStudyWorkspace({
+      kind: isTraps ? 'traps' : 'openings',
+      items: filtered,
+      active,
+      searchValue: State.openingsSearch,
+      onSearch: (val) => {
+        State.openingsSearch = val;
+        render();
+        const inp = document.getElementById('studySearchInput');
+        if (inp) {
+          inp.focus();
+          inp.setSelectionRange(inp.value.length, inp.value.length);
+        }
+      },
+      onSelect: (item) => {
+        if (isTraps) State.selectedTrapId = item.id;
+        else State.selectedOpeningId = item.id;
+        State.studyStep = 0;
+        State.practiceFeedback = null;
+        State.lastMove = null;
+        render();
+      },
+    }),
+  );
+  return wrap;
+}
+
+function renderStrategy() {
+  const wrap = document.createElement('div');
+  wrap.className = 'view-shell';
+
+  const active =
+    MIDDLEGAME_LESSONS.find((m) => m.id === State.selectedStrategyId) || MIDDLEGAME_LESSONS[0];
+  State.selectedStrategyId = active.id;
+
+  const bar = el(`<div class="view-bar">
+    <div style="display:flex;align-items:center;gap:.55rem;flex-wrap:wrap">
+      <h1>${iconSvg('strategy', 18)} Middlegame &amp; Strategy (${MIDDLEGAME_LESSONS.length})</h1>
+      <div class="pill-switch" id="stModeSwitch">
+        <button type="button" data-m="learn" class="${State.studyMode === 'learn' ? 'active' : ''}">Learn</button>
+        <button type="button" data-m="practice" class="${State.studyMode === 'practice' ? 'active' : ''}">Practice Drill</button>
+      </div>
+    </div>
+    <div class="view-bar-meta">
+      <button type="button" class="toggle-btn ${State.showStudyStockfish ? 'active' : ''}" id="stSfToggle">${iconSvg('coach', 14)} Stockfish 19: ${State.showStudyStockfish ? 'On' : 'Off'}</button>
+      <button type="button" class="btn gold sm" id="stPuzzles">${iconSvg('puzzles', 13)} Strategy Puzzles (55)</button>
+      <button type="button" class="btn ghost sm" id="stSidebarToggle" title="Toggle lesson sidebar">${iconSvg('sidebar', 14)} <span>Lessons</span></button>
+    </div>
+  </div>`);
+
+  bar.querySelectorAll('#stModeSwitch button').forEach((b) => {
+    b.onclick = () => {
+      State.studyMode = b.dataset.m;
+      State.studyStep = 0;
+      State.practiceFeedback = null;
+      State.lastMove = null;
+      render();
+    };
+  });
+  bar.querySelector('#stSfToggle').onclick = () => {
+    State.showStudyStockfish = !State.showStudyStockfish;
+    if (!State.showStudyStockfish) stockfishClient.stop();
+    render();
+  };
+  bar.querySelector('#stSidebarToggle').onclick = () => {
+    State.studySidebarCollapsed = !State.studySidebarCollapsed;
+    render();
+  };
+  bar.querySelector('#stPuzzles').onclick = () => {
+    State.puzzleView = 'catalog';
+    State.puzzleCategory = 'Strategy';
+    State.puzzlePage = 1;
+    navigate('puzzles');
+  };
+  wrap.appendChild(bar);
+
+  wrap.appendChild(
+    buildLineStudyWorkspace({
+      kind: 'middlegame',
+      items: MIDDLEGAME_LESSONS,
+      active,
+      onSelect: (item) => {
+        State.selectedStrategyId = item.id;
+        State.studyStep = 0;
+        State.practiceFeedback = null;
+        State.lastMove = null;
+        render();
+      },
+    }),
+  );
+  return wrap;
+}
+
+function buildLineStudyWorkspace({ kind, items, active, searchValue = null, onSearch = null, onSelect }) {
+  const split = document.createElement('div');
+  split.className = `master-detail${State.studySidebarCollapsed ? ' sidebar-collapsed' : ''}${State.mobileStudyListOpen ? ' mobile-list-open' : ''}`;
+
+  const progressMap = State.training[kind] || {};
+  const sidebar = document.createElement('aside');
+  sidebar.className = 'master-sidebar';
+  if (onSearch) {
+    const fRow = el(`<div class="master-filter"><input id="studySearchInput" placeholder="Filter lines or ECO..." value="${escapeHtml(searchValue || '')}" /></div>`);
+    fRow.querySelector('input').oninput = (e) => onSearch(e.target.value);
+    sidebar.appendChild(fRow);
+  }
+
+  const list = document.createElement('div');
+  list.className = 'master-list';
+  items.forEach((item) => {
+    const pr = progressMap[item.id] || {};
+    const total = Math.max(1, (item.line || []).length);
+    const pct = Math.min(100, Math.round(((pr.step || 0) / total) * 100));
+    const elItem = el(`<div class="list-item ${item.id === active.id ? 'active' : ''}">
+      <div style="display:flex;align-items:center;gap:.5rem;min-width:0;flex:1">
+        <div class="lesson-progress ${pr.complete ? 'complete' : ''}" style="--progress:${pct}%"><b>${pct}%</b></div>
+        <div class="meta">
+          <h4>${escapeHtml(item.name)}</h4>
+          <span class="small">${escapeHtml(item.eco || item.category || '')} ${item.level ? `· ${escapeHtml(item.level)}` : ''}</span>
+        </div>
+      </div>
+    </div>`);
+    elItem.onclick = () => onSelect(item);
+    list.appendChild(elItem);
+  });
+  sidebar.appendChild(list);
+  split.appendChild(sidebar);
+
+  // Detail area
+  const detail = document.createElement('div');
+  detail.className = 'detail-workspace';
+  const mobBar = el(`<div class="mobile-lesson-bar">
+    <select aria-label="Select lesson">
+      ${items.map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === active.id ? 'selected' : ''}>${escapeHtml(item.name)}</option>`).join('')}
+    </select>
+    <button type="button" class="toggle-btn ${State.mobileStudyListOpen ? 'active' : ''}" id="mobListBtn">${iconSvg('sidebar', 13)} List</button>
+  </div>`);
+  mobBar.querySelector('select').onchange = (e) => {
+    const picked = items.find((it) => it.id === e.target.value);
+    if (picked) onSelect(picked);
+  };
+  mobBar.querySelector('#mobListBtn').onclick = () => {
+    State.mobileStudyListOpen = !State.mobileStudyListOpen;
+    render();
+  };
+  detail.appendChild(mobBar);
+  const line = active.line || [];
+  const total = line.length;
+  State.studyStep = Math.max(0, Math.min(State.studyStep, total));
+  const step = State.studyStep;
+  const g = active.startFen ? new Chess(active.startFen) : new Chess();
+  const playedMoves = [];
+  for (let i = 0; i < step; i += 1) {
+    const m = g.move(line[i].move);
+    if (m) playedMoves.push(m.san);
+  }
+  const lastMv = step > 0 ? lastMoveSquares(g) : null;
+
+  const layout = document.createElement('div');
+  layout.className = `play-layout${State.boardMaximized ? ' board-maximized' : ''}`;
+  const boardCol = document.createElement('div');
+  boardCol.className = 'board-column';
+
+  const isPractice = State.studyMode === 'practice';
+  const practiceComplete = isPractice && step >= total;
+  const expectedStep = isPractice && !practiceComplete ? line[step] : null;
+  const isInteractivePractice = isPractice && !practiceComplete;
+
+  const stage = buildBoardStage(g, {
+    flip: State.flipBoard,
+    lastMove: lastMv,
+    interactive: isInteractivePractice && !State.promotionPending,
+    onMove: (playedMove) => {
+      if (!expectedStep) return;
+      const cleanExp = expectedStep.move.replace(/[+#?!]+$/g, '');
+      const cleanGot = playedMove.san.replace(/[+#?!]+$/g, '');
+      if (cleanExp === cleanGot) {
+        State.studyStep += 1;
+        recordStudyProgress(kind, active, State.studyStep, total);
+        if (State.studyStep >= total) {
+          recordPracticeMastery(kind, active);
+          State.practiceFeedback = { kind: 'correct', text: 'Line mastered from memory!' };
+        } else {
+          State.practiceFeedback = { kind: 'correct', text: `${playedMove.san} — ${expectedStep.text}` };
+        }
+      } else {
+        g.undo();
+        State.lastMove = lastMoveSquares(g);
+        State.practiceFeedback = { kind: 'wrong', text: `Try again — look for ${expectedStep.move[0] === 'O' ? 'castling' : 'the main line move'} instead of ${playedMove.san}.` };
+      }
+      render();
+    },
+    showEvalBar: State.showStudyStockfish,
+    showArrows: State.showStudyStockfish,
+  });
+  State.dom.evalBar = stage.evalBar;
+  State.dom.arrowsSvg = stage.arrowsSvg;
+  boardCol.appendChild(stage.frame);
+
+  const ctrl = document.createElement('div');
+  ctrl.className = 'board-controls';
+  if (isPractice) {
+    const rst = el(`<button type="button" class="btn ghost sm">${iconSvg('refresh', 13)} Restart Drill</button>`);
+    rst.onclick = () => {
+      State.studyStep = 0;
+      State.practiceFeedback = null;
+      render();
+    };
+    const peek = el(`<button type="button" class="btn gold sm">${iconSvg('hint', 13)} Reveal Move</button>`);
+    peek.disabled = practiceComplete;
+    peek.onclick = () => {
+      if (!expectedStep) return;
+      State.studyStep += 1;
+      recordStudyProgress(kind, active, State.studyStep, total);
+      State.practiceFeedback = { kind: 'hint', text: `Played ${expectedStep.move}: ${expectedStep.text}` };
+      render();
+    };
+    const flp = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 13)} Flip</button>`);
+    flp.onclick = () => {
+      State.flipBoard = !State.flipBoard;
+      render();
+    };
+    ctrl.appendChild(rst);
+    ctrl.appendChild(peek);
+    ctrl.appendChild(flp);
+    ctrl.appendChild(makeMaxBoardButton());
+  } else {
+    const bFirst = el(`<button type="button" class="btn ghost sm" title="Start">${iconSvg('first', 13)}</button>`);
+    const bPrev = el(`<button type="button" class="btn ghost sm" title="Previous">${iconSvg('prev', 13)} Back</button>`);
+    const bNext = el(`<button type="button" class="btn gold sm" title="Next">Next ${iconSvg('next', 13)}</button>`);
+    const bLast = el(`<button type="button" class="btn ghost sm" title="End">${iconSvg('last', 13)}</button>`);
+    const bFlip = el(`<button type="button" class="btn ghost sm" title="Flip">${iconSvg('flip', 13)}</button>`);
+    bFirst.disabled = step === 0;
+    bPrev.disabled = step === 0;
+    bNext.disabled = step >= total;
+    bLast.disabled = step >= total;
+    bFirst.onclick = () => {
+      State.studyStep = 0;
+      render();
+    };
+    bPrev.onclick = () => {
+      State.studyStep = Math.max(0, step - 1);
+      render();
+    };
+    bNext.onclick = () => {
+      State.studyStep = Math.min(total, step + 1);
+      recordStudyProgress(kind, active, State.studyStep, total);
+      render();
+    };
+    bLast.onclick = () => {
+      State.studyStep = total;
+      recordStudyProgress(kind, active, total, total);
+      render();
+    };
+    bFlip.onclick = () => {
+      State.flipBoard = !State.flipBoard;
+      render();
+    };
+    ctrl.appendChild(bFirst);
+    ctrl.appendChild(bPrev);
+    ctrl.appendChild(bNext);
+    ctrl.appendChild(bLast);
+    ctrl.appendChild(bFlip);
+    ctrl.appendChild(makeMaxBoardButton());
+  }
+  boardCol.appendChild(ctrl);
+  layout.appendChild(boardCol);
+
+  const side = document.createElement('div');
+  side.className = 'play-sidebar';
+
+  if (isPractice) {
+    const pct = total ? Math.round((step / total) * 100) : 0;
+    side.appendChild(el(`<div class="practice-prompt ${practiceComplete ? 'complete' : ''}">
+      <div class="practice-progress"><span style="width:${pct}%"></span></div>
+      <h4>${practiceComplete ? 'Line Mastered!' : `Play Move ${Math.floor(step / 2) + 1} (${g.turn() === 'w' ? 'White' : 'Black'})`}</h4>
+      <p class="small" style="margin:0">${escapeHtml(active.summary)}</p>
+    </div>`));
+    if (State.practiceFeedback) {
+      side.appendChild(el(`<div class="puzzle-feedback ${State.practiceFeedback.kind}">${escapeHtml(State.practiceFeedback.text)}</div>`));
+    }
+  } else {
+    const curMoveTxt = step === 0 ? 'Starting Position' : `${Math.ceil(step / 2)}${step % 2 === 1 ? '.' : '...'} ${line[step - 1].move}`;
+    const bodyTxt = step === 0 ? active.summary : line[step - 1].text;
+    side.appendChild(el(`<div class="tutorial-text">
+      <div class="step-counter tabular-nums">${escapeHtml(active.name)} · Move ${step}/${total}</div>
+      <div class="move-played">${escapeHtml(curMoveTxt)}</div>
+      <p>${escapeHtml(bodyTxt)}</p>
+      ${active.keyIdeas ? `<div class="key-ideas">${active.keyIdeas.map((k) => `<span class="idea-chip">${escapeHtml(k)}</span>`).join('')}</div>` : ''}
+    </div>`));
+  }
+
+  if (State.showStudyStockfish) {
+    const sfPanel = createStockfishPanel({
+      title: 'Stockfish 19 Live Analysis',
+      showArrows: State.showCoachArrows,
+      onToggleArrows: () => {
+        State.showCoachArrows = !State.showCoachArrows;
+        applyStockfishDom(State.sfSnapshot);
+      },
+    });
+    State.dom.sfPanel = sfPanel;
+    side.appendChild(sfPanel);
+    triggerLiveAnalysis(g.fen(), { depth: 12, multiPv: 3 });
+  }
+
+  side.appendChild(buildMovesPanel(playedMoves));
+  layout.appendChild(side);
+  detail.appendChild(layout);
+  split.appendChild(detail);
+  return split;
+}
+
+// =========================================================
+// ENDGAMES MASTER-DETAIL + PLAYABLE SPARRING
+// =========================================================
+function renderEndgames() {
+  const wrap = document.createElement('div');
+  wrap.className = 'view-shell';
+
+  const active = ENDGAMES.find((e) => e.id === State.selectedEndgameId) || ENDGAMES[0];
+  State.selectedEndgameId = active.id;
+
+  if (!State.game || State.studyContext?.id !== active.id) {
+    State.studyContext = active;
+    State.game = new Chess(active.fen);
+    State.lastMove = null;
+  }
+  const g = State.game;
+
+  const bar = el(`<div class="view-bar">
+    <div style="display:flex;align-items:center;gap:.55rem;flex-wrap:wrap">
+      <h1>${iconSvg('endgames', 18)} Endgames (${ENDGAMES.length})</h1>
+      <button type="button" class="toggle-btn ${State.endgameSparring ? 'active' : ''}" id="egSparBtn">${iconSvg('play', 14)} Spar vs Stockfish 19: ${State.endgameSparring ? 'On' : 'Free Play'}</button>
+    </div>
+    <div class="view-bar-meta">
+      <button type="button" class="toggle-btn ${State.showStudyStockfish ? 'active' : ''}" id="egSfToggle">${iconSvg('coach', 14)} Analysis: ${State.showStudyStockfish ? 'On' : 'Off'}</button>
+      <button type="button" class="btn gold sm" id="egPuzzles">${iconSvg('puzzles', 13)} Endgame Puzzles (55)</button>
+      <button type="button" class="btn ghost sm" id="egSidebarToggle" title="Toggle endgame list">${iconSvg('sidebar', 14)} <span>Lessons</span></button>
+    </div>
+  </div>`);
+
+  bar.querySelector('#egSparBtn').onclick = () => {
+    State.endgameSparring = !State.endgameSparring;
+    State.playerColor = new Chess(active.fen).turn();
+    render();
+  };
+  bar.querySelector('#egSfToggle').onclick = () => {
+    State.showStudyStockfish = !State.showStudyStockfish;
+    if (!State.showStudyStockfish) stockfishClient.stop();
+    render();
+  };
+  bar.querySelector('#egPuzzles').onclick = () => {
+    State.puzzleView = 'catalog';
+    State.puzzleCategory = 'Endgame';
+    State.puzzlePage = 1;
+    navigate('puzzles');
+  };
+  bar.querySelector('#egSidebarToggle').onclick = () => {
+    State.studySidebarCollapsed = !State.studySidebarCollapsed;
+    render();
+  };
+  wrap.appendChild(bar);
+
+  const split = document.createElement('div');
+  split.className = `master-detail${State.studySidebarCollapsed ? ' sidebar-collapsed' : ''}${State.mobileStudyListOpen ? ' mobile-list-open' : ''}`;
+
+  const sidebar = document.createElement('aside');
+  sidebar.className = 'master-sidebar';
+  const list = document.createElement('div');
+  list.className = 'master-list';
+  ENDGAMES.forEach((eg) => {
+    const done = Boolean(State.training.endgames?.[eg.id]?.complete);
+    const item = el(`<div class="list-item ${eg.id === active.id ? 'active' : ''}">
+      <div class="meta">
+        <h4>${escapeHtml(eg.name)}</h4>
+        <span class="small">${escapeHtml(eg.difficulty)} · Target: ${escapeHtml(eg.targetResult || 'Win')}</span>
+      </div>
+      ${done ? '<span class="solved-badge">Studied</span>' : ''}
+    </div>`);
+    item.onclick = () => {
+      State.selectedEndgameId = eg.id;
+      State.studyContext = eg;
+      State.game = new Chess(eg.fen);
+      State.lastMove = null;
+      State.endgameSparring = false;
+      State.flipBoard = new Chess(eg.fen).turn() === 'b';
+      recordStudyProgress('endgames', eg, 1, 1);
+      render();
+    };
+    list.appendChild(item);
+  });
+  sidebar.appendChild(list);
+  split.appendChild(sidebar);
+
+  const detail = document.createElement('div');
+  detail.className = 'detail-workspace';
+  const egMobBar = el(`<div class="mobile-lesson-bar">
+    <select aria-label="Select endgame study">
+      ${ENDGAMES.map((eg) => `<option value="${escapeHtml(eg.id)}" ${eg.id === active.id ? 'selected' : ''}>${escapeHtml(eg.name)}</option>`).join('')}
+    </select>
+    <button type="button" class="toggle-btn ${State.mobileStudyListOpen ? 'active' : ''}" id="egMobListBtn">${iconSvg('sidebar', 13)} List</button>
+  </div>`);
+  egMobBar.querySelector('select').onchange = (e) => {
+    const picked = ENDGAMES.find((x) => x.id === e.target.value);
+    if (picked) {
+      State.selectedEndgameId = picked.id;
+      State.studyContext = picked;
+      State.game = new Chess(picked.fen);
+      State.lastMove = null;
+      State.endgameSparring = false;
+      State.flipBoard = new Chess(picked.fen).turn() === 'b';
+      recordStudyProgress('endgames', picked, 1, 1);
+      render();
+    }
+  };
+  egMobBar.querySelector('#egMobListBtn').onclick = () => {
+    State.mobileStudyListOpen = !State.mobileStudyListOpen;
+    render();
+  };
+  detail.appendChild(egMobBar);
+  const layout = document.createElement('div');
+  layout.className = `play-layout${State.boardMaximized ? ' board-maximized' : ''}`;
+
+  const boardCol = document.createElement('div');
+  boardCol.className = 'board-column';
+  const stage = buildBoardStage(g, {
+    flip: State.flipBoard,
+    lastMove: State.lastMove,
+    interactive: !g.game_over() && !State.endgameSparThinking && !State.promotionPending,
+    onMove: async () => {
+      State.lastMove = lastMoveSquares(g);
+      recordStudyProgress('endgames', active, 1, 1);
+      if (State.endgameSparring && !g.game_over()) {
+        State.endgameSparThinking = true;
+        render();
+        const uci = await stockfishClient.playMove(g.fen(), 4);
+        State.endgameSparThinking = false;
+        if (uci && uci !== '(none)' && State.page === 'endgames' && State.selectedEndgameId === active.id) {
+          g.move({
+            from: uci.slice(0, 2),
+            to: uci.slice(2, 4),
+            promotion: uci.length > 4 ? uci.slice(4, 5) : undefined,
+          });
+          State.lastMove = lastMoveSquares(g);
+        }
+      }
+      render();
+    },
+    showEvalBar: State.showStudyStockfish,
+    showArrows: State.showStudyStockfish,
+  });
+  State.dom.evalBar = stage.evalBar;
+  State.dom.arrowsSvg = stage.arrowsSvg;
+  boardCol.appendChild(stage.frame);
+
+  const ctrl = document.createElement('div');
+  ctrl.className = 'board-controls';
+  const rst = el(`<button type="button" class="btn ghost sm">${iconSvg('refresh', 13)} Reset</button>`);
+  rst.onclick = () => {
+    State.game = new Chess(active.fen);
+    State.lastMove = null;
+    State.endgameSparThinking = false;
+    render();
+  };
+  const flp = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 13)} Flip</button>`);
+  flp.onclick = () => {
+    State.flipBoard = !State.flipBoard;
+    render();
+  };
+  ctrl.appendChild(rst);
+  ctrl.appendChild(flp);
+  ctrl.appendChild(makeMaxBoardButton());
+  boardCol.appendChild(ctrl);
+  layout.appendChild(boardCol);
+
+  const side = document.createElement('div');
+  side.className = 'play-sidebar';
+  side.appendChild(el(`<div class="tutorial-text">
+    <div class="step-counter">${escapeHtml(active.difficulty)} · Goal: ${escapeHtml(active.goal || active.targetResult || 'Convert cleanly')}</div>
+    <h4 style="margin-bottom:.3rem">${escapeHtml(active.name)}</h4>
+    <p>${escapeHtml(active.summary)}</p>
+    <ul style="margin:.4rem 0 0 1.1rem;font-size:.88rem;color:var(--ink-soft)">
+      ${active.technique.map((t) => `<li style="margin-bottom:.2rem">${escapeHtml(t)}</li>`).join('')}
+    </ul>
+  </div>`));
+
+  if (State.showStudyStockfish) {
+    const sfPanel = createStockfishPanel({
+      title: 'Stockfish 19 Tablebase & Eval',
+      showArrows: State.showCoachArrows,
+      onToggleArrows: () => {
+        State.showCoachArrows = !State.showCoachArrows;
+        applyStockfishDom(State.sfSnapshot);
+      },
+    });
+    State.dom.sfPanel = sfPanel;
+    side.appendChild(sfPanel);
+    triggerLiveAnalysis(g.fen(), { depth: 13, multiPv: 3 });
+  }
+
+  layout.appendChild(side);
+  detail.appendChild(layout);
+  split.appendChild(detail);
+  wrap.appendChild(split);
+  return wrap;
+}
+
+// =========================================================
+// PLAY MENU (2-Col Zero-Scroll Setup) + ACTIVE GAMES
+// =========================================================
+function chess960Fen() {
+  const squares = Array(8).fill(null);
+  const pick = (options) => options[Math.floor(Math.random() * options.length)];
+  squares[pick([0, 2, 4, 6])] = 'B';
+  squares[pick([1, 3, 5, 7])] = 'B';
+  const free = () => squares.map((v, i) => (v ? null : i)).filter((i) => i !== null);
+  squares[pick(free())] = 'Q';
+  for (let i = 0; i < 2; i += 1) squares[pick(free())] = 'N';
+  const rest = free();
+  squares[rest[0]] = 'R';
+  squares[rest[1]] = 'K';
+  squares[rest[2]] = 'R';
+  const rank = squares.join('');
+  return `${rank.toLowerCase()}/pppppppp/8/8/8/8/PPPPPPPP/${rank} w - - 0 1`;
+}
+
+function renderPlayMenu() {
+  const wrap = document.createElement('div');
+  wrap.className = 'view-shell';
+  wrap.appendChild(el(`<div class="view-bar">
+    <h1>${iconSvg('play', 18)} Match Hall — Play or Launch Engine Clash</h1>
+    <div class="toggle-row" id="varTog">
+      <button type="button" class="toggle-btn ${State.variant === 'standard' ? 'active' : ''}" data-v="standard">Standard Chess</button>
+      <button type="button" class="toggle-btn ${State.variant === 'chess960' ? 'active' : ''}" data-v="chess960">Chess960</button>
+    </div>
+  </div>`));
+
+  wrap.querySelectorAll('#varTog button').forEach((b) => {
+    b.onclick = () => {
+      State.variant = b.dataset.v;
+      render();
+    };
+  });
+
+  const grid = document.createElement('div');
+  grid.className = 'setup-grid-3';
+
+  // Col 1: Human vs Selected Engine
+  const humEngProf = getEngineProfile(State.playEngineProfileId);
+  const validTier = humEngProf.tiers.some((t) => t.value === State.playEngineLevel)
+    ? State.playEngineLevel
+    : humEngProf.defaultTier;
+  State.playEngineLevel = validTier;
+
+  const engCard = el(`<section class="card setup-card">
+    <div>
+      <h3>${iconSvg('coach', 17)} Play vs Chess Engine</h3>
+      <p class="small">${escapeHtml(humEngProf.description)}</p>
+      <div style="margin:.4rem 0">
+        <label for="humEngProf">Opponent Engine</label>
+        <select id="humEngProf">
+          ${ENGINE_PROFILE_LIST.map((p) => `<option value="${p.id}" ${p.id === humEngProf.id ? 'selected' : ''}>${escapeHtml(p.name)} — ${escapeHtml(p.styleTag)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="level-grid" id="engLvls" style="margin:.4rem 0">
+        ${humEngProf.tiers
+          .map((t) => `<div class="level-card ${!(humEngProf.family === 'nnue' && State.playEngineUseCustom) && State.playEngineLevel === t.value ? 'selected' : ''}" data-lvl="${t.value}">
+            <div class="lvl-num tabular-nums">${t.value}</div>
+            <div class="lvl-name">${escapeHtml(t.label.split(' ')[0])}</div>
+            <div class="lvl-elo tabular-nums">${escapeHtml(t.elo)}</div>
+          </div>`)
+          .join('')}
+      </div>
+      ${humEngProf.family === 'nnue' ? `<div style="display:flex;align-items:center;gap:.55rem;margin:.3rem 0">
+        <span class="small mono tabular-nums" style="white-space:nowrap">Custom: <strong id="cEloVal">${State.playEngineCustomElo}</strong></span>
+        <input type="range" id="cEloSlider" min="1320" max="2850" step="20" value="${State.playEngineCustomElo}" style="flex:1" />
+      </div>` : ''}
+      <div class="toggle-row" id="engSideTog" style="margin-top:.35rem">
+        <span class="small" style="margin-right:.3rem">Side:</span>
+        ${['white', 'black', 'random'].map((c) => `<button type="button" class="toggle-btn ${State.playEngineColor === c ? 'active' : ''}" data-c="${c}">${c}</button>`).join('')}
+      </div>
+    </div>
+    <button type="button" class="btn gold full" id="startEngineBtn">${iconSvg('play', 15)} Start Match vs ${escapeHtml(humEngProf.shortName)}</button>
+  </section>`);
+
+  engCard.querySelector('#humEngProf').onchange = (e) => {
+    State.playEngineProfileId = e.target.value;
+    State.playEngineUseCustom = false;
+    State.playEngineLevel = getEngineProfile(e.target.value).defaultTier;
+    render();
+  };
+  engCard.querySelectorAll('#engLvls .level-card').forEach((elCard) => {
+    elCard.onclick = () => {
+      State.playEngineUseCustom = false;
+      State.playEngineLevel = Number(elCard.dataset.lvl);
+      render();
+    };
+  });
+  const sliderEl = engCard.querySelector('#cEloSlider');
+  if (sliderEl) {
+    sliderEl.oninput = (e) => {
+      State.playEngineUseCustom = true;
+      State.playEngineCustomElo = Number(e.target.value);
+      engCard.querySelector('#cEloVal').textContent = State.playEngineCustomElo;
+    };
+  }
+  engCard.querySelectorAll('#engSideTog button').forEach((b) => {
+    b.onclick = () => {
+      State.playEngineColor = b.dataset.c;
+      render();
+    };
+  });
+  engCard.querySelector('#startEngineBtn').onclick = () => {
+    const prof = getEngineProfile(State.playEngineProfileId);
+    const useCustom = prof.family === 'nnue' && State.playEngineUseCustom;
+    const lvl = useCustom ? { custom: State.playEngineCustomElo } : State.playEngineLevel;
+    if (State._humanVsEngineInstance) {
+      State._humanVsEngineInstance.dispose();
+    }
+    State._humanVsEngineInstance = createArenaEngine(prof.id);
+    State._engineConfig = lvl;
+    State._engineLevelDisplay = `${prof.shortName} · ${getEngineTierMeta(prof.id, lvl).label}`;
+    let c = State.playEngineColor;
+    if (c === 'random') c = Math.random() < 0.5 ? 'white' : 'black';
+    State.playerColor = c === 'white' ? 'w' : 'b';
+    State.flipBoard = State.playerColor === 'b';
+    State.vsMode = 'engine';
+    State.game = new Chess(State.variant === 'chess960' ? chess960Fen() : undefined);
+    State.gameMoveHistory = [];
+    State.gameOver = false;
+    State.engineThinking = false;
+    State.lastResult = null;
+    State.lastMove = null;
+    navigate('vs-engine');
+    if (State.playerColor === 'b') setTimeout(() => engineMakeMove(), 240);
+  };
+  grid.appendChild(engCard);
+
+  // Col 2: Engine vs Engine Arena Setup Card
+  const wProf = getEngineProfile(State.arenaWhiteProfileId);
+  const bProf = getEngineProfile(State.arenaBlackProfileId);
+  if (!wProf.tiers.some((t) => t.value === State.arenaWhiteTier)) State.arenaWhiteTier = wProf.defaultTier;
+  if (!bProf.tiers.some((t) => t.value === State.arenaBlackTier)) State.arenaBlackTier = bProf.defaultTier;
+
+  const arenaCard = el(`<section class="card ornate setup-card">
+    <div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:.4rem">
+        <h3>${iconSvg('duel', 17)} Engine vs Engine Arena</h3>
+        <span class="tag green">Live Thoughts</span>
+      </div>
+      <p class="small">Pit two distinct chess engines against each other and inspect both MultiPV thoughts, plans, and eval clashes live.</p>
+
+      <div style="margin:.4rem 0">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <label for="arWProf">White Engine</label>
+          <button type="button" class="btn-ghost-xs" id="arSwapBtn" title="Swap White and Black engines">${iconSvg('swap', 12)} Swap</button>
+        </div>
+        <div class="arena-field-row">
+          <select id="arWProf">
+            ${ENGINE_PROFILE_LIST.map((p) => `<option value="${p.id}" ${p.id === wProf.id ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('')}
+          </select>
+          <select id="arWTier" style="max-width:155px">
+            ${wProf.tiers.map((t) => `<option value="${t.value}" ${t.value === State.arenaWhiteTier ? 'selected' : ''}>${escapeHtml(t.label)}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+
+      <div style="margin:.4rem 0">
+        <label for="arBProf">Black Engine</label>
+        <div class="arena-field-row">
+          <select id="arBProf">
+            ${ENGINE_PROFILE_LIST.map((p) => `<option value="${p.id}" ${p.id === bProf.id ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('')}
+          </select>
+          <select id="arBTier" style="max-width:155px">
+            ${bProf.tiers.map((t) => `<option value="${t.value}" ${t.value === State.arenaBlackTier ? 'selected' : ''}>${escapeHtml(t.label)}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+
+      <div class="arena-field-row" style="margin:.45rem 0">
+        <div style="flex:1">
+          <label for="arPreset">Starting Position</label>
+          <select id="arPreset">
+            ${ARENA_PRESETS.map((p, idx) => `<option value="${idx}" ${idx === State.arenaPresetIdx ? 'selected' : ''}>${escapeHtml(p.label)}</option>`).join('')}
+          </select>
+        </div>
+        <div style="width:120px">
+          <label for="arPace">Pace</label>
+          <select id="arPace">
+            <option value="400" ${State.arenaPaceMs === 400 ? 'selected' : ''}>Fast (0.4s)</option>
+            <option value="1200" ${State.arenaPaceMs === 1200 ? 'selected' : ''}>Normal (1.2s)</option>
+            <option value="2400" ${State.arenaPaceMs === 2400 ? 'selected' : ''}>Study (2.4s)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <button type="button" class="btn gold full" id="launchArenaBtn">${iconSvg('duel', 15)} Launch Engine Clash</button>
+  </section>`);
+
+  arenaCard.querySelector('#arWProf').onchange = (e) => {
+    State.arenaWhiteProfileId = e.target.value;
+    State.arenaWhiteTier = getEngineProfile(e.target.value).defaultTier;
+    render();
+  };
+  arenaCard.querySelector('#arWTier').onchange = (e) => {
+    State.arenaWhiteTier = Number(e.target.value);
+  };
+  arenaCard.querySelector('#arBProf').onchange = (e) => {
+    State.arenaBlackProfileId = e.target.value;
+    State.arenaBlackTier = getEngineProfile(e.target.value).defaultTier;
+    render();
+  };
+  arenaCard.querySelector('#arBTier').onchange = (e) => {
+    State.arenaBlackTier = Number(e.target.value);
+  };
+  arenaCard.querySelector('#arPreset').onchange = (e) => {
+    State.arenaPresetIdx = Number(e.target.value);
+  };
+  arenaCard.querySelector('#arPace').onchange = (e) => {
+    State.arenaPaceMs = Number(e.target.value);
+  };
+  arenaCard.querySelector('#arSwapBtn').onclick = () => {
+    [State.arenaWhiteProfileId, State.arenaBlackProfileId] = [State.arenaBlackProfileId, State.arenaWhiteProfileId];
+    [State.arenaWhiteTier, State.arenaBlackTier] = [State.arenaBlackTier, State.arenaWhiteTier];
+    render();
+  };
+  arenaCard.querySelector('#launchArenaBtn').onclick = () => startEngineArenaMatch();
+  grid.appendChild(arenaCard);
+
+  // Col 3: Member vs Member Card
+  const others = Object.values(State.members).filter((m) => m.id !== State.user.id);
+  const humCard = el(`<section class="card setup-card">
+    <div>
+      <h3>${iconSvg('club', 17)} Over-the-Board: Member vs Member</h3>
+      ${others.length === 0
+        ? `<p class="small" style="margin-top:.4rem">Add a second local club member on the Login screen to play two-player rated or coached friendly matches on this device.</p>`
+        : `
+          <div style="margin:.45rem 0">
+            <label for="oppSel">Opponent</label>
+            <select id="oppSel">
+              ${others.map((m) => `<option value="${m.id}">${escapeHtml(m.name)} (${m.rating})</option>`).join('')}
+            </select>
+          </div>
+          <div style="display:flex;gap:1rem;flex-wrap:wrap;margin:.45rem 0">
+            <div>
+              <label>Your Color</label>
+              <div class="toggle-row" id="humColor">
+                <button type="button" class="toggle-btn active" data-c="white">White</button>
+                <button type="button" class="toggle-btn" data-c="black">Black</button>
+                <button type="button" class="toggle-btn" data-c="random">Random</button>
+              </div>
+            </div>
+            <div>
+              <label>Match Type</label>
+              <div class="toggle-row" id="humType">
+                <button type="button" class="toggle-btn active" data-t="rated">Rated Elo</button>
+                <button type="button" class="toggle-btn" data-t="friendly">Friendly (+Coach)</button>
+              </div>
+            </div>
+          </div>
+        `}
+    </div>
+    ${others.length > 0 ? `<button type="button" class="btn full" id="startHumanBtn">Begin Over-the-Board Match</button>` : `<button type="button" class="btn ghost full" id="switchAdd">Switch / Add Member</button>`}
+  </section>`);
+
+  if (others.length > 0) {
+    let humCol = 'white';
+    let humType = 'rated';
+    humCard.querySelectorAll('#humColor button').forEach((b) => {
+      b.onclick = () => {
+        humCard.querySelectorAll('#humColor button').forEach((x) => x.classList.remove('active'));
+        b.classList.add('active');
+        humCol = b.dataset.c;
+      };
+    });
+    humCard.querySelectorAll('#humType button').forEach((b) => {
+      b.onclick = () => {
+        humCard.querySelectorAll('#humType button').forEach((x) => x.classList.remove('active'));
+        b.classList.add('active');
+        humType = b.dataset.t;
+      };
+    });
+    humCard.querySelector('#startHumanBtn').onclick = () => {
+      let c = humCol;
+      if (c === 'random') c = Math.random() < 0.5 ? 'white' : 'black';
+      const oppId = humCard.querySelector('#oppSel').value;
+      if (c === 'white') {
+        State.gameWhite = State.user.id;
+        State.gameBlack = oppId;
+      } else {
+        State.gameWhite = oppId;
+        State.gameBlack = State.user.id;
+      }
+      State.gameRated = humType === 'rated';
+      State.vsMode = State.gameRated ? 'human-rated' : 'human-unrated';
+      State.game = new Chess(State.variant === 'chess960' ? chess960Fen() : undefined);
+      State.gameMoveHistory = [];
+      State.gameOver = false;
+      State.lastResult = null;
+      State.lastMove = null;
+      State.playCoachLastGrade = null;
+      State.flipBoard = false;
+      navigate('vs-human');
+    };
+  } else {
+    humCard.querySelector('#switchAdd').onclick = async () => {
+      await logoutUser();
+      render();
+    };
+  }
+  grid.appendChild(humCard);
+  wrap.appendChild(grid);
+  return wrap;
+}
+
+function renderVsEngine() {
+  if (!State.game) State.game = new Chess();
+  const g = State.game;
+  const turn = g.turn();
+  const oppProfile = getEngineProfile(State.playEngineProfileId);
+  const wrap = document.createElement('div');
+  wrap.className = 'view-shell';
+
+  wrap.appendChild(el(`<div class="view-bar">
+    <h1>${escapeHtml(State.user.name)} vs ${escapeHtml(oppProfile.name)}</h1>
+    <div class="view-bar-meta">
+      <span class="tag gold">${escapeHtml(State._engineLevelDisplay || oppProfile.name)}</span>
+      <button type="button" class="btn ghost sm" id="leaveEng">Leave Game</button>
+    </div>
+  </div>`));
+  wrap.querySelector('#leaveEng').onclick = () => {
+    if (State._humanVsEngineInstance) State._humanVsEngineInstance.stop();
+    stockfishClient.stop();
+    navigate('play-menu');
+  };
+
+  const layout = document.createElement('div');
+  layout.className = `play-layout${State.boardMaximized ? ' board-maximized' : ''}`;
+
+  const boardCol = document.createElement('div');
+  boardCol.className = 'board-column';
+  const stage = buildBoardStage(g, {
+    flip: State.flipBoard,
+    lastMove: State.lastMove,
+    interactive: !State.gameOver && !State.promotionPending && !State.engineThinking && turn === State.playerColor,
+    onMove: (m) => {
+      State.gameMoveHistory.push(m.san);
+      State.lastMove = lastMoveSquares(g);
+      checkEngineGameEnd();
+      render();
+      if (!State.gameOver) setTimeout(() => engineMakeMove(), 180);
+    },
+    showEvalBar: false,
+    showArrows: false,
+  });
+  boardCol.appendChild(stage.frame);
+
+  const ctrl = document.createElement('div');
+  ctrl.className = 'board-controls';
+  const undoBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('prev', 13)} Take Back</button>`);
+  undoBtn.disabled = State.gameMoveHistory.length < 2 || State.gameOver || State.engineThinking;
+  undoBtn.onclick = () => {
+    g.undo();
+    State.gameMoveHistory.pop();
+    g.undo();
+    State.gameMoveHistory.pop();
+    State.lastMove = lastMoveSquares(g);
+    render();
+  };
+  const flipBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 13)} Flip</button>`);
+  flipBtn.onclick = () => {
+    State.flipBoard = !State.flipBoard;
+    render();
+  };
+  const resignBtn = el(`<button type="button" class="btn danger sm">Resign</button>`);
+  resignBtn.disabled = State.gameOver;
+  resignBtn.onclick = () => {
+    State.gameOver = true;
+    State.lastResult = { kind: 'loss', text: `You resigned. ${oppProfile.name} wins.` };
+    render();
+  };
+  const newBtn = el(`<button type="button" class="btn gold sm">New Match</button>`);
+  newBtn.onclick = () => navigate('play-menu');
+  ctrl.appendChild(undoBtn);
+  ctrl.appendChild(flipBtn);
+  ctrl.appendChild(resignBtn);
+  ctrl.appendChild(newBtn);
+  ctrl.appendChild(makeMaxBoardButton());
+  boardCol.appendChild(ctrl);
+  layout.appendChild(boardCol);
+
+  const side = document.createElement('div');
+  side.className = 'play-sidebar';
+  if (State.gameOver) {
+    side.appendChild(el(`<div class="status-banner ${State.lastResult?.kind || 'draw'}">${escapeHtml(State.lastResult?.text || 'Game Over')}</div>`));
+  } else if (State.engineThinking) {
+    side.appendChild(el(`<div class="status-banner">${escapeHtml(oppProfile.name)} is thinking... <span class="spinner"></span></div>`));
+  } else {
+    side.appendChild(el(`<div class="status-banner">${turn === State.playerColor ? escapeHtml(State.user.name) : escapeHtml(oppProfile.name)} to move</div>`));
+  }
+  side.appendChild(el(`<div class="game-info">
+    <div class="player-row ${turn !== State.playerColor ? 'active' : ''}"><div><span class="turn-marker"></span><span class="pname">${escapeHtml(oppProfile.name)}</span></div><span class="badge">${escapeHtml(State._engineLevelDisplay || '')}</span></div>
+    <div class="player-row ${turn === State.playerColor ? 'active' : ''}"><div><span class="turn-marker"></span><span class="pname">${escapeHtml(State.user.name)}</span></div><span class="badge elo tabular-nums">${State.user.rating}</span></div>
+  </div>`));
+  side.appendChild(buildMovesPanel(State.gameMoveHistory));
+  layout.appendChild(side);
+  wrap.appendChild(layout);
+  return wrap;
+}
+
+function checkEngineGameEnd() {
+  const g = State.game;
+  const oppProfile = getEngineProfile(State.playEngineProfileId);
+  if (g.in_checkmate()) {
+    const winner = g.turn() === 'w' ? 'b' : 'w';
+    const youWon = winner === State.playerColor;
+    State.gameOver = true;
+    State.lastResult = {
+      kind: youWon ? 'win' : 'loss',
+      text: youWon ? `Checkmate! You defeated ${oppProfile.name}!` : `Checkmate. ${oppProfile.name} wins.`,
+    };
+  } else if (g.in_draw() || g.in_stalemate() || g.in_threefold_repetition() || g.insufficient_material()) {
+    State.gameOver = true;
+    State.lastResult = { kind: 'draw', text: 'Game drawn.' };
+  }
+}
+
+async function engineMakeMove() {
+  const g = State.game;
+  if (!g || State.gameOver || g.turn() === State.playerColor) return;
+  State.engineThinking = true;
+  render();
+  const runner = State._humanVsEngineInstance || stockfishClient;
+  const uci = await runner.playMove(g.fen(), State._engineConfig || 3, {
+    chess960: State.variant === 'chess960',
+  });
+  State.engineThinking = false;
+  if (!uci || uci === '(none)' || State.page !== 'vs-engine' || State.game !== g) {
+    render();
+    return;
+  }
+  const m = g.move({
+    from: uci.slice(0, 2),
+    to: uci.slice(2, 4),
+    promotion: uci.length > 4 ? uci.slice(4, 5) : undefined,
+  });
+  if (m) {
+    State.gameMoveHistory.push(m.san);
+    State.lastMove = { from: m.from, to: m.to };
+    checkEngineGameEnd();
+  }
+  render();
+}
+
+// =========================================================
+// DUAL-ENGINE CLASH ARENA (Live Thinking & Telemetry)
+// =========================================================
+function startEngineArenaMatch() {
+  disposeArenaEngines();
+  const preset = ARENA_PRESETS[State.arenaPresetIdx] || ARENA_PRESETS[0];
+  const is960 = preset.fen === 'chess960';
+  const startFen = is960 ? chess960Fen() : preset.fen;
+
+  State.arenaEngines = {
+    w: createArenaEngine(State.arenaWhiteProfileId),
+    b: createArenaEngine(State.arenaBlackProfileId),
+  };
+  State.arenaGame = new Chess(startFen);
+  State.arenaInitialFen = startFen;
+  State.arenaIsChess960 = is960;
+  State.arenaUciHistory = [];
+  State.arenaHistoryFens = [startFen.split(' ').slice(0, 4).join(' ')];
+  State.arenaMoveLog = [];
+  State.arenaPaused = false;
+  State.arenaThinkingSide = null;
+  State.arenaInspectIndex = null;
+  State.arenaWhiteSnap = null;
+  State.arenaBlackSnap = null;
+  State.arenaWhiteLastMeta = null;
+  State.arenaBlackLastMeta = null;
+  State.flipBoard = false;
+  State.lastMove = null;
+  navigate('engine-arena');
+  scheduleNextArenaTurn(150);
+}
+
+function syncArenaLiveDom() {
+  const g = State.arenaGame;
+  if (!g) return;
+  const inspecting =
+    State.arenaInspectIndex !== null && State.arenaMoveLog[State.arenaInspectIndex]
+      ? State.arenaMoveLog[State.arenaInspectIndex]
+      : null;
+
+  const activeSide = inspecting ? inspecting.side : State.arenaThinkingSide || g.turn();
+  const wSnap = State.arenaWhiteSnap;
+  const bSnap = State.arenaBlackSnap;
+  const primarySnap = activeSide === 'w' ? (wSnap || bSnap) : (bSnap || wSnap);
+  const secondarySnap = activeSide === 'w' ? bSnap : wSnap;
+
+  const wProfile = getEngineProfile(State.arenaWhiteProfileId);
+  const bProfile = getEngineProfile(State.arenaBlackProfileId);
+  const wTier = getEngineTierMeta(wProfile.id, State.arenaWhiteTier);
+  const bTier = getEngineTierMeta(bProfile.id, State.arenaBlackTier);
+
+  if (State.dom.evalBar) {
+    updateEvalBar(State.dom.evalBar, {
+      whiteCp: primarySnap?.whiteCp ?? 0,
+      whiteMate: primarySnap?.whiteMate ?? null,
+      flipped: State.flipBoard,
+    });
+  }
+  if (State.dom.arrowsSvg) {
+    updateBoardArrows(State.dom.arrowsSvg, primarySnap?.lines || [], {
+      flipped: State.flipBoard,
+      show: State.showCoachArrows,
+      compareLine: secondarySnap?.lines?.[0] || null,
+    });
+  }
+  if (State.dom.arenaDualStrip) {
+    updateDualEvalStrip(State.dom.arenaDualStrip, {
+      whiteName: wProfile.shortName,
+      blackName: bProfile.shortName,
+      whiteSnap: wSnap,
+      blackSnap: bSnap,
+    });
+  }
+  if (State.dom.arenaWhiteCard) {
+    updateEngineThoughtCard(State.dom.arenaWhiteCard, {
+      snapshot: wSnap,
+      profile: wProfile,
+      tierLabel: wTier.label,
+      isThinking: !inspecting && State.arenaThinkingSide === 'w',
+      isActiveTurn: !inspecting && !g.game_over() && g.turn() === 'w',
+      chosenSan: State.arenaWhiteLastMeta?.san || null,
+      elapsedMs: State.arenaWhiteLastMeta?.elapsedMs ?? null,
+    });
+  }
+  if (State.dom.arenaBlackCard) {
+    updateEngineThoughtCard(State.dom.arenaBlackCard, {
+      snapshot: bSnap,
+      profile: bProfile,
+      tierLabel: bTier.label,
+      isThinking: !inspecting && State.arenaThinkingSide === 'b',
+      isActiveTurn: !inspecting && !g.game_over() && g.turn() === 'b',
+      chosenSan: State.arenaBlackLastMeta?.san || null,
+      elapsedMs: State.arenaBlackLastMeta?.elapsedMs ?? null,
+    });
+  }
+}
+
+async function analyzeBothOnPause() {
+  const g = State.arenaGame;
+  if (!g || !State.arenaEngines.w || !State.arenaEngines.b) return;
+  const inspected =
+    State.arenaInspectIndex !== null && State.arenaMoveLog[State.arenaInspectIndex]
+      ? State.arenaMoveLog[State.arenaInspectIndex]
+      : null;
+  const targetFen = inspected ? inspected.fenAfter : g.fen();
+  const token = ++State.arenaLoopToken;
+
+  const wProfile = getEngineProfile(State.arenaWhiteProfileId);
+  const bProfile = getEngineProfile(State.arenaBlackProfileId);
+
+  const wDepth = wProfile.family === 'nnue' ? 12 : 4;
+  const bDepth = bProfile.family === 'nnue' ? 12 : 4;
+
+  await Promise.all([
+    State.arenaEngines.w
+      .analyze(targetFen, {
+        depth: wDepth,
+        multiPv: 3,
+        chess960: State.arenaIsChess960,
+        historyFens: State.arenaHistoryFens,
+        onUpdate: (snap) => {
+          if (token !== State.arenaLoopToken || State.page !== 'engine-arena') return;
+          State.arenaWhiteSnap = snap;
+          syncArenaLiveDom();
+        },
+      })
+      .then((snap) => {
+        if (snap && token === State.arenaLoopToken && State.page === 'engine-arena') {
+          State.arenaWhiteSnap = snap;
+          syncArenaLiveDom();
+        }
+      })
+      .catch(() => null),
+    State.arenaEngines.b
+      .analyze(targetFen, {
+        depth: bDepth,
+        multiPv: 3,
+        chess960: State.arenaIsChess960,
+        historyFens: State.arenaHistoryFens,
+        onUpdate: (snap) => {
+          if (token !== State.arenaLoopToken || State.page !== 'engine-arena') return;
+          State.arenaBlackSnap = snap;
+          syncArenaLiveDom();
+        },
+      })
+      .then((snap) => {
+        if (snap && token === State.arenaLoopToken && State.page === 'engine-arena') {
+          State.arenaBlackSnap = snap;
+          syncArenaLiveDom();
+        }
+      })
+      .catch(() => null),
+  ]);
+}
+
+function scheduleNextArenaTurn(delayMs = State.arenaPaceMs) {
+  if (State.arenaPaused || State.page !== 'engine-arena') return;
+  const g = State.arenaGame;
+  if (!g || g.game_over()) return;
+  const token = State.arenaLoopToken;
+  if (State.arenaTimerId) clearTimeout(State.arenaTimerId);
+  State.arenaTimerId = setTimeout(() => {
+    State.arenaTimerId = null;
+    executeArenaPly(token, false);
+  }, delayMs);
+}
+
+async function executeArenaPly(token, stepOnly = false) {
+  const g = State.arenaGame;
+  if (!g || g.game_over() || State.page !== 'engine-arena') return;
+  if (token !== State.arenaLoopToken) return;
+
+  const side = g.turn();
+  const runner = State.arenaEngines[side];
+  if (!runner) return;
+
+  const profileId = side === 'w' ? State.arenaWhiteProfileId : State.arenaBlackProfileId;
+  const tier = side === 'w' ? State.arenaWhiteTier : State.arenaBlackTier;
+  const profile = getEngineProfile(profileId);
+  const tierMeta = getEngineTierMeta(profileId, tier);
+
+  State.arenaThinkingSide = side;
+  State.arenaInspectIndex = null;
+  if (side === 'w') State.arenaWhiteLastMeta = null;
+  else State.arenaBlackLastMeta = null;
+  syncArenaLiveDom();
+
+  const fenBefore = g.fen();
+  const res = await runner
+    .thinkAndMove(fenBefore, {
+      level: tier,
+      multiPv: 3,
+      chess960: State.arenaIsChess960,
+      initialFen: State.arenaInitialFen,
+      uciHistory: State.arenaUciHistory,
+      historyFens: State.arenaHistoryFens,
+      onUpdate: (snap) => {
+        if (token !== State.arenaLoopToken || State.page !== 'engine-arena') return;
+        if (side === 'w') State.arenaWhiteSnap = snap;
+        else State.arenaBlackSnap = snap;
+        syncArenaLiveDom();
+      },
+    })
+    .catch(() => null);
+
+  if (token !== State.arenaLoopToken || State.page !== 'engine-arena' || State.arenaGame !== g) {
+    return;
+  }
+
+  State.arenaThinkingSide = null;
+  if (!res || !res.chosenUci || res.chosenUci === '(none)') {
+    render();
+    return;
+  }
+
+  const m = g.move({
+    from: res.chosenUci.slice(0, 2),
+    to: res.chosenUci.slice(2, 4),
+    promotion: res.chosenUci.length > 4 ? res.chosenUci.slice(4, 5) : undefined,
+  });
+
+  if (!m) {
+    render();
+    return;
+  }
+
+  const fenAfter = g.fen();
+  const meta = {
+    san: m.san,
+    elapsedMs: res.elapsedMs,
+    snapshot: res.snapshot,
+  };
+  if (side === 'w') {
+    State.arenaWhiteSnap = res.snapshot;
+    State.arenaWhiteLastMeta = meta;
+  } else {
+    State.arenaBlackSnap = res.snapshot;
+    State.arenaBlackLastMeta = meta;
+  }
+
+  State.arenaUciHistory.push(res.chosenUci);
+  State.arenaHistoryFens.push(fenAfter.split(' ').slice(0, 4).join(' '));
+  State.arenaMoveLog.push({
+    ply: State.arenaMoveLog.length + 1,
+    side,
+    san: m.san,
+    uci: res.chosenUci,
+    from: m.from,
+    to: m.to,
+    fenAfter,
+    engineName: profile.shortName,
+    tierLabel: tierMeta.label,
+    snapshot: res.snapshot,
+    thoughtText: formatEngineThought(res.snapshot, {
+      profile,
+      tierLabel: tierMeta.label,
+      chosenSan: m.san,
+      isThinking: false,
+    }),
+    elapsedMs: res.elapsedMs,
+  });
+  State.lastMove = { from: m.from, to: m.to };
+
+  if (stepOnly) State.arenaPaused = true;
+  render();
+
+  if (!stepOnly && !State.arenaPaused && !g.game_over()) {
+    scheduleNextArenaTurn(State.arenaPaceMs);
+  }
+}
+
+function renderEngineArena() {
+  if (!State.arenaGame) {
+    startEngineArenaMatch();
+    return document.createElement('div');
+  }
+  const g = State.arenaGame;
+  const wProfile = getEngineProfile(State.arenaWhiteProfileId);
+  const bProfile = getEngineProfile(State.arenaBlackProfileId);
+  const wTier = getEngineTierMeta(wProfile.id, State.arenaWhiteTier);
+  const bTier = getEngineTierMeta(bProfile.id, State.arenaBlackTier);
+
+  const inspecting =
+    State.arenaInspectIndex !== null && State.arenaMoveLog[State.arenaInspectIndex]
+      ? State.arenaMoveLog[State.arenaInspectIndex]
+      : null;
+  const displayGame = inspecting ? new Chess(inspecting.fenAfter) : g;
+  const displayLastMove = inspecting ? { from: inspecting.from, to: inspecting.to } : State.lastMove;
+  const finished = g.game_over();
+
+  const wrap = document.createElement('div');
+  wrap.className = 'view-shell';
+
+  const bar = el(`<div class="view-bar">
+    <div style="display:flex;align-items:center;gap:.45rem;min-width:0">
+      <h1>${iconSvg('duel', 18)} Engine Clash Arena</h1>
+      <span class="badge elo">${escapeHtml(wProfile.shortName)} vs ${escapeHtml(bProfile.shortName)}</span>
+    </div>
+    <div class="view-bar-meta">
+      <button type="button" class="btn gold sm" id="arPlayPause" ${finished ? 'disabled' : ''}>
+        ${iconSvg(State.arenaPaused ? 'play' : 'pause', 13)} <span>${State.arenaPaused ? 'Resume' : 'Pause'}</span>
+      </button>
+      <button type="button" class="btn ghost sm" id="arStep" ${finished || (!State.arenaPaused && State.arenaThinkingSide) ? 'disabled' : ''}>
+        ${iconSvg('step', 13)} <span>Step</span>
+      </button>
+      <select id="arLivePace" aria-label="Arena pace" style="width:auto;padding:.22rem .42rem;font-size:.8rem">
+        <option value="400" ${State.arenaPaceMs === 400 ? 'selected' : ''}>0.4s</option>
+        <option value="1200" ${State.arenaPaceMs === 1200 ? 'selected' : ''}>1.2s</option>
+        <option value="2400" ${State.arenaPaceMs === 2400 ? 'selected' : ''}>2.4s</option>
+      </select>
+      <button type="button" class="btn ghost sm" id="arResetBtn">${iconSvg('refresh', 13)} <span>Rematch</span></button>
+      <button type="button" class="btn ghost sm" id="arSetupBtn">Setup</button>
+    </div>
+  </div>`);
+
+  bar.querySelector('#arPlayPause').onclick = () => {
+    if (State.arenaPaused) {
+      State.arenaPaused = false;
+      State.arenaInspectIndex = null;
+      State.arenaLoopToken += 1;
+      render();
+      scheduleNextArenaTurn(120);
+    } else {
+      State.arenaPaused = true;
+      stopArenaLoop();
+      render();
+      analyzeBothOnPause();
+    }
+  };
+  bar.querySelector('#arStep').onclick = () => {
+    if (finished) return;
+    stopArenaLoop();
+    State.arenaInspectIndex = null;
+    State.arenaPaused = true;
+    executeArenaPly(State.arenaLoopToken, true);
+  };
+  bar.querySelector('#arLivePace').onchange = (e) => {
+    State.arenaPaceMs = Number(e.target.value);
+  };
+  bar.querySelector('#arResetBtn').onclick = () => startEngineArenaMatch();
+  bar.querySelector('#arSetupBtn').onclick = () => navigate('play-menu');
+  wrap.appendChild(bar);
+
+  const layout = document.createElement('div');
+  layout.className = `play-layout dual-arena${State.boardMaximized ? ' board-maximized' : ''}`;
+
+  const boardCol = document.createElement('div');
+  boardCol.className = 'board-column';
+  const stage = buildBoardStage(displayGame, {
+    flip: State.flipBoard,
+    lastMove: displayLastMove,
+    interactive: false,
+    showEvalBar: true,
+    showArrows: true,
+  });
+  State.dom.evalBar = stage.evalBar;
+  State.dom.arrowsSvg = stage.arrowsSvg;
+  boardCol.appendChild(stage.frame);
+
+  const ctrl = document.createElement('div');
+  ctrl.className = 'board-controls';
+  const flipBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 13)} Flip</button>`);
+  flipBtn.onclick = () => {
+    State.flipBoard = !State.flipBoard;
+    render();
+  };
+  const arrBtn = el(`<button type="button" class="btn ghost sm ${State.showCoachArrows ? 'active' : ''}">Arrows: ${State.showCoachArrows ? 'On' : 'Off'}</button>`);
+  arrBtn.onclick = () => {
+    State.showCoachArrows = !State.showCoachArrows;
+    render();
+  };
+  const swapSidesBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('swap', 13)} Swap Matchup</button>`);
+  swapSidesBtn.onclick = () => {
+    [State.arenaWhiteProfileId, State.arenaBlackProfileId] = [State.arenaBlackProfileId, State.arenaWhiteProfileId];
+    [State.arenaWhiteTier, State.arenaBlackTier] = [State.arenaBlackTier, State.arenaWhiteTier];
+    startEngineArenaMatch();
+  };
+  ctrl.appendChild(flipBtn);
+  ctrl.appendChild(arrBtn);
+  ctrl.appendChild(swapSidesBtn);
+  ctrl.appendChild(makeMaxBoardButton());
+  boardCol.appendChild(ctrl);
+  layout.appendChild(boardCol);
+
+  const side = document.createElement('div');
+  side.className = 'play-sidebar';
+
+  // Status banner
+  if (inspecting) {
+    const revBanner = el(`<div class="status-banner" style="display:flex;justify-content:space-between;align-items:center;gap:.4rem">
+      <span>Inspecting Ply ${inspecting.ply}: ${escapeHtml(inspecting.san)} (${escapeHtml(inspecting.engineName)})</span>
+      <button type="button" class="btn gold sm" id="arLiveReturn" style="padding:.15rem .5rem;font-size:.78rem">Live Board</button>
+    </div>`);
+    revBanner.querySelector('#arLiveReturn').onclick = () => {
+      State.arenaInspectIndex = null;
+      render();
+      if (State.arenaPaused) analyzeBothOnPause();
+    };
+    side.appendChild(revBanner);
+  } else if (finished) {
+    let outcome = 'Match Drawn.';
+    let cls = 'draw';
+    if (g.in_checkmate()) {
+      const winnerIsWhite = g.turn() === 'b';
+      const winnerName = winnerIsWhite ? wProfile.name : bProfile.name;
+      outcome = `Checkmate! ${winnerName} (${winnerIsWhite ? 'White' : 'Black'}) wins in ${Math.ceil(State.arenaMoveLog.length / 2)} moves.`;
+      cls = winnerIsWhite ? 'win' : 'loss';
+    }
+    side.appendChild(el(`<div class="status-banner ${cls}">${escapeHtml(outcome)}</div>`));
+  } else if (State.arenaThinkingSide) {
+    const tProf = State.arenaThinkingSide === 'w' ? wProfile : bProfile;
+    side.appendChild(el(`<div class="status-banner">${escapeHtml(tProf.name)} (${State.arenaThinkingSide === 'w' ? 'White' : 'Black'}) thinking... <span class="spinner"></span></div>`));
+  } else {
+    side.appendChild(el(`<div class="status-banner">${State.arenaPaused ? 'Paused — both engines analyzing position' : `${g.turn() === 'w' ? wProfile.name : bProfile.name} to move`}</div>`));
+  }
+
+  // Dual Evaluation Comparison Strip
+  const dualStrip = createDualEvalStrip();
+  State.dom.arenaDualStrip = dualStrip;
+  side.appendChild(dualStrip);
+
+  // Telemetry View Switch
+  const tabBar = el(`<div class="arena-tabs">
+    <div class="pill-switch" id="arTabSwitch">
+      <button type="button" data-t="both" class="${State.arenaTab === 'both' ? 'active' : ''}">Both Thoughts</button>
+      <button type="button" data-t="white" class="${State.arenaTab === 'white' ? 'active' : ''}">White</button>
+      <button type="button" data-t="black" class="${State.arenaTab === 'black' ? 'active' : ''}">Black</button>
+      <button type="button" data-t="log" class="${State.arenaTab === 'log' ? 'active' : ''}">Log (${State.arenaMoveLog.length})</button>
+    </div>
+    <span class="mono small tabular-nums">Move ${Math.floor(State.arenaMoveLog.length / 2) + 1}</span>
+  </div>`);
+  tabBar.querySelectorAll('#arTabSwitch button').forEach((b) => {
+    b.onclick = () => {
+      State.arenaTab = b.dataset.t;
+      render();
+    };
+  });
+  side.appendChild(tabBar);
+
+  if (State.arenaTab === 'log') {
+    const logList = document.createElement('div');
+    logList.className = 'move-eval-list';
+    if (State.arenaMoveLog.length === 0) {
+      logList.innerHTML = '<div class="sf-empty">No moves played yet. Waiting for opening move...</div>';
+    } else {
+      [...State.arenaMoveLog].reverse().forEach((entry, revIdx) => {
+        const realIdx = State.arenaMoveLog.length - 1 - revIdx;
+        const moveNo = `${Math.ceil(entry.ply / 2)}${entry.side === 'w' ? '.' : '...'}`;
+        const lead = entry.snapshot?.lines?.[0];
+        const scoreTxt = lead ? formatEvalScore(lead.whiteCp, lead.whiteMate) : '0.00';
+        const row = el(`<button type="button" class="move-eval-row ${State.arenaInspectIndex === realIdx ? 'selected' : ''}">
+          <span class="mono tabular-nums" style="font-weight:700;color:var(--walnut-dark)">${moveNo} ${escapeHtml(entry.san)}</span>
+          <span class="small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(entry.engineName)}: ${escapeHtml(entry.thoughtText)}</span>
+          <span class="mono tabular-nums" style="font-weight:600">${scoreTxt}</span>
+        </button>`);
+        row.onclick = () => {
+          State.arenaPaused = true;
+          stopArenaLoop();
+          State.arenaInspectIndex = realIdx;
+          State.arenaWhiteSnap = null;
+          State.arenaBlackSnap = null;
+          render();
+          analyzeBothOnPause();
+        };
+        logList.appendChild(row);
+      });
+    }
+    side.appendChild(logList);
+  } else {
+    const cardsBox = document.createElement('div');
+    cardsBox.className = 'arena-cards-split';
+    if (State.arenaTab === 'both' || State.arenaTab === 'white') {
+      const wCard = createEngineThoughtCard({ side: 'w', profile: wProfile, tierLabel: wTier.label });
+      State.dom.arenaWhiteCard = wCard;
+      cardsBox.appendChild(wCard);
+    }
+    if (State.arenaTab === 'both' || State.arenaTab === 'black') {
+      const bCard = createEngineThoughtCard({ side: 'b', profile: bProfile, tierLabel: bTier.label });
+      State.dom.arenaBlackCard = bCard;
+      cardsBox.appendChild(bCard);
+    }
+    side.appendChild(cardsBox);
+  }
+
+  side.appendChild(buildMovesPanel(State.arenaMoveLog.map((x) => x.san)));
+  layout.appendChild(side);
+  wrap.appendChild(layout);
+
+  syncArenaLiveDom();
+  return wrap;
+}
+
+function renderVsHuman() {
+  if (!State.game) State.game = new Chess();
+  const g = State.game;
+  const turn = g.turn();
+  const w = State.members[State.gameWhite] || { name: 'White', rating: 1200 };
+  const b = State.members[State.gameBlack] || { name: 'Black', rating: 1200 };
+  const coachAllowed = !State.gameRated && State.showPlayCoach;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'view-shell';
+  wrap.appendChild(el(`<div class="view-bar">
+    <h1>${escapeHtml(w.name)} vs ${escapeHtml(b.name)}</h1>
+    <div class="view-bar-meta">
+      <span class="tag ${State.gameRated ? 'gold' : 'green'}">${State.gameRated ? 'Rated' : 'Friendly'}</span>
+      ${!State.gameRated ? `<button type="button" class="toggle-btn ${State.showPlayCoach ? 'active' : ''}" id="humCoachBtn">${iconSvg('coach', 14)} Coach: ${State.showPlayCoach ? 'On' : 'Off'}</button>` : ''}
+      <button type="button" class="btn ghost sm" id="leaveHum">Leave Game</button>
+    </div>
+  </div>`));
+  wrap.querySelector('#leaveHum').onclick = () => {
+    stockfishClient.stop();
+    navigate('play-menu');
+  };
+  const hcBtn = wrap.querySelector('#humCoachBtn');
+  if (hcBtn) {
+    hcBtn.onclick = () => {
+      State.showPlayCoach = !State.showPlayCoach;
+      if (!State.showPlayCoach) stockfishClient.stop();
+      render();
+    };
+  }
+
+  const layout = document.createElement('div');
+  layout.className = `play-layout${State.boardMaximized ? ' board-maximized' : ''}`;
+
+  const boardCol = document.createElement('div');
+  boardCol.className = 'board-column';
+  const stage = buildBoardStage(g, {
+    flip: State.flipBoard ? turn === 'b' : false,
+    lastMove: State.lastMove,
+    interactive: !State.gameOver && !State.promotionPending,
+    onMove: async (m) => {
+      const prevSnap = State.sfSnapshot;
+      State.gameMoveHistory.push(m.san);
+      State.lastMove = lastMoveSquares(g);
+      checkHumanGameEnd();
+      if (coachAllowed && prevSnap?.lines?.[0] && !State.gameOver) {
+        const snap = await triggerLiveAnalysis(g.fen(), { depth: 11, multiPv: 3 });
+        if (snap) {
+          State.playCoachLastGrade = gradePlayedMove({
+            prevWhiteCp: prevSnap.whiteCp,
+            prevWhiteMate: prevSnap.whiteMate,
+            nextWhiteCp: snap.whiteCp,
+            nextWhiteMate: snap.whiteMate,
+            moverColor: m.color,
+            playedUci: m.from + m.to + (m.promotion || ''),
+            bestUci: prevSnap.lines[0].uci,
+            bestSan: prevSnap.lines[0].bestMoveSan,
+          });
+        }
+      }
+      render();
+    },
+    showEvalBar: coachAllowed,
+    showArrows: coachAllowed,
+  });
+  State.dom.evalBar = stage.evalBar;
+  State.dom.arrowsSvg = stage.arrowsSvg;
+  boardCol.appendChild(stage.frame);
+
+  const ctrl = document.createElement('div');
+  ctrl.className = 'board-controls';
+  const undoBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('prev', 13)} Undo</button>`);
+  undoBtn.disabled = State.gameMoveHistory.length === 0 || State.gameOver;
+  undoBtn.onclick = () => {
+    g.undo();
+    State.gameMoveHistory.pop();
+    State.lastMove = lastMoveSquares(g);
+    render();
+  };
+  const flipBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 13)} Flip</button>`);
+  flipBtn.onclick = () => {
+    State.flipBoard = !State.flipBoard;
+    render();
+  };
+  const drawBtn = el(`<button type="button" class="btn ghost sm">Draw</button>`);
+  drawBtn.disabled = State.gameOver;
+  drawBtn.onclick = () => finishHumanGame('1/2-1/2', 'agreement');
+  const resignBtn = el(`<button type="button" class="btn danger sm">${escapeHtml(turn === 'w' ? w.name : b.name)} Resigns</button>`);
+  resignBtn.disabled = State.gameOver;
+  resignBtn.onclick = () => finishHumanGame(turn === 'w' ? '0-1' : '1-0', 'resignation');
+  ctrl.appendChild(undoBtn);
+  ctrl.appendChild(flipBtn);
+  ctrl.appendChild(drawBtn);
+  ctrl.appendChild(resignBtn);
+  ctrl.appendChild(makeMaxBoardButton());
+  boardCol.appendChild(ctrl);
+  layout.appendChild(boardCol);
+
+  const side = document.createElement('div');
+  side.className = 'play-sidebar';
+  if (State.gameOver) {
+    side.appendChild(el(`<div class="status-banner ${State.lastResult?.kind || 'draw'}">${escapeHtml(State.lastResult?.text || 'Game over')}</div>`));
+  } else {
+    side.appendChild(el(`<div class="status-banner">${escapeHtml(turn === 'w' ? w.name : b.name)} to move${g.in_check() ? ' (Check)' : ''}</div>`));
+  }
+  side.appendChild(el(`<div class="game-info">
+    <div class="player-row ${turn === 'b' ? 'active' : ''}"><div><span class="turn-marker"></span><span class="pname">${escapeHtml(b.name)}</span></div><span class="badge elo tabular-nums">${b.rating}</span></div>
+    <div class="player-row ${turn === 'w' ? 'active' : ''}"><div><span class="turn-marker"></span><span class="pname">${escapeHtml(w.name)}</span></div><span class="badge elo tabular-nums">${w.rating}</span></div>
+  </div>`));
+  if (coachAllowed) {
+    const sfPanel = createStockfishPanel({
+      title: 'Friendly Coach Analysis',
+      showArrows: State.showCoachArrows,
+      onToggleArrows: () => {
+        State.showCoachArrows = !State.showCoachArrows;
+        applyStockfishDom(State.sfSnapshot, State.playCoachLastGrade);
+      },
+    });
+    State.dom.sfPanel = sfPanel;
+    side.appendChild(sfPanel);
+    triggerLiveAnalysis(g.fen(), { depth: 11, multiPv: 3, grade: State.playCoachLastGrade });
+  }
+  side.appendChild(buildMovesPanel(State.gameMoveHistory));
+  layout.appendChild(side);
+  wrap.appendChild(layout);
+  return wrap;
+}
+
+function checkHumanGameEnd() {
+  if (State.gameOver) return;
+  const g = State.game;
+  if (g.in_checkmate()) finishHumanGame(g.turn() === 'w' ? '0-1' : '1-0', 'checkmate');
+  else if (g.in_draw() || g.in_stalemate() || g.in_threefold_repetition() || g.insufficient_material()) {
+    finishHumanGame('1/2-1/2', g.in_stalemate() ? 'stalemate' : 'draw');
+  }
+}
+
+async function finishHumanGame(result, reason) {
+  State.gameOver = true;
+  const w = State.members[State.gameWhite];
+  const b = State.members[State.gameBlack];
+  let scoreW = 0.5;
+  let kind = 'draw';
+  let text = `Drawn by ${reason}.`;
+  if (result === '1-0') {
+    scoreW = 1;
+    kind = 'win';
+    text = `${w.name} wins by ${reason}!`;
+  } else if (result === '0-1') {
+    scoreW = 0;
+    kind = 'loss';
+    text = `${b.name} wins by ${reason}!`;
+  }
+  let newW = w.rating;
+  let newB = b.rating;
+  if (State.gameRated && w && b) {
+    newW = computeElo(w.rating, b.rating, scoreW);
+    newB = computeElo(b.rating, w.rating, 1 - scoreW);
+    w.rating = newW;
+    b.rating = newB;
+    if (scoreW === 1) {
+      w.wins += 1;
+      b.losses += 1;
+    } else if (scoreW === 0) {
+      w.losses += 1;
+      b.wins += 1;
+    } else {
+      w.draws += 1;
+      b.draws += 1;
+    }
+    await saveMembers();
+    if (State.user.id === w.id) State.user.rating = newW;
+    if (State.user.id === b.id) State.user.rating = newB;
+  }
+  State.lastResult = { kind, text };
+  if (w && b) {
+    await saveGameRecord({
+      ts: Date.now(),
+      type: State.gameRated ? 'rated' : 'friendly',
+      white: { id: w.id, name: w.name, ratingBefore: w.rating, ratingAfter: newW },
+      black: { id: b.id, name: b.name, ratingBefore: b.rating, ratingAfter: newB },
+      result,
+      reason,
+      moves: State.gameMoveHistory.slice(),
+      pgn: State.game.pgn(),
+    });
+  }
+  render();
+}
+
+// =========================================================
+// CLUB HUB (Leaderboard + Annals + Shared Clubs)
+// =========================================================
+function renderClub() {
+  const wrap = document.createElement('div');
+  wrap.className = 'view-shell';
+  wrap.appendChild(el(`<div class="view-bar">
+    <h1>${iconSvg('club', 18)} Club Standings &amp; Match Annals</h1>
+    ${sharedClub ? `<span class="tag green">Shared Firebase Mode</span>` : `<span class="tag">${Object.keys(State.members).length} Members</span>`}
+  </div>`));
+
+  const grid = document.createElement('div');
+  grid.className = 'club-grid';
+
+  // Left: Standings Leaderboard + optional Shared Club creation
+  const left = document.createElement('section');
+  left.className = 'card club-card';
+  left.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.45rem">
+    <h3>Club Standings</h3>
+    ${sharedClub ? `<button type="button" class="btn gold sm" id="createClubBtn">${iconSvg('plus', 13)} New Club</button>` : ''}
+  </div>
+  <div class="scroll-pane" style="flex:1">
+    <table class="leaderboard">
+      <thead><tr><th>#</th><th>Member</th><th>Elo</th><th>W-L-D</th></tr></thead>
+      <tbody>
+        ${Object.values(State.members).length === 0
+          ? `<tr><td colspan="4" class="small italic">${sharedClub ? 'Signed in via school email. Create or open a shared club.' : 'No local members yet.'}</td></tr>`
+          : Object.values(State.members)
+              .sort((a, b) => b.rating - a.rating)
+              .map((m, i) => `<tr class="${m.id === State.user.id ? 'you' : ''}">
+                <td class="rank tabular-nums">${i + 1}</td>
+                <td>${escapeHtml(m.name)}${m.id === State.user.id ? ' <span class="badge">you</span>' : ''}</td>
+                <td class="rating tabular-nums">${m.rating}</td>
+                <td class="mono tabular-nums">${m.wins || 0}-${m.losses || 0}-${m.draws || 0}</td>
+              </tr>`)
+              .join('')}
+      </tbody>
+    </table>
+  </div>`;
+  const clubBtn = left.querySelector('#createClubBtn');
+  if (clubBtn) {
+    clubBtn.onclick = async () => {
+      const nm = prompt('Enter club name:', 'Edugates Varsity');
+      if (!nm) return;
+      const slug = nm.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      await createClub({ name: nm, slug });
+      State.sharedClubs = await listMyClubs();
+      render();
+    };
+  }
+  grid.appendChild(left);
+
+  // Right: Recorded Games Annals
+  const right = document.createElement('section');
+  right.className = 'card club-card';
+  right.innerHTML = `<h3 style="margin-bottom:.45rem">Recorded Games</h3><div class="scroll-pane item-list" id="annalsList"><span class="small italic">Loading games...</span></div>`;
+  const listEl = right.querySelector('#annalsList');
+  loadGameRecords().then((records) => {
+    listEl.innerHTML = '';
+    if (records.length === 0) {
+      listEl.innerHTML = `<p class="small italic" style="color:var(--ink-soft)">No games recorded yet. Play an Over-the-Board game to record your PGN.</p>`;
+      return;
+    }
+    records.forEach((r) => {
+      const item = el(`<div class="list-item">
+        <div class="meta">
+          <h4>${escapeHtml(r.white.name)} vs ${escapeHtml(r.black.name)}</h4>
+          <span class="small tabular-nums">${r.moves.length} plies · ${escapeHtml(r.reason)} · ${formatDate(r.ts)}</span>
+        </div>
+        <div style="display:flex;gap:.35rem;align-items:center">
+          <span class="tag ${r.type === 'rated' ? 'gold' : ''}">${r.type}</span>
+          <span class="mono tabular-nums" style="font-weight:700">${escapeHtml(r.result)}</span>
+        </div>
+      </div>`);
+      item.onclick = () => showGameModal(r);
+      listEl.appendChild(item);
+    });
+  });
+  grid.appendChild(right);
+
+  wrap.appendChild(grid);
+  return wrap;
+}
+
+function showGameModal(r) {
+  const back = el(`<div class="modal-backdrop"></div>`);
+  const m = el(`<div class="modal">
+    <button type="button" class="modal-close">×</button>
+    <h2>${escapeHtml(r.white.name)} vs ${escapeHtml(r.black.name)}</h2>
+    <p class="small tabular-nums">${formatDate(r.ts)} · ${escapeHtml(r.reason)} · <strong>${escapeHtml(r.result)}</strong></p>
+    <hr class="fancy"/>
+    <div class="mono tabular-nums" style="background:var(--paper-dim);padding:.75rem;font-size:.86rem;line-height:1.6;max-height:260px;overflow-y:auto">${formatPGN(r.moves)}</div>
+  </div>`);
+  m.querySelector('.modal-close').onclick = () => back.remove();
+  back.onclick = (e) => {
+    if (e.target === back) back.remove();
+  };
+  back.appendChild(m);
+  document.getElementById('app').appendChild(back);
+}
+
+function formatPGN(moves) {
+  let s = '';
+  for (let i = 0; i < moves.length; i += 2) {
+    s += `${i / 2 + 1}. ${moves[i] || ''} ${moves[i + 1] || ''} `;
+  }
+  return s.trim() || '<em>(no moves)</em>';
+}
+
+// =========================================================
+// UTIL & KEYBOARD NAVIGATION
+// =========================================================
+function el(html) {
   const t = document.createElement('template');
   t.innerHTML = html.trim();
   return t.content.firstChild;
 }
-function escapeHtml(s){
-  if(s==null) return '';
-  return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[c]);
 }
-function formatDate(ts){
-  if(!ts) return '';
-  return new Date(ts).toLocaleDateString(undefined, {year:'numeric',month:'short',day:'numeric'});
+function formatDate(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-// =========================================================
-// INIT
-// =========================================================
-document.addEventListener('keydown',event=>{
-  if(event.target instanceof HTMLInputElement||event.target instanceof HTMLSelectElement||event.target instanceof HTMLTextAreaElement) return;
-  if(State.studyMode!=='learn'||!['study-opening','study-trap'].includes(State.page)||!State.studyContext) return;
-  const total=State.studyContext.line.length;
-  if(event.key==='ArrowRight'&&State.studyStep<total){
-    State.studyStep+=1; recordLessonStep(State.studyContext,State.page==='study-trap'?'trap':'opening',State.studyStep,total); render();
+document.addEventListener('keydown', (event) => {
+  if (
+    event.target instanceof HTMLInputElement ||
+    event.target instanceof HTMLSelectElement ||
+    event.target instanceof HTMLTextAreaElement
+  ) {
+    return;
   }
-  if(event.key==='ArrowLeft'&&State.studyStep>0){ State.studyStep-=1; render(); }
+  if (State.studyMode !== 'learn') return;
+  if (State.page === 'openings') {
+    const active =
+      State.openingsTab === 'traps'
+        ? TRAPS.find((t) => t.id === State.selectedTrapId)
+        : OPENINGS.find((o) => o.id === State.selectedOpeningId);
+    if (!active) return;
+    const total = (active.line || []).length;
+    if (event.key === 'ArrowRight' && State.studyStep < total) {
+      State.studyStep += 1;
+      recordStudyProgress(State.openingsTab === 'traps' ? 'traps' : 'openings', active, State.studyStep, total);
+      render();
+    } else if (event.key === 'ArrowLeft' && State.studyStep > 0) {
+      State.studyStep -= 1;
+      render();
+    }
+  } else if (State.page === 'strategy') {
+    const active = MIDDLEGAME_LESSONS.find((m) => m.id === State.selectedStrategyId);
+    if (!active) return;
+    const total = (active.line || []).length;
+    if (event.key === 'ArrowRight' && State.studyStep < total) {
+      State.studyStep += 1;
+      recordStudyProgress('middlegame', active, State.studyStep, total);
+      render();
+    } else if (event.key === 'ArrowLeft' && State.studyStep > 0) {
+      State.studyStep -= 1;
+      render();
+    }
+  }
 });
 
-(async ()=>{
+(async () => {
   await loadMembers();
   await loadCurrentUser();
   render();
