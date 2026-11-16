@@ -32,6 +32,16 @@ import {
   getEngineTierMeta,
 } from './domain/engine-arena.js';
 import {
+  FAMOUS_SAMPLE_GAMES,
+  STANDARD_START_FEN,
+  buildPositionAtPly,
+  computeGameAccuracySummary,
+  detectBinaryFileSignature,
+  exportGameToPgn,
+  parseImportedGames,
+  stepPly,
+} from './domain/pgn-import.js';
+import {
   gradePlayedMove,
   isStockfishSafeFen,
   resolveEngineLevelConfig,
@@ -218,6 +228,8 @@ const State = {
   practiceFeedback: null,
   endgameSparring: false,
   endgameSparThinking: false,
+  endgameMoves: [],
+  endgameViewPly: null,
   showStudyStockfish: true,
 
   // Puzzles & Quiz Sprint state
@@ -229,6 +241,7 @@ const State = {
   puzzlePage: 1,
   activePuzzle: PUZZLES[0] || null,
   puzzlePly: 0,
+  puzzleViewPly: null,
   puzzleFeedback: null,
   puzzleSolvedThisRun: false,
   puzzleAutoReplying: false,
@@ -237,12 +250,14 @@ const State = {
   quizSession: createQuizSession(QUIZZES, { category: 'All', count: 10 }),
   showQuizStockfish: false,
 
-  // Stockfish 19 Live Coach & Engine state
-  coachMode: 'guided', // 'guided' | 'sandbox' | 'blunder-check'
+  // Stockfish 19 Live Coach, PGN Game Analyzer & Move Cursor state
+  coachMode: 'guided', // 'guided' | 'sandbox' | 'blunder-check' | 'pgn-analysis'
   coachEngineLevel: 3,
   coachPlayerColor: 'w',
   coachGame: null,
-  coachHistory: [],
+  coachInitialFen: STANDARD_START_FEN,
+  coachMoves: [],
+  coachPly: 0,
   coachThinking: false,
   coachLastGrade: null,
   coachPendingBlunder: null,
@@ -250,6 +265,15 @@ const State = {
   coachFenError: null,
   coachPausedOnMateOrDraw: null,
   showCoachArrows: true,
+  coachImportedGames: [],
+  coachSelectedGameIdx: 0,
+  coachGameMeta: null,
+  coachImportDrawerOpen: false,
+  coachPasteBuffer: '',
+  coachImportError: null,
+  coachFullScanRunning: false,
+  coachFullScanDone: 0,
+  coachScanToken: 0,
 
   // Live Stockfish snapshot & widget refs
   sfSnapshot: null,
@@ -282,7 +306,7 @@ const State = {
   arenaMoveLog: [],
   arenaPaused: false,
   arenaThinkingSide: null,
-  arenaInspectIndex: null,
+  arenaViewPly: null,
   arenaWhiteSnap: null,
   arenaBlackSnap: null,
   arenaWhiteLastMeta: null,
@@ -304,7 +328,9 @@ const State = {
   gameRated: false,
   gameWhite: null,
   gameBlack: null,
+  gameInitialFen: STANDARD_START_FEN,
   gameMoveHistory: [],
+  gameViewPly: null,
   gameOver: false,
   lastResult: null,
   engineThinking: false,
@@ -573,6 +599,11 @@ function disposeArenaEngines() {
   }
 }
 
+function stopCoachFullGameScan() {
+  State.coachScanToken += 1;
+  State.coachFullScanRunning = false;
+}
+
 function makeMaxBoardButton() {
   const btn = el(`<button type="button" class="btn ghost sm ${State.boardMaximized ? 'active' : ''}" title="${State.boardMaximized ? 'Restore balanced panel' : 'Maximize board size'}">${iconSvg(State.boardMaximized ? 'compress' : 'expand', 13)} <span>${State.boardMaximized ? 'Fit' : 'Max'}</span></button>`);
   btn.onclick = () => {
@@ -580,6 +611,33 @@ function makeMaxBoardButton() {
     render();
   };
   return btn;
+}
+
+function buildMoveTransportBar({ ply = 0, total = 0, onNavigate }) {
+  const wrap = document.createElement('div');
+  wrap.className = 'move-transport';
+  const cur = Math.max(0, Math.min(total, Number(ply) || 0));
+
+  const btns = [
+    { action: 'first', html: `${iconSvg('first', 13)}<span>First</span>`, disabled: cur <= 0, title: 'First move (Home)' },
+    { action: 'back', html: `${iconSvg('prev', 13)}<span>Back</span>`, disabled: cur <= 0, title: 'Previous move (Left Arrow)' },
+    { action: 'forward', html: `<span>Forward</span>${iconSvg('next', 13)}`, disabled: cur >= total, title: 'Next move (Right Arrow)' },
+    { action: 'last', html: `<span>Last</span>${iconSvg('last', 13)}`, disabled: cur >= total, title: 'Last move (End)' },
+  ];
+
+  btns.forEach(({ action, html, disabled, title }) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.title = title;
+    b.setAttribute('aria-label', title);
+    b.disabled = disabled;
+    b.innerHTML = html;
+    b.onclick = () => {
+      if (onNavigate) onNavigate(stepPly(cur, action, total));
+    };
+    wrap.appendChild(b);
+  });
+  return wrap;
 }
 
 // =========================================================
@@ -597,6 +655,7 @@ const ROUTE_ALIASES = {
 function navigate(page, ctx = null) {
   stockfishClient.stop();
   stopArenaLoop();
+  stopCoachFullGameScan();
   State.selectedSquare = null;
   State.legalDests = [];
   State.promotionPending = null;
@@ -982,6 +1041,7 @@ function renderHome() {
     <div style="display:flex;gap:.35rem;flex-wrap:wrap">
       <button type="button" class="btn sm" id="goGuided">Guided Sparring</button>
       <button type="button" class="btn ghost sm" id="goSandbox">FEN Lab</button>
+      <button type="button" class="btn ghost sm" id="goImportPgn">${iconSvg('upload', 13)} Import PGN / Text</button>
       <button type="button" class="btn ghost sm" id="goBlunder">Blunder Check</button>
     </div>
   </section>`);
@@ -991,6 +1051,11 @@ function renderHome() {
   };
   coachCard.querySelector('#goSandbox').onclick = () => {
     State.coachMode = 'sandbox';
+    navigate('coach');
+  };
+  coachCard.querySelector('#goImportPgn').onclick = () => {
+    State.coachMode = 'pgn-analysis';
+    State.coachImportDrawerOpen = true;
     navigate('coach');
   };
   coachCard.querySelector('#goBlunder').onclick = () => {
@@ -1233,35 +1298,310 @@ function findKingSquare(game, color) {
   return null;
 }
 
-function buildMovesPanel(moves) {
+function buildMovesPanel(
+  moves,
+  {
+    currentPly = null,
+    onSelectPly = null,
+    title = 'Moves',
+    extraHeaderEl = null,
+  } = {},
+) {
+  const total = Array.isArray(moves) ? moves.length : 0;
+  const activePly = currentPly != null ? Math.max(0, Math.min(total, currentPly)) : total;
   const panel = document.createElement('div');
   panel.className = 'moves-panel';
-  panel.innerHTML = '<h4>Moves</h4>';
+
+  const head = document.createElement('div');
+  head.className = 'moves-head';
+  head.innerHTML = `<div style="display:flex;align-items:center;gap:.4rem">
+    <h4>${escapeHtml(title)}</h4>
+    <span class="small mono tabular-nums">${activePly}/${total}</span>
+  </div>`;
+
+  const headActions = document.createElement('div');
+  headActions.style.cssText = 'display:flex;align-items:center;gap:.3rem';
+  if (onSelectPly && total > 0) {
+    const startBtn = el(`<button type="button" class="moves-start-btn ${activePly === 0 ? 'current' : ''}">Start</button>`);
+    startBtn.onclick = () => onSelectPly(0);
+    headActions.appendChild(startBtn);
+  }
+  if (extraHeaderEl) headActions.appendChild(extraHeaderEl);
+  head.appendChild(headActions);
+  panel.appendChild(head);
+
   const ml = document.createElement('div');
   ml.className = 'moves-list tabular-nums';
-  if (moves.length === 0) {
+  if (total === 0) {
     ml.appendChild(el(`<div class="small italic" style="grid-column:span 3;color:var(--ink-soft)">No moves yet.</div>`));
   } else {
-    for (let i = 0; i < moves.length; i += 2) {
+    const renderMoveCell = (plyIdx) => {
+      const item = moves[plyIdx];
+      if (!item) return el('<div></div>');
+      const san = typeof item === 'string' ? item : item.san || '';
+      const grade = typeof item === 'object' ? item.grade : null;
+      const plyNo = plyIdx + 1;
+      const isCur = plyNo === activePly;
+      const gradeHtml = grade?.symbol
+        ? `<span class="mv-grade mv-grade-${grade.grade}">${escapeHtml(grade.symbol)}</span>`
+        : '';
+      const cell = el(`<div class="move${isCur ? ' current' : ''}" role="${onSelectPly ? 'button' : 'text'}" tabindex="${onSelectPly ? '0' : '-1'}">
+        <span>${escapeHtml(san)}</span>${gradeHtml}
+      </div>`);
+      if (onSelectPly) {
+        cell.onclick = () => onSelectPly(plyNo);
+        cell.onkeydown = (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onSelectPly(plyNo);
+          }
+        };
+      }
+      return cell;
+    };
+
+    for (let i = 0; i < total; i += 2) {
       ml.appendChild(el(`<div class="num">${i / 2 + 1}.</div>`));
-      ml.appendChild(el(`<div class="move">${moves[i] || ''}</div>`));
-      ml.appendChild(el(`<div class="move">${moves[i + 1] || ''}</div>`));
+      ml.appendChild(renderMoveCell(i));
+      ml.appendChild(i + 1 < total ? renderMoveCell(i + 1) : el('<div></div>'));
     }
   }
   panel.appendChild(ml);
   setTimeout(() => {
-    panel.scrollTop = panel.scrollHeight;
+    const curEl = ml.querySelector('.move.current');
+    if (curEl && typeof curEl.scrollIntoView === 'function') {
+      curEl.scrollIntoView({ block: 'nearest' });
+    } else if (activePly >= total) {
+      panel.scrollTop = panel.scrollHeight;
+    }
   }, 0);
   return panel;
 }
 
 // =========================================================
-// STOCKFISH 19 LIVE COACH WORKSPACE
+// STOCKFISH 19 LIVE COACH, PGN IMPORTER & ANALYZER
 // =========================================================
+function buildRichMovesFromSans(startFen, sans = []) {
+  const g = new Chess(startFen || STANDARD_START_FEN);
+  const out = [];
+  sans.forEach((entry, idx) => {
+    const rawSan = typeof entry === 'string' ? entry : entry.san || entry.uci;
+    const fenBefore = g.fen();
+    const m = g.move(rawSan, { sloppy: true });
+    if (!m) return;
+    out.push({
+      ply: idx + 1,
+      moveNumber: Math.ceil((idx + 1) / 2),
+      color: m.color,
+      san: m.san,
+      uci: m.from + m.to + (m.promotion || ''),
+      from: m.from,
+      to: m.to,
+      promotion: m.promotion || null,
+      fenBefore,
+      fenAfter: g.fen(),
+      comment: typeof entry === 'object' ? entry.comment || '' : '',
+      grade: typeof entry === 'object' ? entry.grade || null : null,
+    });
+  });
+  return out;
+}
+
+function makeCoachMoveEntry(played, fenBefore, fenAfter, plyNum) {
+  return {
+    ply: plyNum,
+    moveNumber: Math.ceil(plyNum / 2),
+    color: played.color,
+    san: played.san,
+    uci: played.from + played.to + (played.promotion || ''),
+    from: played.from,
+    to: played.to,
+    promotion: played.promotion || null,
+    fenBefore,
+    fenAfter,
+    comment: '',
+    grade: null,
+  };
+}
+
+function navigateCoachPly(nextPly) {
+  const total = State.coachMoves.length;
+  const clamped = Math.max(0, Math.min(total, nextPly));
+  const pos = buildPositionAtPly(State.coachInitialFen, State.coachMoves, clamped, Chess);
+  State.coachPly = pos.ply;
+  State.coachGame = pos.game;
+  State.coachLastGrade = pos.currentMove?.grade || null;
+  State.coachPendingBlunder = null;
+  State.coachThinking = false;
+  State.coachFenInput = pos.fen;
+  State.lastMove = pos.lastMove;
+  State.selectedSquare = null;
+  State.legalDests = [];
+  render();
+}
+
+function selectImportedCoachGame(idx) {
+  const list = State.coachImportedGames || [];
+  const chosen = list[idx];
+  if (!chosen) return;
+  stopCoachFullGameScan();
+  State.coachSelectedGameIdx = idx;
+  State.coachInitialFen = chosen.startFen || STANDARD_START_FEN;
+  State.coachMoves = chosen.moves.map((m) => ({ ...m }));
+  State.coachGameMeta = {
+    title: chosen.title,
+    headers: chosen.headers || {},
+    result: chosen.result || '*',
+    warning: chosen.warning || null,
+    sourceName: chosen.sourceName || State.coachGameMeta?.sourceName || '',
+  };
+  State.coachImportDrawerOpen = false;
+  State.coachImportError = null;
+  State.coachFullScanDone = 0;
+  State.coachMode = 'pgn-analysis';
+  const startPly = State.coachMoves.length > 0 ? 1 : 0;
+  const pos = buildPositionAtPly(State.coachInitialFen, State.coachMoves, startPly, Chess);
+  State.coachPly = pos.ply;
+  State.coachGame = pos.game;
+  State.coachLastGrade = pos.currentMove?.grade || null;
+  State.coachPendingBlunder = null;
+  State.coachFenInput = pos.fen;
+  State.lastMove = pos.lastMove;
+  render();
+}
+
+function loadParsedGamesIntoCoach(games, sourceName = '') {
+  State.coachImportedGames = games.map((g) => ({ ...g, sourceName }));
+  selectImportedCoachGame(0);
+}
+
+function openGameInCoachAnalyzer({
+  title = 'Game Analysis',
+  headers = {},
+  startFen = STANDARD_START_FEN,
+  moves = [],
+  result = '*',
+  sourceName = '',
+  jumpToEnd = false,
+} = {}) {
+  stopCoachFullGameScan();
+  const baseFen = startFen || STANDARD_START_FEN;
+  const richMoves =
+    moves.length > 0 && typeof moves[0] === 'object' && moves[0].fenAfter
+      ? moves.map((m) => ({ ...m }))
+      : buildRichMovesFromSans(baseFen, moves);
+
+  State.coachMode = 'pgn-analysis';
+  State.coachImportedGames = [
+    { title, headers, startFen: baseFen, moves: richMoves, result, warning: null, sourceName },
+  ];
+  State.coachSelectedGameIdx = 0;
+  State.coachInitialFen = baseFen;
+  State.coachMoves = richMoves;
+  State.coachGameMeta = { title, headers, result, warning: null, sourceName };
+  State.coachImportDrawerOpen = false;
+  State.coachImportError = null;
+  State.coachFullScanDone = 0;
+  State.coachPly = jumpToEnd ? richMoves.length : richMoves.length > 0 ? 1 : 0;
+
+  const pos = buildPositionAtPly(baseFen, richMoves, State.coachPly, Chess);
+  State.coachGame = pos.game;
+  State.coachLastGrade = pos.currentMove?.grade || null;
+  State.coachFenInput = pos.fen;
+  State.lastMove = pos.lastMove;
+  navigate('coach');
+}
+
+async function handleGameFileImport(file) {
+  if (!file) return;
+  try {
+    const buffer = await file.arrayBuffer();
+    const binKind = detectBinaryFileSignature(new Uint8Array(buffer));
+    if (binKind) {
+      State.coachImportError = `"${file.name}" is a ${binKind}, not a .pgn or .txt notation file. Open a PGN / text file or paste moves below.`;
+      render();
+      return;
+    }
+    const text = new TextDecoder('utf-8').decode(buffer);
+    State.coachPasteBuffer = text;
+    const parsed = parseImportedGames(text, Chess);
+    if (!parsed.ok) {
+      State.coachImportError = parsed.error;
+      render();
+      return;
+    }
+    loadParsedGamesIntoCoach(parsed.games, file.name);
+  } catch (err) {
+    State.coachImportError = err instanceof Error ? err.message : 'Unable to read that file.';
+    render();
+  }
+}
+
+async function runCoachFullGameScan() {
+  if (State.coachMoves.length === 0) return;
+  if (State.coachFullScanRunning) {
+    stopCoachFullGameScan();
+    render();
+    return;
+  }
+
+  const token = ++State.coachScanToken;
+  State.coachFullScanRunning = true;
+  State.coachFullScanDone = 0;
+  render();
+
+  let prevSnap = await stockfishClient.analyze(State.coachInitialFen, { depth: 9, multiPv: 1 });
+  for (let i = 0; i < State.coachMoves.length; i += 1) {
+    if (token !== State.coachScanToken || State.page !== 'coach') return;
+    const move = State.coachMoves[i];
+    const nextSnap = await stockfishClient.analyze(move.fenAfter, { depth: 9, multiPv: 1 });
+    if (token !== State.coachScanToken || State.page !== 'coach') return;
+
+    if (prevSnap && nextSnap) {
+      const topLine = prevSnap.lines?.[0];
+      move.grade = gradePlayedMove({
+        prevWhiteCp: prevSnap.whiteCp,
+        prevWhiteMate: prevSnap.whiteMate,
+        nextWhiteCp: nextSnap.whiteCp,
+        nextWhiteMate: nextSnap.whiteMate,
+        moverColor: move.color,
+        playedUci: move.uci,
+        bestUci: topLine?.uci || '',
+        bestSan: topLine?.bestMoveSan || '',
+      });
+    }
+    prevSnap = nextSnap;
+    State.coachFullScanDone = i + 1;
+    if (State.coachPly === i + 1) State.coachLastGrade = move.grade;
+    if ((i + 1) % 3 === 0 || i + 1 === State.coachMoves.length) {
+      render();
+    }
+  }
+
+  if (token === State.coachScanToken) {
+    State.coachFullScanRunning = false;
+    render();
+  }
+}
+
+function downloadPgnFile(filename, pgnText) {
+  const blob = new Blob([pgnText], { type: 'application/x-chess-pgn;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function ensureCoachGame() {
   if (!State.coachGame) {
-    State.coachGame = new Chess();
-    State.coachHistory = [];
+    State.coachInitialFen = STANDARD_START_FEN;
+    State.coachGame = new Chess(State.coachInitialFen);
+    State.coachMoves = [];
+    State.coachPly = 0;
     State.coachLastGrade = null;
     State.coachPendingBlunder = null;
     State.coachFenInput = State.coachGame.fen();
@@ -1270,8 +1610,17 @@ function ensureCoachGame() {
 
 function startNewCoachSession(startFen = null) {
   stockfishClient.stop();
-  State.coachGame = startFen ? new Chess(startFen) : new Chess();
-  State.coachHistory = [];
+  stopCoachFullGameScan();
+  const baseFen = startFen || STANDARD_START_FEN;
+  State.coachInitialFen = baseFen;
+  State.coachGame = new Chess(baseFen);
+  State.coachMoves = [];
+  State.coachPly = 0;
+  State.coachGameMeta = null;
+  State.coachImportedGames = [];
+  State.coachSelectedGameIdx = 0;
+  State.coachImportError = null;
+  State.coachFullScanDone = 0;
   State.coachLastGrade = null;
   State.coachPendingBlunder = null;
   State.coachThinking = false;
@@ -1280,7 +1629,11 @@ function startNewCoachSession(startFen = null) {
   State.lastMove = null;
   State.coachFenError = null;
   State.coachFenInput = State.coachGame.fen();
-  if (State.coachMode !== 'sandbox' && State.coachPlayerColor === 'b' && State.coachGame.turn() === 'w') {
+  if (
+    !['sandbox', 'pgn-analysis'].includes(State.coachMode) &&
+    State.coachPlayerColor === 'b' &&
+    State.coachGame.turn() === 'w'
+  ) {
     setTimeout(() => coachEngineReply(), 200);
   }
   render();
@@ -1289,12 +1642,13 @@ function startNewCoachSession(startFen = null) {
 async function coachEngineReply() {
   const g = State.coachGame;
   if (!g || g.game_over() || State.coachPendingBlunder) return;
-  if (State.coachMode === 'sandbox') return;
+  if (['sandbox', 'pgn-analysis'].includes(State.coachMode)) return;
   if (g.turn() === State.coachPlayerColor) return;
 
   State.coachThinking = true;
   render();
-  const uci = await stockfishClient.playMove(g.fen(), State.coachEngineLevel);
+  const fenBefore = g.fen();
+  const uci = await stockfishClient.playMove(fenBefore, State.coachEngineLevel);
   State.coachThinking = false;
   if (!uci || uci === '(none)' || State.page !== 'coach' || State.coachGame !== g) {
     render();
@@ -1306,7 +1660,11 @@ async function coachEngineReply() {
     promotion: uci.length > 4 ? uci.slice(4, 5) : undefined,
   });
   if (m) {
-    State.coachHistory.push(m.san);
+    if (State.coachPly < State.coachMoves.length) {
+      State.coachMoves = State.coachMoves.slice(0, State.coachPly);
+    }
+    State.coachMoves.push(makeCoachMoveEntry(m, fenBefore, g.fen(), State.coachMoves.length + 1));
+    State.coachPly = State.coachMoves.length;
     State.lastMove = { from: m.from, to: m.to };
   }
   render();
@@ -1318,9 +1676,15 @@ async function handleCoachHumanMove(moveObj) {
   const playedUci = moveObj.from + moveObj.to + (moveObj.promotion || '');
   const prevSnap = State.sfSnapshot?.fen && State.sfSnapshot.fen !== g.fen() ? State.sfSnapshot : null;
   const topLine = prevSnap?.lines?.[0] || null;
+  const fenBefore = moveObj.before || g.fen();
   const afterFen = g.fen();
 
-  State.coachHistory.push(moveObj.san);
+  if (State.coachPly < State.coachMoves.length) {
+    State.coachMoves = State.coachMoves.slice(0, State.coachPly);
+  }
+  const entry = makeCoachMoveEntry(moveObj, fenBefore, afterFen, State.coachMoves.length + 1);
+  State.coachMoves.push(entry);
+  State.coachPly = State.coachMoves.length;
   State.coachFenInput = afterFen;
   State.coachPendingBlunder = null;
 
@@ -1339,6 +1703,7 @@ async function handleCoachHumanMove(moveObj) {
       bestUci: topLine.uci,
       bestSan: topLine.bestMoveSan,
     });
+    entry.grade = grade;
     State.coachLastGrade = grade;
 
     if (
@@ -1353,14 +1718,24 @@ async function handleCoachHumanMove(moveObj) {
     applyStockfishDom(nextSnap, grade);
   }
 
-  if (!g.game_over() && State.coachMode !== 'sandbox' && g.turn() !== State.coachPlayerColor) {
+  if (
+    !g.game_over() &&
+    !['sandbox', 'pgn-analysis'].includes(State.coachMode) &&
+    g.turn() !== State.coachPlayerColor
+  ) {
     coachEngineReply();
   }
 }
 
 function renderCoach() {
   ensureCoachGame();
-  const g = State.coachGame;
+  const pos = buildPositionAtPly(State.coachInitialFen, State.coachMoves, State.coachPly, Chess);
+  State.coachGame = pos.game;
+  const g = pos.game;
+  const totalPlies = State.coachMoves.length;
+  const reviewMove = pos.currentMove;
+  const activeGrade = reviewMove?.grade || (State.coachPly === totalPlies ? State.coachLastGrade : null);
+
   const wrap = document.createElement('div');
   wrap.className = 'view-shell';
 
@@ -1369,24 +1744,28 @@ function renderCoach() {
     <div style="display:flex;align-items:center;gap:.55rem;flex-wrap:wrap">
       <h1>${iconSvg('coach', 18)} Stockfish 19 Coach</h1>
       <div class="pill-switch" id="coachModes">
-        <button type="button" data-mode="guided" class="${State.coachMode === 'guided' ? 'active' : ''}">Guided Sparring</button>
-        <button type="button" data-mode="sandbox" class="${State.coachMode === 'sandbox' ? 'active' : ''}">FEN Sandbox</button>
+        <button type="button" data-mode="guided" class="${State.coachMode === 'guided' ? 'active' : ''}">Guided</button>
+        <button type="button" data-mode="pgn-analysis" class="${State.coachMode === 'pgn-analysis' ? 'active' : ''}">Game Analysis</button>
+        <button type="button" data-mode="sandbox" class="${State.coachMode === 'sandbox' ? 'active' : ''}">FEN Lab</button>
         <button type="button" data-mode="blunder-check" class="${State.coachMode === 'blunder-check' ? 'active' : ''}">Blunder Check</button>
       </div>
     </div>
     <div class="view-bar-meta">
-      <select id="coachLvl" aria-label="Coach sparring strength" style="width:auto;padding:.24rem .5rem;font-size:.84rem">
-        ${[1, 2, 3, 4, 5]
-          .map((n) => {
-            const cfg = resolveEngineLevelConfig(n);
-            return `<option value="${n}" ${State.coachEngineLevel === n ? 'selected' : ''}>Lvl ${n}: ${cfg.label}</option>`;
-          })
-          .join('')}
-      </select>
-      <div class="pill-switch" id="coachSide">
-        <button type="button" data-c="w" class="${State.coachPlayerColor === 'w' ? 'active' : ''}">White</button>
-        <button type="button" data-c="b" class="${State.coachPlayerColor === 'b' ? 'active' : ''}">Black</button>
-      </div>
+      <button type="button" class="toggle-btn ${State.coachImportDrawerOpen ? 'active' : ''}" id="coachImportBtn">${iconSvg('upload', 13)} Import PGN / Text</button>
+      ${State.coachMode === 'guided' || State.coachMode === 'blunder-check' ? `
+        <select id="coachLvl" aria-label="Coach sparring strength" style="width:auto;padding:.24rem .5rem;font-size:.84rem">
+          ${[1, 2, 3, 4, 5]
+            .map((n) => {
+              const cfg = resolveEngineLevelConfig(n);
+              return `<option value="${n}" ${State.coachEngineLevel === n ? 'selected' : ''}>Lvl ${n}: ${cfg.label}</option>`;
+            })
+            .join('')}
+        </select>
+        <div class="pill-switch" id="coachSide">
+          <button type="button" data-c="w" class="${State.coachPlayerColor === 'w' ? 'active' : ''}">White</button>
+          <button type="button" data-c="b" class="${State.coachPlayerColor === 'b' ? 'active' : ''}">Black</button>
+        </div>
+      ` : ''}
       <button type="button" class="btn gold sm" id="coachNew">${iconSvg('refresh', 14)} New</button>
     </div>
   </div>`);
@@ -1394,7 +1773,10 @@ function renderCoach() {
   bar.querySelectorAll('#coachModes button').forEach((b) => {
     b.onclick = () => {
       State.coachMode = b.dataset.mode;
-      if (State.coachMode !== 'sandbox' && State.coachGame.game_over()) {
+      if (State.coachMode === 'pgn-analysis' && State.coachMoves.length === 0) {
+        State.coachImportDrawerOpen = true;
+      }
+      if (!['sandbox', 'pgn-analysis'].includes(State.coachMode) && State.coachGame.game_over()) {
         startNewCoachSession();
       } else {
         State.coachPendingBlunder = null;
@@ -1402,9 +1784,21 @@ function renderCoach() {
       }
     };
   });
-  bar.querySelector('#coachLvl').onchange = (e) => {
-    State.coachEngineLevel = Number(e.target.value);
+  bar.querySelector('#coachImportBtn').onclick = () => {
+    if (State.coachMode !== 'pgn-analysis') {
+      State.coachMode = 'pgn-analysis';
+      State.coachImportDrawerOpen = true;
+    } else {
+      State.coachImportDrawerOpen = !State.coachImportDrawerOpen;
+    }
+    render();
   };
+  const lvlSel = bar.querySelector('#coachLvl');
+  if (lvlSel) {
+    lvlSel.onchange = (e) => {
+      State.coachEngineLevel = Number(e.target.value);
+    };
+  }
   bar.querySelectorAll('#coachSide button').forEach((b) => {
     b.onclick = () => {
       State.coachPlayerColor = b.dataset.c;
@@ -1423,13 +1817,13 @@ function renderCoach() {
     !State.promotionPending &&
     !State.coachThinking &&
     !State.coachPendingBlunder &&
-    (State.coachMode === 'sandbox' || g.turn() === State.coachPlayerColor);
+    (['sandbox', 'pgn-analysis'].includes(State.coachMode) || g.turn() === State.coachPlayerColor);
 
   const boardCol = document.createElement('div');
   boardCol.className = 'board-column';
   const stage = buildBoardStage(g, {
     flip: State.flipBoard,
-    lastMove: State.lastMove,
+    lastMove: pos.lastMove,
     interactive: canMoveNow,
     onMove: (m) => handleCoachHumanMove(m),
     showEvalBar: true,
@@ -1441,33 +1835,24 @@ function renderCoach() {
 
   const ctrl = document.createElement('div');
   ctrl.className = 'board-controls';
-  const undoBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('prev', 14)} Undo</button>`);
-  undoBtn.disabled = State.coachHistory.length === 0 || State.coachThinking;
-  undoBtn.onclick = () => {
-    g.undo();
-    State.coachHistory.pop();
-    if (State.coachMode !== 'sandbox' && !State.coachPendingBlunder && g.turn() !== State.coachPlayerColor && State.coachHistory.length > 0) {
-      g.undo();
-      State.coachHistory.pop();
-    }
-    State.coachPendingBlunder = null;
-    State.coachLastGrade = null;
-    State.coachFenInput = g.fen();
-    State.lastMove = lastMoveSquares(g);
-    render();
-  };
+  ctrl.appendChild(
+    buildMoveTransportBar({
+      ply: State.coachPly,
+      total: totalPlies,
+      onNavigate: (nextPly) => navigateCoachPly(nextPly),
+    }),
+  );
   const flipBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 14)} Flip</button>`);
   flipBtn.onclick = () => {
     State.flipBoard = !State.flipBoard;
     render();
   };
-  ctrl.appendChild(undoBtn);
   ctrl.appendChild(flipBtn);
   ctrl.appendChild(makeMaxBoardButton());
   boardCol.appendChild(ctrl);
   layout.appendChild(boardCol);
 
-  // Sidebar: Status + FEN Sandbox (in sandbox mode) + Live Stockfish Panel + Moves
+  // Sidebar: Blunder Alert / Status + Import / Game Meta / Accuracy + FEN + Live Stockfish + Interactive Moves
   const side = document.createElement('div');
   side.className = 'play-sidebar';
 
@@ -1480,12 +1865,13 @@ function renderCoach() {
       </div>
     </div>`);
     alert.querySelector('#retryBlunder').onclick = () => {
-      g.undo();
-      State.coachHistory.pop();
-      State.coachPendingBlunder = null;
-      State.coachLastGrade = null;
-      State.lastMove = lastMoveSquares(g);
-      render();
+      if (State.coachMoves.length > 0 && State.coachPly === State.coachMoves.length) {
+        State.coachMoves.pop();
+        State.coachPly = State.coachMoves.length;
+      } else {
+        State.coachPly = Math.max(0, State.coachPly - 1);
+      }
+      navigateCoachPly(State.coachPly);
     };
     alert.querySelector('#playAnyway').onclick = () => {
       State.coachPendingBlunder = null;
@@ -1500,11 +1886,173 @@ function renderCoach() {
   } else if (State.coachThinking) {
     side.appendChild(el(`<div class="status-banner">Stockfish 19 is replying... <span class="spinner"></span></div>`));
   } else {
+    const plyStatus =
+      totalPlies > 0
+        ? `Move ${State.coachPly === 0 ? 'Start' : `${reviewMove?.moveNumber}${reviewMove?.color === 'w' ? '.' : '...'} ${reviewMove?.san}`} (${State.coachPly}/${totalPlies})`
+        : `${g.turn() === 'w' ? 'White' : 'Black'} to move`;
     const modeNote =
-      State.coachMode === 'sandbox'
-        ? `${g.turn() === 'w' ? 'White' : 'Black'} to move — click any Stockfish chip to step forward`
-        : `${g.turn() === State.coachPlayerColor ? 'Your turn' : 'Engine turn'} — live MultiPV 3 & move grading active`;
-    side.appendChild(el(`<div class="status-banner">${modeNote}</div>`));
+      State.coachMode === 'pgn-analysis'
+        ? `${plyStatus} — step moves or play variations`
+        : State.coachMode === 'sandbox'
+          ? `${plyStatus} — click any Stockfish chip to step forward`
+          : `${g.turn() === State.coachPlayerColor ? 'Your turn' : 'Engine turn'} · ${plyStatus}`;
+    side.appendChild(el(`<div class="status-banner">${escapeHtml(modeNote)}</div>`));
+  }
+
+  const showImportDrawer =
+    State.coachImportDrawerOpen || (State.coachMode === 'pgn-analysis' && totalPlies === 0 && !State.coachGameMeta);
+
+  if (showImportDrawer) {
+    const impBox = document.createElement('section');
+    impBox.className = 'import-panel';
+    impBox.innerHTML = `
+      <div class="import-panel-head">
+        <strong style="font-size:.92rem">${iconSvg('file', 14)} Open PGN / Text File or Paste Moves</strong>
+        <div style="display:flex;gap:.3rem;align-items:center">
+          <select id="famousGameSel" style="width:auto;padding:.18rem .4rem;font-size:.78rem" aria-label="Load classic sample game">
+            <option value="">Classic Samples...</option>
+            ${FAMOUS_SAMPLE_GAMES.map((fg, i) => `<option value="${i}">${escapeHtml(fg.label)}</option>`).join('')}
+          </select>
+          ${totalPlies > 0 ? `<button type="button" class="btn-ghost-xs" id="closeImpDrawer">Close</button>` : ''}
+        </div>
+      </div>
+      <div class="import-dropzone" id="pgnDropZone">
+        <span class="small">Drop a <strong>.pgn</strong> or <strong>.txt</strong> game file here</span>
+        <label class="btn ghost sm" style="margin:0;text-transform:none;cursor:pointer;padding:.24rem .6rem;font-size:.8rem">
+          ${iconSvg('upload', 13)} Open File
+          <input type="file" id="pgnFileInput" accept=".pgn,.txt,.fen,text/plain" style="display:none" />
+        </label>
+      </div>
+      <textarea id="pgnPasteArea" class="import-textarea" placeholder="Paste full PGN with tags, move text (e.g. 1. e4 e5 2. Nf3 Nc6 3. Bb5), UCI moves (e2e4 e7e5), or a FEN...">${escapeHtml(State.coachPasteBuffer)}</textarea>
+      <div style="display:flex;gap:.35rem;flex-wrap:wrap;justify-content:space-between;align-items:center">
+        <span class="small">Supports .pgn, .txt, multi-game files, comments, &amp; variations</span>
+        <div style="display:flex;gap:.35rem">
+          <button type="button" class="btn ghost sm" id="clearPasteBtn" style="padding:.24rem .55rem;font-size:.8rem">Clear</button>
+          <button type="button" class="btn gold sm" id="loadPasteBtn" style="padding:.24rem .7rem;font-size:.82rem">${iconSvg('paste', 13)} Analyze Pasted Text</button>
+        </div>
+      </div>
+      ${State.coachImportError ? `<div class="puzzle-feedback wrong" style="margin-top:0">${escapeHtml(State.coachImportError)}</div>` : ''}
+    `;
+
+    const closeBtn = impBox.querySelector('#closeImpDrawer');
+    if (closeBtn) {
+      closeBtn.onclick = () => {
+        State.coachImportDrawerOpen = false;
+        render();
+      };
+    }
+    impBox.querySelector('#famousGameSel').onchange = (e) => {
+      if (e.target.value === '') return;
+      const sample = FAMOUS_SAMPLE_GAMES[Number(e.target.value)];
+      if (sample) {
+        State.coachPasteBuffer = sample.pgn;
+        const parsed = parseImportedGames(sample.pgn, Chess);
+        if (parsed.ok) loadParsedGamesIntoCoach(parsed.games, 'Classic Library');
+      }
+    };
+    const fileInput = impBox.querySelector('#pgnFileInput');
+    fileInput.onchange = (e) => {
+      const f = e.target.files?.[0];
+      if (f) handleGameFileImport(f);
+    };
+    const dropZone = impBox.querySelector('#pgnDropZone');
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const f = e.dataTransfer?.files?.[0];
+      if (f) handleGameFileImport(f);
+    });
+    const textArea = impBox.querySelector('#pgnPasteArea');
+    textArea.oninput = (e) => {
+      State.coachPasteBuffer = e.target.value;
+    };
+    impBox.querySelector('#clearPasteBtn').onclick = () => {
+      State.coachPasteBuffer = '';
+      State.coachImportError = null;
+      render();
+    };
+    impBox.querySelector('#loadPasteBtn').onclick = () => {
+      const parsed = parseImportedGames(State.coachPasteBuffer, Chess);
+      if (!parsed.ok) {
+        State.coachImportError = parsed.error;
+        render();
+        return;
+      }
+      loadParsedGamesIntoCoach(parsed.games, 'Pasted Text');
+    };
+    side.appendChild(impBox);
+  }
+
+  if (totalPlies > 0 || State.coachGameMeta) {
+    const titleTxt = State.coachGameMeta?.title || `Live Coach Session (${Math.ceil(totalPlies / 2)} moves)`;
+    const pgnText = exportGameToPgn({
+      headers: State.coachGameMeta?.headers || { White: State.user?.name || 'White', Black: 'Analysis' },
+      startFen: State.coachInitialFen,
+      moves: State.coachMoves,
+      result: State.coachGameMeta?.result || '*',
+    });
+
+    const metaBar = document.createElement('div');
+    metaBar.className = 'game-meta-bar';
+    metaBar.innerHTML = `
+      <div class="game-meta-top">
+        <span class="game-meta-title">${escapeHtml(titleTxt)}</span>
+        <div class="game-meta-actions">
+          ${State.coachImportedGames.length > 1 ? `<select id="multiGameSel" style="width:auto;padding:.15rem .35rem;font-size:.76rem" aria-label="Select game from archive">
+            ${State.coachImportedGames.map((gm, idx) => `<option value="${idx}" ${idx === State.coachSelectedGameIdx ? 'selected' : ''}>#${idx + 1}: ${escapeHtml(gm.title)}</option>`).join('')}
+          </select>` : ''}
+          ${totalPlies > 0 ? `<button type="button" class="btn-ghost-xs" id="scanGameBtn">${iconSvg('scan', 12)} ${State.coachFullScanRunning ? `Stop (${State.coachFullScanDone}/${totalPlies})` : 'Scan All Moves'}</button>` : ''}
+          <button type="button" class="btn-ghost-xs" id="copyPgnBtn">${iconSvg('paste', 12)} Copy PGN</button>
+          <button type="button" class="btn-ghost-xs" id="savePgnBtn">${iconSvg('download', 12)} .pgn</button>
+        </div>
+      </div>
+      ${State.coachGameMeta?.warning ? `<div class="small" style="color:var(--burgundy)">${escapeHtml(State.coachGameMeta.warning)}</div>` : ''}
+      ${reviewMove?.comment ? `<div class="pgn-comment-box">${escapeHtml(reviewMove.comment)}</div>` : ''}
+    `;
+
+    const multiSel = metaBar.querySelector('#multiGameSel');
+    if (multiSel) {
+      multiSel.onchange = (e) => selectImportedCoachGame(Number(e.target.value));
+    }
+    const scanBtn = metaBar.querySelector('#scanGameBtn');
+    if (scanBtn) scanBtn.onclick = () => runCoachFullGameScan();
+    metaBar.querySelector('#copyPgnBtn').onclick = async () => {
+      try {
+        await navigator.clipboard?.writeText(pgnText);
+        metaBar.querySelector('#copyPgnBtn').textContent = 'Copied!';
+      } catch {
+        downloadPgnFile('chess-club-analysis.pgn', pgnText);
+      }
+    };
+    metaBar.querySelector('#savePgnBtn').onclick = () => downloadPgnFile('chess-club-analysis.pgn', pgnText);
+    side.appendChild(metaBar);
+
+    const accSummary = computeGameAccuracySummary(State.coachMoves);
+    if (accSummary.counts.w.total > 0 || accSummary.counts.b.total > 0) {
+      const nextKey =
+        accSummary.keyPlies.find((p) => p > State.coachPly) ?? accSummary.keyPlies[0] ?? null;
+      const accBar = el(`<div class="accuracy-strip">
+        <div class="acc-side">
+          <span class="small">White Accuracy</span>
+          <strong class="tabular-nums">${accSummary.whiteAccuracy != null ? `${accSummary.whiteAccuracy}%` : '--'}</strong>
+          <span class="acc-counts tabular-nums">${accSummary.counts.w.inaccuracy}?! · ${accSummary.counts.w.mistake}? · ${accSummary.counts.w.blunder}??</span>
+        </div>
+        <div class="acc-side">
+          <span class="small">Black Accuracy</span>
+          <strong class="tabular-nums">${accSummary.blackAccuracy != null ? `${accSummary.blackAccuracy}%` : '--'}</strong>
+          <span class="acc-counts tabular-nums">${accSummary.counts.b.inaccuracy}?! · ${accSummary.counts.b.mistake}? · ${accSummary.counts.b.blunder}??</span>
+        </div>
+        ${nextKey != null ? `<button type="button" class="btn gold sm" id="nextKeyBtn" style="padding:.24rem .55rem;font-size:.78rem">Next Key Move</button>` : '<span class="solved-badge">Clean Game</span>'}
+      </div>`);
+      const nextKeyBtn = accBar.querySelector('#nextKeyBtn');
+      if (nextKeyBtn) nextKeyBtn.onclick = () => navigateCoachPly(nextKey);
+      side.appendChild(accBar);
+    }
   }
 
   if (State.coachMode === 'sandbox') {
@@ -1547,7 +2095,7 @@ function renderCoach() {
     showArrows: State.showCoachArrows,
     onToggleArrows: () => {
       State.showCoachArrows = !State.showCoachArrows;
-      applyStockfishDom(State.sfSnapshot, State.coachLastGrade);
+      applyStockfishDom(State.sfSnapshot, activeGrade);
     },
     onApplyMove: (uci) => {
       if (!canMoveNow || !uci || uci.length < 4) return;
@@ -1562,27 +2110,39 @@ function renderCoach() {
       }
     },
     onRetryMove: () => {
-      if (State.coachHistory.length === 0) return;
-      g.undo();
-      State.coachHistory.pop();
-      if (State.coachMode !== 'sandbox' && g.turn() !== State.coachPlayerColor && State.coachHistory.length > 0) {
-        g.undo();
-        State.coachHistory.pop();
+      if (State.coachMoves.length === 0 || State.coachPly === 0) return;
+      if (State.coachPly === State.coachMoves.length) {
+        State.coachMoves.pop();
+        if (
+          !['sandbox', 'pgn-analysis'].includes(State.coachMode) &&
+          State.coachMoves.length > 0 &&
+          State.coachMoves[State.coachMoves.length - 1].color !== State.coachPlayerColor
+        ) {
+          State.coachMoves.pop();
+        }
+        navigateCoachPly(State.coachMoves.length);
+      } else {
+        navigateCoachPly(State.coachPly - 1);
       }
-      State.coachPendingBlunder = null;
-      State.coachLastGrade = null;
-      State.lastMove = lastMoveSquares(g);
-      render();
     },
   });
   State.dom.sfPanel = sfPanel;
   side.appendChild(sfPanel);
-  side.appendChild(buildMovesPanel(State.coachHistory));
+  side.appendChild(
+    buildMovesPanel(State.coachMoves, {
+      currentPly: State.coachPly,
+      onSelectPly: (plyNo) => navigateCoachPly(plyNo),
+    }),
+  );
 
   layout.appendChild(side);
   wrap.appendChild(layout);
 
-  triggerLiveAnalysis(g.fen(), { depth: 14, multiPv: 3, grade: State.coachLastGrade });
+  if (!State.coachFullScanRunning) {
+    triggerLiveAnalysis(g.fen(), { depth: 14, multiPv: 3, grade: activeGrade });
+  } else {
+    applyStockfishDom(State.sfSnapshot, activeGrade);
+  }
   return wrap;
 }
 
@@ -1594,6 +2154,7 @@ function openPuzzleInSolver(puzzle) {
   State.puzzleView = 'solver';
   State.page = 'puzzles';
   State.puzzlePly = 0;
+  State.puzzleViewPly = null;
   State.puzzleFeedback = null;
   State.puzzleSolvedThisRun = false;
   State.puzzleAutoReplying = false;
@@ -1777,12 +2338,20 @@ function renderPuzzleSolver() {
   if (!State.game || State.activePuzzle?.id !== ctx.id) {
     State.game = new Chess(ctx.fen);
     State.puzzlePly = 0;
+    State.puzzleViewPly = null;
     State.puzzleFeedback = null;
     State.flipBoard = ctx.sideToMove === 'Black';
   }
   const g = State.game;
   const totalPlies = ctx.moves.length;
-  const solvedNow = State.puzzlePly >= totalPlies;
+  const maxPlayed = State.puzzlePly;
+  const effectivePly =
+    State.puzzleViewPly != null ? Math.max(0, Math.min(maxPlayed, State.puzzleViewPly)) : maxPlayed;
+  const isReviewing = effectivePly < maxPlayed;
+  const solvedNow = maxPlayed >= totalPlies;
+  const viewPos = isReviewing
+    ? buildPositionAtPly(ctx.fen, ctx.moves, effectivePly, Chess)
+    : { game: g, lastMove: State.lastMove };
 
   const layout = document.createElement('div');
   layout.className = `play-layout${State.boardMaximized ? ' board-maximized' : ''}`;
@@ -1816,6 +2385,7 @@ function renderPuzzleSolver() {
     // First advance to user's played move cleanly so user sees their move right away
     g.move(res.playedSan);
     State.lastMove = { from: playedMove.from, to: playedMove.to };
+    State.puzzleViewPly = null;
 
     if (res.finished) {
       State.puzzlePly = ctx.moves.length;
@@ -1839,10 +2409,10 @@ function renderPuzzleSolver() {
       render();
     }, 240);
   };
-  const stage = buildBoardStage(g, {
+  const stage = buildBoardStage(viewPos.game, {
     flip: State.flipBoard,
-    lastMove: State.lastMove,
-    interactive: !solvedNow && !State.puzzleAutoReplying && !State.promotionPending,
+    lastMove: viewPos.lastMove,
+    interactive: !isReviewing && !solvedNow && !State.puzzleAutoReplying && !State.promotionPending,
     onMove: onPuzzleMove,
     showEvalBar: State.showPuzzleStockfish,
     showArrows: State.showPuzzleStockfish,
@@ -1854,6 +2424,16 @@ function renderPuzzleSolver() {
 
   const ctrl = document.createElement('div');
   ctrl.className = 'board-controls';
+  ctrl.appendChild(
+    buildMoveTransportBar({
+      ply: effectivePly,
+      total: maxPlayed,
+      onNavigate: (nextPly) => {
+        State.puzzleViewPly = nextPly >= maxPlayed ? null : nextPly;
+        render();
+      },
+    }),
+  );
   const backCat = el(`<button type="button" class="btn ghost sm">${iconSvg('prev', 14)} Catalog</button>`);
   backCat.onclick = () => {
     stockfishClient.stop();
@@ -1861,7 +2441,7 @@ function renderPuzzleSolver() {
     render();
   };
   const hintBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('hint', 14)} Hint</button>`);
-  hintBtn.disabled = solvedNow || State.puzzleAutoReplying;
+  hintBtn.disabled = isReviewing || solvedNow || State.puzzleAutoReplying;
   hintBtn.onclick = () => {
     const nextSan = ctx.moves[State.puzzlePly];
     const tmp = new Chess(g.fen());
@@ -1879,6 +2459,7 @@ function renderPuzzleSolver() {
     const remaining = ctx.moves.slice(State.puzzlePly);
     remaining.forEach((san) => g.move(san));
     State.puzzlePly = ctx.moves.length;
+    State.puzzleViewPly = null;
     State.lastMove = lastMoveSquares(g);
     State.puzzleFeedback = { kind: 'correct', text: `Solution (${ctx.moves.join(' ')}) — ${ctx.explanation}` };
     render();
@@ -1917,8 +2498,8 @@ function renderPuzzleSolver() {
 
   const promptCard = el(`<div class="puzzle-prompt">
     <div class="puzzle-prompt-head">
-      <span class="turn-flag ${g.turn() === 'w' ? 'white' : ''}">${g.turn() === 'w' ? 'White to move' : 'Black to move'}</span>
-      <span class="mono tabular-nums" style="font-size:.76rem;color:var(--ink-soft)">Step ${Math.min(Math.floor(State.puzzlePly / 2) + 1, Math.ceil(totalPlies / 2))}/${Math.ceil(totalPlies / 2)}</span>
+      <span class="turn-flag ${viewPos.game.turn() === 'w' ? 'white' : ''}">${viewPos.game.turn() === 'w' ? 'White to move' : 'Black to move'}</span>
+      <span class="mono tabular-nums" style="font-size:.76rem;color:var(--ink-soft)">${isReviewing ? `Reviewing Ply ${effectivePly}/${maxPlayed}` : `Step ${Math.min(Math.floor(maxPlayed / 2) + 1, Math.ceil(totalPlies / 2))}/${Math.ceil(totalPlies / 2)}`}</span>
     </div>
     <h4>${escapeHtml(ctx.theme)}</h4>
     <p style="margin:0;color:var(--ink-soft)">${escapeHtml(ctx.prompt)}</p>
@@ -1927,6 +2508,19 @@ function renderPuzzleSolver() {
 
   if (State.puzzleFeedback) {
     side.appendChild(el(`<div class="puzzle-feedback ${State.puzzleFeedback.kind}">${escapeHtml(State.puzzleFeedback.text)}</div>`));
+  }
+
+  if (maxPlayed > 0) {
+    side.appendChild(
+      buildMovesPanel(ctx.moves.slice(0, maxPlayed), {
+        currentPly: effectivePly,
+        onSelectPly: (plyNo) => {
+          State.puzzleViewPly = plyNo >= maxPlayed ? null : plyNo;
+          render();
+        },
+        title: 'Played Moves',
+      }),
+    );
   }
 
   if (State.showPuzzleStockfish) {
@@ -1940,7 +2534,7 @@ function renderPuzzleSolver() {
     });
     State.dom.sfPanel = sfPanel;
     side.appendChild(sfPanel);
-    triggerLiveAnalysis(g.fen(), { depth: 12, multiPv: 3 });
+    triggerLiveAnalysis(viewPos.game.fen(), { depth: 12, multiPv: 3 });
   }
 
   layout.appendChild(side);
@@ -2406,41 +3000,22 @@ function buildLineStudyWorkspace({ kind, items, active, searchValue = null, onSe
     ctrl.appendChild(flp);
     ctrl.appendChild(makeMaxBoardButton());
   } else {
-    const bFirst = el(`<button type="button" class="btn ghost sm" title="Start">${iconSvg('first', 13)}</button>`);
-    const bPrev = el(`<button type="button" class="btn ghost sm" title="Previous">${iconSvg('prev', 13)} Back</button>`);
-    const bNext = el(`<button type="button" class="btn gold sm" title="Next">Next ${iconSvg('next', 13)}</button>`);
-    const bLast = el(`<button type="button" class="btn ghost sm" title="End">${iconSvg('last', 13)}</button>`);
-    const bFlip = el(`<button type="button" class="btn ghost sm" title="Flip">${iconSvg('flip', 13)}</button>`);
-    bFirst.disabled = step === 0;
-    bPrev.disabled = step === 0;
-    bNext.disabled = step >= total;
-    bLast.disabled = step >= total;
-    bFirst.onclick = () => {
-      State.studyStep = 0;
-      render();
-    };
-    bPrev.onclick = () => {
-      State.studyStep = Math.max(0, step - 1);
-      render();
-    };
-    bNext.onclick = () => {
-      State.studyStep = Math.min(total, step + 1);
-      recordStudyProgress(kind, active, State.studyStep, total);
-      render();
-    };
-    bLast.onclick = () => {
-      State.studyStep = total;
-      recordStudyProgress(kind, active, total, total);
-      render();
-    };
+    ctrl.appendChild(
+      buildMoveTransportBar({
+        ply: step,
+        total,
+        onNavigate: (nextStep) => {
+          State.studyStep = nextStep;
+          if (nextStep > step) recordStudyProgress(kind, active, State.studyStep, total);
+          render();
+        },
+      }),
+    );
+    const bFlip = el(`<button type="button" class="btn ghost sm" title="Flip">${iconSvg('flip', 13)} Flip</button>`);
     bFlip.onclick = () => {
       State.flipBoard = !State.flipBoard;
       render();
     };
-    ctrl.appendChild(bFirst);
-    ctrl.appendChild(bPrev);
-    ctrl.appendChild(bNext);
-    ctrl.appendChild(bLast);
     ctrl.appendChild(bFlip);
     ctrl.appendChild(makeMaxBoardButton());
   }
@@ -2485,7 +3060,22 @@ function buildLineStudyWorkspace({ kind, items, active, searchValue = null, onSe
     triggerLiveAnalysis(g.fen(), { depth: 12, multiPv: 3 });
   }
 
-  side.appendChild(buildMovesPanel(playedMoves));
+  side.appendChild(
+    isPractice
+      ? buildMovesPanel(playedMoves, { title: 'Played Moves' })
+      : buildMovesPanel(
+          line.map((s) => s.move),
+          {
+            currentPly: step,
+            onSelectPly: (nextStep) => {
+              State.studyStep = nextStep;
+              if (nextStep > step) recordStudyProgress(kind, active, State.studyStep, total);
+              render();
+            },
+            title: 'Mainline Moves',
+          },
+        ),
+  );
   layout.appendChild(side);
   detail.appendChild(layout);
   split.appendChild(detail);
@@ -2505,9 +3095,18 @@ function renderEndgames() {
   if (!State.game || State.studyContext?.id !== active.id) {
     State.studyContext = active;
     State.game = new Chess(active.fen);
+    State.endgameMoves = [];
+    State.endgameViewPly = null;
     State.lastMove = null;
   }
   const g = State.game;
+  const totalPlies = State.endgameMoves.length;
+  const viewPly =
+    State.endgameViewPly != null ? Math.max(0, Math.min(totalPlies, State.endgameViewPly)) : totalPlies;
+  const isReviewing = viewPly < totalPlies;
+  const viewPos = isReviewing
+    ? buildPositionAtPly(active.fen, State.endgameMoves, viewPly, Chess)
+    : { game: g, lastMove: State.lastMove };
 
   const bar = el(`<div class="view-bar">
     <div style="display:flex;align-items:center;gap:.55rem;flex-wrap:wrap">
@@ -2563,6 +3162,8 @@ function renderEndgames() {
       State.selectedEndgameId = eg.id;
       State.studyContext = eg;
       State.game = new Chess(eg.fen);
+      State.endgameMoves = [];
+      State.endgameViewPly = null;
       State.lastMove = null;
       State.endgameSparring = false;
       State.flipBoard = new Chess(eg.fen).turn() === 'b';
@@ -2588,6 +3189,8 @@ function renderEndgames() {
       State.selectedEndgameId = picked.id;
       State.studyContext = picked;
       State.game = new Chess(picked.fen);
+      State.endgameMoves = [];
+      State.endgameViewPly = null;
       State.lastMove = null;
       State.endgameSparring = false;
       State.flipBoard = new Chess(picked.fen).turn() === 'b';
@@ -2605,11 +3208,13 @@ function renderEndgames() {
 
   const boardCol = document.createElement('div');
   boardCol.className = 'board-column';
-  const stage = buildBoardStage(g, {
+  const stage = buildBoardStage(viewPos.game, {
     flip: State.flipBoard,
-    lastMove: State.lastMove,
-    interactive: !g.game_over() && !State.endgameSparThinking && !State.promotionPending,
-    onMove: async () => {
+    lastMove: viewPos.lastMove,
+    interactive: !isReviewing && !g.game_over() && !State.endgameSparThinking && !State.promotionPending,
+    onMove: async (playedMove) => {
+      State.endgameMoves.push(playedMove.san);
+      State.endgameViewPly = null;
       State.lastMove = lastMoveSquares(g);
       recordStudyProgress('endgames', active, 1, 1);
       if (State.endgameSparring && !g.game_over()) {
@@ -2618,11 +3223,12 @@ function renderEndgames() {
         const uci = await stockfishClient.playMove(g.fen(), 4);
         State.endgameSparThinking = false;
         if (uci && uci !== '(none)' && State.page === 'endgames' && State.selectedEndgameId === active.id) {
-          g.move({
+          const opp = g.move({
             from: uci.slice(0, 2),
             to: uci.slice(2, 4),
             promotion: uci.length > 4 ? uci.slice(4, 5) : undefined,
           });
+          if (opp) State.endgameMoves.push(opp.san);
           State.lastMove = lastMoveSquares(g);
         }
       }
@@ -2637,9 +3243,21 @@ function renderEndgames() {
 
   const ctrl = document.createElement('div');
   ctrl.className = 'board-controls';
+  ctrl.appendChild(
+    buildMoveTransportBar({
+      ply: viewPly,
+      total: totalPlies,
+      onNavigate: (nextPly) => {
+        State.endgameViewPly = nextPly >= totalPlies ? null : nextPly;
+        render();
+      },
+    }),
+  );
   const rst = el(`<button type="button" class="btn ghost sm">${iconSvg('refresh', 13)} Reset</button>`);
   rst.onclick = () => {
     State.game = new Chess(active.fen);
+    State.endgameMoves = [];
+    State.endgameViewPly = null;
     State.lastMove = null;
     State.endgameSparThinking = false;
     render();
@@ -2677,8 +3295,18 @@ function renderEndgames() {
     });
     State.dom.sfPanel = sfPanel;
     side.appendChild(sfPanel);
-    triggerLiveAnalysis(g.fen(), { depth: 13, multiPv: 3 });
+    triggerLiveAnalysis(viewPos.game.fen(), { depth: 13, multiPv: 3 });
   }
+
+  side.appendChild(
+    buildMovesPanel(State.endgameMoves, {
+      currentPly: viewPly,
+      onSelectPly: (plyNo) => {
+        State.endgameViewPly = plyNo >= totalPlies ? null : plyNo;
+        render();
+      },
+    }),
+  );
 
   layout.appendChild(side);
   detail.appendChild(layout);
@@ -2808,7 +3436,9 @@ function renderPlayMenu() {
     State.flipBoard = State.playerColor === 'b';
     State.vsMode = 'engine';
     State.game = new Chess(State.variant === 'chess960' ? chess960Fen() : undefined);
+    State.gameInitialFen = State.game.fen();
     State.gameMoveHistory = [];
+    State.gameViewPly = null;
     State.gameOver = false;
     State.engineThinking = false;
     State.lastResult = null;
@@ -2976,7 +3606,9 @@ function renderPlayMenu() {
       State.gameRated = humType === 'rated';
       State.vsMode = State.gameRated ? 'human-rated' : 'human-unrated';
       State.game = new Chess(State.variant === 'chess960' ? chess960Fen() : undefined);
+      State.gameInitialFen = State.game.fen();
       State.gameMoveHistory = [];
+      State.gameViewPly = null;
       State.gameOver = false;
       State.lastResult = null;
       State.lastMove = null;
@@ -2996,10 +3628,21 @@ function renderPlayMenu() {
 }
 
 function renderVsEngine() {
-  if (!State.game) State.game = new Chess();
+  if (!State.game) {
+    State.game = new Chess();
+    State.gameInitialFen = State.game.fen();
+  }
   const g = State.game;
   const turn = g.turn();
   const oppProfile = getEngineProfile(State.playEngineProfileId);
+  const totalPlies = State.gameMoveHistory.length;
+  const viewPly =
+    State.gameViewPly != null ? Math.max(0, Math.min(totalPlies, State.gameViewPly)) : totalPlies;
+  const isReviewing = viewPly < totalPlies;
+  const viewPos = isReviewing
+    ? buildPositionAtPly(State.gameInitialFen, State.gameMoveHistory, viewPly, Chess)
+    : { game: g, lastMove: State.lastMove };
+
   const wrap = document.createElement('div');
   wrap.className = 'view-shell';
 
@@ -3007,9 +3650,24 @@ function renderVsEngine() {
     <h1>${escapeHtml(State.user.name)} vs ${escapeHtml(oppProfile.name)}</h1>
     <div class="view-bar-meta">
       <span class="tag gold">${escapeHtml(State._engineLevelDisplay || oppProfile.name)}</span>
+      ${totalPlies > 0 ? `<button type="button" class="btn ghost sm" id="anEngBtn">${iconSvg('coach', 13)} Analyze</button>` : ''}
       <button type="button" class="btn ghost sm" id="leaveEng">Leave Game</button>
     </div>
   </div>`));
+  const anEngBtn = wrap.querySelector('#anEngBtn');
+  if (anEngBtn) {
+    anEngBtn.onclick = () => {
+      const whiteName = State.playerColor === 'w' ? State.user.name : oppProfile.name;
+      const blackName = State.playerColor === 'b' ? State.user.name : oppProfile.name;
+      openGameInCoachAnalyzer({
+        title: `${whiteName} vs ${blackName}`,
+        headers: { Event: 'Edugates Match vs Engine', White: whiteName, Black: blackName },
+        startFen: State.gameInitialFen,
+        moves: State.gameMoveHistory,
+        jumpToEnd: true,
+      });
+    };
+  }
   wrap.querySelector('#leaveEng').onclick = () => {
     if (State._humanVsEngineInstance) State._humanVsEngineInstance.stop();
     stockfishClient.stop();
@@ -3021,12 +3679,18 @@ function renderVsEngine() {
 
   const boardCol = document.createElement('div');
   boardCol.className = 'board-column';
-  const stage = buildBoardStage(g, {
+  const stage = buildBoardStage(viewPos.game, {
     flip: State.flipBoard,
-    lastMove: State.lastMove,
-    interactive: !State.gameOver && !State.promotionPending && !State.engineThinking && turn === State.playerColor,
+    lastMove: viewPos.lastMove,
+    interactive:
+      !isReviewing &&
+      !State.gameOver &&
+      !State.promotionPending &&
+      !State.engineThinking &&
+      turn === State.playerColor,
     onMove: (m) => {
       State.gameMoveHistory.push(m.san);
+      State.gameViewPly = null;
       State.lastMove = lastMoveSquares(g);
       checkEngineGameEnd();
       render();
@@ -3039,13 +3703,24 @@ function renderVsEngine() {
 
   const ctrl = document.createElement('div');
   ctrl.className = 'board-controls';
-  const undoBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('prev', 13)} Take Back</button>`);
-  undoBtn.disabled = State.gameMoveHistory.length < 2 || State.gameOver || State.engineThinking;
+  ctrl.appendChild(
+    buildMoveTransportBar({
+      ply: viewPly,
+      total: totalPlies,
+      onNavigate: (nextPly) => {
+        State.gameViewPly = nextPly >= totalPlies ? null : nextPly;
+        render();
+      },
+    }),
+  );
+  const undoBtn = el(`<button type="button" class="btn ghost sm" title="Take Back">${iconSvg('refresh', 13)} Take Back</button>`);
+  undoBtn.disabled = isReviewing || State.gameMoveHistory.length < 2 || State.gameOver || State.engineThinking;
   undoBtn.onclick = () => {
     g.undo();
     State.gameMoveHistory.pop();
     g.undo();
     State.gameMoveHistory.pop();
+    State.gameViewPly = null;
     State.lastMove = lastMoveSquares(g);
     render();
   };
@@ -3073,7 +3748,9 @@ function renderVsEngine() {
 
   const side = document.createElement('div');
   side.className = 'play-sidebar';
-  if (State.gameOver) {
+  if (isReviewing) {
+    side.appendChild(el(`<div class="status-banner tabular-nums">Reviewing Ply ${viewPly}/${totalPlies} — click Last to resume live board</div>`));
+  } else if (State.gameOver) {
     side.appendChild(el(`<div class="status-banner ${State.lastResult?.kind || 'draw'}">${escapeHtml(State.lastResult?.text || 'Game Over')}</div>`));
   } else if (State.engineThinking) {
     side.appendChild(el(`<div class="status-banner">${escapeHtml(oppProfile.name)} is thinking... <span class="spinner"></span></div>`));
@@ -3084,7 +3761,15 @@ function renderVsEngine() {
     <div class="player-row ${turn !== State.playerColor ? 'active' : ''}"><div><span class="turn-marker"></span><span class="pname">${escapeHtml(oppProfile.name)}</span></div><span class="badge">${escapeHtml(State._engineLevelDisplay || '')}</span></div>
     <div class="player-row ${turn === State.playerColor ? 'active' : ''}"><div><span class="turn-marker"></span><span class="pname">${escapeHtml(State.user.name)}</span></div><span class="badge elo tabular-nums">${State.user.rating}</span></div>
   </div>`));
-  side.appendChild(buildMovesPanel(State.gameMoveHistory));
+  side.appendChild(
+    buildMovesPanel(State.gameMoveHistory, {
+      currentPly: viewPly,
+      onSelectPly: (plyNo) => {
+        State.gameViewPly = plyNo >= totalPlies ? null : plyNo;
+        render();
+      },
+    }),
+  );
   layout.appendChild(side);
   wrap.appendChild(layout);
   return wrap;
@@ -3155,7 +3840,7 @@ function startEngineArenaMatch() {
   State.arenaMoveLog = [];
   State.arenaPaused = false;
   State.arenaThinkingSide = null;
-  State.arenaInspectIndex = null;
+  State.arenaViewPly = null;
   State.arenaWhiteSnap = null;
   State.arenaBlackSnap = null;
   State.arenaWhiteLastMeta = null;
@@ -3166,15 +3851,18 @@ function startEngineArenaMatch() {
   scheduleNextArenaTurn(150);
 }
 
+function getArenaViewedEntry() {
+  if (State.arenaViewPly == null) return null;
+  const clamped = Math.max(0, Math.min(State.arenaMoveLog.length, State.arenaViewPly));
+  return clamped < State.arenaMoveLog.length ? { ply: clamped, entry: clamped > 0 ? State.arenaMoveLog[clamped - 1] : null } : null;
+}
+
 function syncArenaLiveDom() {
   const g = State.arenaGame;
   if (!g) return;
-  const inspecting =
-    State.arenaInspectIndex !== null && State.arenaMoveLog[State.arenaInspectIndex]
-      ? State.arenaMoveLog[State.arenaInspectIndex]
-      : null;
+  const viewed = getArenaViewedEntry();
 
-  const activeSide = inspecting ? inspecting.side : State.arenaThinkingSide || g.turn();
+  const activeSide = viewed ? (viewed.entry?.side || 'w') : State.arenaThinkingSide || g.turn();
   const wSnap = State.arenaWhiteSnap;
   const bSnap = State.arenaBlackSnap;
   const primarySnap = activeSide === 'w' ? (wSnap || bSnap) : (bSnap || wSnap);
@@ -3212,8 +3900,8 @@ function syncArenaLiveDom() {
       snapshot: wSnap,
       profile: wProfile,
       tierLabel: wTier.label,
-      isThinking: !inspecting && State.arenaThinkingSide === 'w',
-      isActiveTurn: !inspecting && !g.game_over() && g.turn() === 'w',
+      isThinking: !viewed && State.arenaThinkingSide === 'w',
+      isActiveTurn: !viewed && !g.game_over() && g.turn() === 'w',
       chosenSan: State.arenaWhiteLastMeta?.san || null,
       elapsedMs: State.arenaWhiteLastMeta?.elapsedMs ?? null,
     });
@@ -3223,8 +3911,8 @@ function syncArenaLiveDom() {
       snapshot: bSnap,
       profile: bProfile,
       tierLabel: bTier.label,
-      isThinking: !inspecting && State.arenaThinkingSide === 'b',
-      isActiveTurn: !inspecting && !g.game_over() && g.turn() === 'b',
+      isThinking: !viewed && State.arenaThinkingSide === 'b',
+      isActiveTurn: !viewed && !g.game_over() && g.turn() === 'b',
       chosenSan: State.arenaBlackLastMeta?.san || null,
       elapsedMs: State.arenaBlackLastMeta?.elapsedMs ?? null,
     });
@@ -3234,11 +3922,12 @@ function syncArenaLiveDom() {
 async function analyzeBothOnPause() {
   const g = State.arenaGame;
   if (!g || !State.arenaEngines.w || !State.arenaEngines.b) return;
-  const inspected =
-    State.arenaInspectIndex !== null && State.arenaMoveLog[State.arenaInspectIndex]
-      ? State.arenaMoveLog[State.arenaInspectIndex]
-      : null;
-  const targetFen = inspected ? inspected.fenAfter : g.fen();
+  const viewed = getArenaViewedEntry();
+  const targetFen = viewed
+    ? viewed.entry
+      ? viewed.entry.fenAfter
+      : State.arenaInitialFen
+    : g.fen();
   const token = ++State.arenaLoopToken;
 
   const wProfile = getEngineProfile(State.arenaWhiteProfileId);
@@ -3316,7 +4005,7 @@ async function executeArenaPly(token, stepOnly = false) {
   const tierMeta = getEngineTierMeta(profileId, tier);
 
   State.arenaThinkingSide = side;
-  State.arenaInspectIndex = null;
+  State.arenaViewPly = null;
   if (side === 'w') State.arenaWhiteLastMeta = null;
   else State.arenaBlackLastMeta = null;
   syncArenaLiveDom();
@@ -3405,6 +4094,18 @@ async function executeArenaPly(token, stepOnly = false) {
   }
 }
 
+function navigateArenaPly(nextPly) {
+  const total = State.arenaMoveLog.length;
+  const clamped = Math.max(0, Math.min(total, nextPly));
+  State.arenaPaused = true;
+  stopArenaLoop();
+  State.arenaViewPly = clamped >= total ? null : clamped;
+  State.arenaWhiteSnap = null;
+  State.arenaBlackSnap = null;
+  render();
+  analyzeBothOnPause();
+}
+
 function renderEngineArena() {
   if (!State.arenaGame) {
     startEngineArenaMatch();
@@ -3416,12 +4117,18 @@ function renderEngineArena() {
   const wTier = getEngineTierMeta(wProfile.id, State.arenaWhiteTier);
   const bTier = getEngineTierMeta(bProfile.id, State.arenaBlackTier);
 
-  const inspecting =
-    State.arenaInspectIndex !== null && State.arenaMoveLog[State.arenaInspectIndex]
-      ? State.arenaMoveLog[State.arenaInspectIndex]
-      : null;
-  const displayGame = inspecting ? new Chess(inspecting.fenAfter) : g;
-  const displayLastMove = inspecting ? { from: inspecting.from, to: inspecting.to } : State.lastMove;
+  const totalPlies = State.arenaMoveLog.length;
+  const viewPly =
+    State.arenaViewPly != null ? Math.max(0, Math.min(totalPlies, State.arenaViewPly)) : totalPlies;
+  const viewed = getArenaViewedEntry();
+  const displayGame = viewed
+    ? new Chess(viewed.entry ? viewed.entry.fenAfter : State.arenaInitialFen)
+    : g;
+  const displayLastMove = viewed
+    ? viewed.entry
+      ? { from: viewed.entry.from, to: viewed.entry.to }
+      : null
+    : State.lastMove;
   const finished = g.game_over();
 
   const wrap = document.createElement('div');
@@ -3444,6 +4151,7 @@ function renderEngineArena() {
         <option value="1200" ${State.arenaPaceMs === 1200 ? 'selected' : ''}>1.2s</option>
         <option value="2400" ${State.arenaPaceMs === 2400 ? 'selected' : ''}>2.4s</option>
       </select>
+      ${totalPlies > 0 ? `<button type="button" class="btn ghost sm" id="arAnalyzeBtn">${iconSvg('coach', 13)} <span>Analyze PGN</span></button>` : ''}
       <button type="button" class="btn ghost sm" id="arResetBtn">${iconSvg('refresh', 13)} <span>Rematch</span></button>
       <button type="button" class="btn ghost sm" id="arSetupBtn">Setup</button>
     </div>
@@ -3452,7 +4160,7 @@ function renderEngineArena() {
   bar.querySelector('#arPlayPause').onclick = () => {
     if (State.arenaPaused) {
       State.arenaPaused = false;
-      State.arenaInspectIndex = null;
+      State.arenaViewPly = null;
       State.arenaLoopToken += 1;
       render();
       scheduleNextArenaTurn(120);
@@ -3466,13 +4174,25 @@ function renderEngineArena() {
   bar.querySelector('#arStep').onclick = () => {
     if (finished) return;
     stopArenaLoop();
-    State.arenaInspectIndex = null;
+    State.arenaViewPly = null;
     State.arenaPaused = true;
     executeArenaPly(State.arenaLoopToken, true);
   };
   bar.querySelector('#arLivePace').onchange = (e) => {
     State.arenaPaceMs = Number(e.target.value);
   };
+  const arAnBtn = bar.querySelector('#arAnalyzeBtn');
+  if (arAnBtn) {
+    arAnBtn.onclick = () => {
+      openGameInCoachAnalyzer({
+        title: `${wProfile.shortName} vs ${bProfile.shortName}`,
+        headers: { Event: 'Engine Clash Arena', White: wProfile.name, Black: bProfile.name },
+        startFen: State.arenaInitialFen,
+        moves: State.arenaMoveLog.map((x) => x.san),
+        jumpToEnd: true,
+      });
+    };
+  }
   bar.querySelector('#arResetBtn').onclick = () => startEngineArenaMatch();
   bar.querySelector('#arSetupBtn').onclick = () => navigate('play-menu');
   wrap.appendChild(bar);
@@ -3495,6 +4215,13 @@ function renderEngineArena() {
 
   const ctrl = document.createElement('div');
   ctrl.className = 'board-controls';
+  ctrl.appendChild(
+    buildMoveTransportBar({
+      ply: viewPly,
+      total: totalPlies,
+      onNavigate: (nextPly) => navigateArenaPly(nextPly),
+    }),
+  );
   const flipBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 13)} Flip</button>`);
   flipBtn.onclick = () => {
     State.flipBoard = !State.flipBoard;
@@ -3505,7 +4232,7 @@ function renderEngineArena() {
     State.showCoachArrows = !State.showCoachArrows;
     render();
   };
-  const swapSidesBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('swap', 13)} Swap Matchup</button>`);
+  const swapSidesBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('swap', 13)} Swap</button>`);
   swapSidesBtn.onclick = () => {
     [State.arenaWhiteProfileId, State.arenaBlackProfileId] = [State.arenaBlackProfileId, State.arenaWhiteProfileId];
     [State.arenaWhiteTier, State.arenaBlackTier] = [State.arenaBlackTier, State.arenaWhiteTier];
@@ -3522,13 +4249,16 @@ function renderEngineArena() {
   side.className = 'play-sidebar';
 
   // Status banner
-  if (inspecting) {
+  if (viewed) {
+    const label = viewed.entry
+      ? `Inspecting Ply ${viewed.ply}/${totalPlies}: ${viewed.entry.san} (${viewed.entry.engineName})`
+      : `Inspecting Starting Position (0/${totalPlies})`;
     const revBanner = el(`<div class="status-banner" style="display:flex;justify-content:space-between;align-items:center;gap:.4rem">
-      <span>Inspecting Ply ${inspecting.ply}: ${escapeHtml(inspecting.san)} (${escapeHtml(inspecting.engineName)})</span>
+      <span>${escapeHtml(label)}</span>
       <button type="button" class="btn gold sm" id="arLiveReturn" style="padding:.15rem .5rem;font-size:.78rem">Live Board</button>
     </div>`);
     revBanner.querySelector('#arLiveReturn').onclick = () => {
-      State.arenaInspectIndex = null;
+      State.arenaViewPly = null;
       render();
       if (State.arenaPaused) analyzeBothOnPause();
     };
@@ -3563,7 +4293,7 @@ function renderEngineArena() {
       <button type="button" data-t="black" class="${State.arenaTab === 'black' ? 'active' : ''}">Black</button>
       <button type="button" data-t="log" class="${State.arenaTab === 'log' ? 'active' : ''}">Log (${State.arenaMoveLog.length})</button>
     </div>
-    <span class="mono small tabular-nums">Move ${Math.floor(State.arenaMoveLog.length / 2) + 1}</span>
+    <span class="mono small tabular-nums">Ply ${viewPly}/${totalPlies}</span>
   </div>`);
   tabBar.querySelectorAll('#arTabSwitch button').forEach((b) => {
     b.onclick = () => {
@@ -3584,20 +4314,12 @@ function renderEngineArena() {
         const moveNo = `${Math.ceil(entry.ply / 2)}${entry.side === 'w' ? '.' : '...'}`;
         const lead = entry.snapshot?.lines?.[0];
         const scoreTxt = lead ? formatEvalScore(lead.whiteCp, lead.whiteMate) : '0.00';
-        const row = el(`<button type="button" class="move-eval-row ${State.arenaInspectIndex === realIdx ? 'selected' : ''}">
+        const row = el(`<button type="button" class="move-eval-row ${viewPly === realIdx + 1 ? 'selected' : ''}">
           <span class="mono tabular-nums" style="font-weight:700;color:var(--walnut-dark)">${moveNo} ${escapeHtml(entry.san)}</span>
           <span class="small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(entry.engineName)}: ${escapeHtml(entry.thoughtText)}</span>
           <span class="mono tabular-nums" style="font-weight:600">${scoreTxt}</span>
         </button>`);
-        row.onclick = () => {
-          State.arenaPaused = true;
-          stopArenaLoop();
-          State.arenaInspectIndex = realIdx;
-          State.arenaWhiteSnap = null;
-          State.arenaBlackSnap = null;
-          render();
-          analyzeBothOnPause();
-        };
+        row.onclick = () => navigateArenaPly(realIdx + 1);
         logList.appendChild(row);
       });
     }
@@ -3618,7 +4340,15 @@ function renderEngineArena() {
     side.appendChild(cardsBox);
   }
 
-  side.appendChild(buildMovesPanel(State.arenaMoveLog.map((x) => x.san)));
+  side.appendChild(
+    buildMovesPanel(
+      State.arenaMoveLog.map((x) => x.san),
+      {
+        currentPly: viewPly,
+        onSelectPly: (plyNo) => navigateArenaPly(plyNo),
+      },
+    ),
+  );
   layout.appendChild(side);
   wrap.appendChild(layout);
 
@@ -3627,12 +4357,22 @@ function renderEngineArena() {
 }
 
 function renderVsHuman() {
-  if (!State.game) State.game = new Chess();
+  if (!State.game) {
+    State.game = new Chess();
+    State.gameInitialFen = State.game.fen();
+  }
   const g = State.game;
   const turn = g.turn();
   const w = State.members[State.gameWhite] || { name: 'White', rating: 1200 };
   const b = State.members[State.gameBlack] || { name: 'Black', rating: 1200 };
   const coachAllowed = !State.gameRated && State.showPlayCoach;
+  const totalPlies = State.gameMoveHistory.length;
+  const viewPly =
+    State.gameViewPly != null ? Math.max(0, Math.min(totalPlies, State.gameViewPly)) : totalPlies;
+  const isReviewing = viewPly < totalPlies;
+  const viewPos = isReviewing
+    ? buildPositionAtPly(State.gameInitialFen, State.gameMoveHistory, viewPly, Chess)
+    : { game: g, lastMove: State.lastMove };
 
   const wrap = document.createElement('div');
   wrap.className = 'view-shell';
@@ -3641,9 +4381,22 @@ function renderVsHuman() {
     <div class="view-bar-meta">
       <span class="tag ${State.gameRated ? 'gold' : 'green'}">${State.gameRated ? 'Rated' : 'Friendly'}</span>
       ${!State.gameRated ? `<button type="button" class="toggle-btn ${State.showPlayCoach ? 'active' : ''}" id="humCoachBtn">${iconSvg('coach', 14)} Coach: ${State.showPlayCoach ? 'On' : 'Off'}</button>` : ''}
+      ${totalPlies > 0 && (State.gameOver || !State.gameRated) ? `<button type="button" class="btn ghost sm" id="anHumBtn">${iconSvg('coach', 13)} Analyze</button>` : ''}
       <button type="button" class="btn ghost sm" id="leaveHum">Leave Game</button>
     </div>
   </div>`));
+  const anHumBtn = wrap.querySelector('#anHumBtn');
+  if (anHumBtn) {
+    anHumBtn.onclick = () => {
+      openGameInCoachAnalyzer({
+        title: `${w.name} vs ${b.name}`,
+        headers: { Event: State.gameRated ? 'Edugates Rated Match' : 'Edugates Friendly', White: w.name, Black: b.name },
+        startFen: State.gameInitialFen,
+        moves: State.gameMoveHistory,
+        jumpToEnd: true,
+      });
+    };
+  }
   wrap.querySelector('#leaveHum').onclick = () => {
     stockfishClient.stop();
     navigate('play-menu');
@@ -3662,13 +4415,14 @@ function renderVsHuman() {
 
   const boardCol = document.createElement('div');
   boardCol.className = 'board-column';
-  const stage = buildBoardStage(g, {
+  const stage = buildBoardStage(viewPos.game, {
     flip: State.flipBoard ? turn === 'b' : false,
-    lastMove: State.lastMove,
-    interactive: !State.gameOver && !State.promotionPending,
+    lastMove: viewPos.lastMove,
+    interactive: !isReviewing && !State.gameOver && !State.promotionPending,
     onMove: async (m) => {
       const prevSnap = State.sfSnapshot;
       State.gameMoveHistory.push(m.san);
+      State.gameViewPly = null;
       State.lastMove = lastMoveSquares(g);
       checkHumanGameEnd();
       if (coachAllowed && prevSnap?.lines?.[0] && !State.gameOver) {
@@ -3697,11 +4451,22 @@ function renderVsHuman() {
 
   const ctrl = document.createElement('div');
   ctrl.className = 'board-controls';
-  const undoBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('prev', 13)} Undo</button>`);
-  undoBtn.disabled = State.gameMoveHistory.length === 0 || State.gameOver;
+  ctrl.appendChild(
+    buildMoveTransportBar({
+      ply: viewPly,
+      total: totalPlies,
+      onNavigate: (nextPly) => {
+        State.gameViewPly = nextPly >= totalPlies ? null : nextPly;
+        render();
+      },
+    }),
+  );
+  const undoBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('refresh', 13)} Undo</button>`);
+  undoBtn.disabled = isReviewing || State.gameMoveHistory.length === 0 || State.gameOver;
   undoBtn.onclick = () => {
     g.undo();
     State.gameMoveHistory.pop();
+    State.gameViewPly = null;
     State.lastMove = lastMoveSquares(g);
     render();
   };
@@ -3726,7 +4491,9 @@ function renderVsHuman() {
 
   const side = document.createElement('div');
   side.className = 'play-sidebar';
-  if (State.gameOver) {
+  if (isReviewing) {
+    side.appendChild(el(`<div class="status-banner tabular-nums">Reviewing Ply ${viewPly}/${totalPlies} — click Last to resume live play</div>`));
+  } else if (State.gameOver) {
     side.appendChild(el(`<div class="status-banner ${State.lastResult?.kind || 'draw'}">${escapeHtml(State.lastResult?.text || 'Game over')}</div>`));
   } else {
     side.appendChild(el(`<div class="status-banner">${escapeHtml(turn === 'w' ? w.name : b.name)} to move${g.in_check() ? ' (Check)' : ''}</div>`));
@@ -3746,9 +4513,17 @@ function renderVsHuman() {
     });
     State.dom.sfPanel = sfPanel;
     side.appendChild(sfPanel);
-    triggerLiveAnalysis(g.fen(), { depth: 11, multiPv: 3, grade: State.playCoachLastGrade });
+    triggerLiveAnalysis(viewPos.game.fen(), { depth: 11, multiPv: 3, grade: isReviewing ? null : State.playCoachLastGrade });
   }
-  side.appendChild(buildMovesPanel(State.gameMoveHistory));
+  side.appendChild(
+    buildMovesPanel(State.gameMoveHistory, {
+      currentPly: viewPly,
+      onSelectPly: (plyNo) => {
+        State.gameViewPly = plyNo >= totalPlies ? null : plyNo;
+        render();
+      },
+    }),
+  );
   layout.appendChild(side);
   wrap.appendChild(layout);
   return wrap;
@@ -3901,14 +4676,41 @@ function renderClub() {
 }
 
 function showGameModal(r) {
+  const pgnText = r.pgn || exportGameToPgn({
+    headers: { Event: 'Edugates Club Match', White: r.white.name, Black: r.black.name, Result: r.result },
+    moves: r.moves || [],
+    result: r.result || '*',
+  });
   const back = el(`<div class="modal-backdrop"></div>`);
   const m = el(`<div class="modal">
     <button type="button" class="modal-close">×</button>
     <h2>${escapeHtml(r.white.name)} vs ${escapeHtml(r.black.name)}</h2>
     <p class="small tabular-nums">${formatDate(r.ts)} · ${escapeHtml(r.reason)} · <strong>${escapeHtml(r.result)}</strong></p>
     <hr class="fancy"/>
-    <div class="mono tabular-nums" style="background:var(--paper-dim);padding:.75rem;font-size:.86rem;line-height:1.6;max-height:260px;overflow-y:auto">${formatPGN(r.moves)}</div>
+    <div class="mono tabular-nums" style="background:var(--paper-dim);padding:.75rem;font-size:.86rem;line-height:1.6;max-height:240px;overflow-y:auto">${formatPGN(r.moves)}</div>
+    <div style="display:flex;gap:.45rem;justify-content:flex-end;margin-top:.75rem;flex-wrap:wrap">
+      <button type="button" class="btn ghost sm" id="modDownloadPgn">${iconSvg('download', 13)} Download .pgn</button>
+      <button type="button" class="btn gold sm" id="modAnalyzeGame">${iconSvg('coach', 13)} Analyze in Coach</button>
+    </div>
   </div>`);
+  m.querySelector('#modDownloadPgn').onclick = () => {
+    downloadPgnFile(`${r.white.name}-vs-${r.black.name}.pgn`.replace(/\s+/g, '-'), pgnText);
+  };
+  m.querySelector('#modAnalyzeGame').onclick = () => {
+    back.remove();
+    const parsed = parseImportedGames(pgnText, Chess);
+    if (parsed.ok) {
+      loadParsedGamesIntoCoach(parsed.games, 'Club Match Annals');
+      navigate('coach');
+    } else {
+      openGameInCoachAnalyzer({
+        title: `${r.white.name} vs ${r.black.name} (${r.result})`,
+        headers: { Event: 'Edugates Club Match', White: r.white.name, Black: r.black.name },
+        moves: r.moves || [],
+        result: r.result || '*',
+      });
+    }
+  };
   m.querySelector('.modal-close').onclick = () => back.remove();
   back.onclick = (e) => {
     if (e.target === back) back.remove();
@@ -3956,32 +4758,70 @@ document.addEventListener('keydown', (event) => {
   ) {
     return;
   }
-  if (State.studyMode !== 'learn') return;
-  if (State.page === 'openings') {
+  const keyAction = {
+    ArrowLeft: 'back',
+    ArrowRight: 'forward',
+    Home: 'first',
+    End: 'last',
+  }[event.key];
+  if (!keyAction) return;
+
+  if (State.page === 'coach') {
+    event.preventDefault();
+    navigateCoachPly(stepPly(State.coachPly, keyAction, State.coachMoves.length));
+  } else if (State.page === 'engine-arena') {
+    event.preventDefault();
+    const total = State.arenaMoveLog.length;
+    const cur = State.arenaViewPly != null ? State.arenaViewPly : total;
+    navigateArenaPly(stepPly(cur, keyAction, total));
+  } else if (State.page === 'vs-engine' || State.page === 'vs-human') {
+    event.preventDefault();
+    const total = State.gameMoveHistory.length;
+    const cur = State.gameViewPly != null ? State.gameViewPly : total;
+    const nextPly = stepPly(cur, keyAction, total);
+    State.gameViewPly = nextPly >= total ? null : nextPly;
+    render();
+  } else if (State.page === 'endgames') {
+    event.preventDefault();
+    const total = State.endgameMoves.length;
+    const cur = State.endgameViewPly != null ? State.endgameViewPly : total;
+    const nextPly = stepPly(cur, keyAction, total);
+    State.endgameViewPly = nextPly >= total ? null : nextPly;
+    render();
+  } else if (State.page === 'puzzles' && State.puzzleView === 'solver' && State.puzzlePly > 0) {
+    event.preventDefault();
+    const total = State.puzzlePly;
+    const cur = State.puzzleViewPly != null ? State.puzzleViewPly : total;
+    const nextPly = stepPly(cur, keyAction, total);
+    State.puzzleViewPly = nextPly >= total ? null : nextPly;
+    render();
+  } else if (State.studyMode === 'learn' && State.page === 'openings') {
     const active =
       State.openingsTab === 'traps'
         ? TRAPS.find((t) => t.id === State.selectedTrapId)
         : OPENINGS.find((o) => o.id === State.selectedOpeningId);
     if (!active) return;
     const total = (active.line || []).length;
-    if (event.key === 'ArrowRight' && State.studyStep < total) {
-      State.studyStep += 1;
-      recordStudyProgress(State.openingsTab === 'traps' ? 'traps' : 'openings', active, State.studyStep, total);
-      render();
-    } else if (event.key === 'ArrowLeft' && State.studyStep > 0) {
-      State.studyStep -= 1;
+    const nextStep = stepPly(State.studyStep, keyAction, total);
+    if (nextStep !== State.studyStep) {
+      event.preventDefault();
+      if (nextStep > State.studyStep) {
+        recordStudyProgress(State.openingsTab === 'traps' ? 'traps' : 'openings', active, nextStep, total);
+      }
+      State.studyStep = nextStep;
       render();
     }
-  } else if (State.page === 'strategy') {
+  } else if (State.studyMode === 'learn' && State.page === 'strategy') {
     const active = MIDDLEGAME_LESSONS.find((m) => m.id === State.selectedStrategyId);
     if (!active) return;
     const total = (active.line || []).length;
-    if (event.key === 'ArrowRight' && State.studyStep < total) {
-      State.studyStep += 1;
-      recordStudyProgress('middlegame', active, State.studyStep, total);
-      render();
-    } else if (event.key === 'ArrowLeft' && State.studyStep > 0) {
-      State.studyStep -= 1;
+    const nextStep = stepPly(State.studyStep, keyAction, total);
+    if (nextStep !== State.studyStep) {
+      event.preventDefault();
+      if (nextStep > State.studyStep) {
+        recordStudyProgress('middlegame', active, nextStep, total);
+      }
+      State.studyStep = nextStep;
       render();
     }
   }
