@@ -959,5 +959,285 @@ export const STRATEGY_PUZZLES = [
       "Nc3"
     ],
     "explanation": "c4 — Undercutting d5 loosens the support under Black’s advanced e4 knight."
+  },
+  {
+    "id": "str-najdorf-outpost-nd5",
+    "category": "Strategy",
+    "theme": "Seizing the d5 Outpost in the Najdorf",
+    "difficulty": "Medium",
+    "rating": 1340,
+    "fen": "r2qkb1r/3n1ppp/p2pbn2/4p3/Pp2P3/1NN1BP2/1PPQ2PP/R3KB1R w KQkq - 0 11",
+    "sideToMove": "White",
+    "prompt": "White to move. Black pushed ...b4 to kick your knight after advancing ...e5, leaving the d5 square chronically weak. Occupy the hole immediately!",
+    "moves": [
+      "Nd5"
+    ],
+    "explanation": "Nd5! — Jumping into the weakened d5 outpost seizes lasting central control; trading on d5 only opens lines and fixes Black’s backward d6 pawn."
+  },
+  {
+    "id": "str-english-outpost-nd4",
+    "category": "Strategy",
+    "theme": "Centralizing into the d4 Outpost",
+    "difficulty": "Medium",
+    "rating": 1360,
+    "fen": "r1bqk2r/pppp1ppp/2n5/3Pp3/1b6/5NP1/PP1PPP1P/R1BQKB1R b KQkq - 0 6",
+    "sideToMove": "Black",
+    "prompt": "Black to move. White pushed d4-d5 attacking your c6 knight, vacating control over d4. Strike back by planting your knight in the heart of the board!",
+    "moves": [
+      "Nd4"
+    ],
+    "explanation": "Nd4! — Planting the knight actively on d4 creates immediate pressure against f3 and e2 while neutralizing White’s central clamp."
+  },
+  {
+    "id": "str-qgd-outpost-ne5",
+    "category": "Strategy",
+    "theme": "Planting a Knight on the e5 Outpost",
+    "difficulty": "Medium",
+    "rating": 1380,
+    "fen": "r2q1rk1/pb1nbppp/1p3n2/2pp4/3P1B2/2NBPN2/PP3PPP/2RQ1RK1 w - - 2 11",
+    "sideToMove": "White",
+    "prompt": "White to move in the Queen’s Gambit Declined. Your pieces coordinate smoothly toward the kingside and e5 is unguarded by pawns. Seize the key outpost!",
+    "moves": [
+      "Ne5"
+    ],
+    "explanation": "Ne5! — Cementing the knight on e5 dominates central squares, frees f3/Qf3 ideas, and forces Black into uncomfortable exchanges."
+  },
+  {
+    "id": "str-stonewall-outpost-ne5",
+    "category": "Strategy",
+    "theme": "Stonewall Control of the e5 Outpost",
+    "difficulty": "Easy",
+    "rating": 1180,
+    "fen": "r1bq1rk1/pp3ppp/2nbpn2/2pp4/3P1P2/2PBPN2/PP1N2PP/R1BQK2R w KQ - 3 8",
+    "sideToMove": "White",
+    "prompt": "White to move. You have built the d4-e3-f4 Stonewall pawn triangle. Plant the right piece on its signature central outpost!",
+    "moves": [
+      "Ne5"
+    ],
+    "explanation": "Ne5! — Occupies the natural Stonewall anchor on e5, locking down Black’s minor pieces while preparing a future kingside attack."
+  },
+  {
+    "id": "str-carlsbad-minority-b5",
+    "category": "Strategy",
+    "theme": "Carlsbad Minority Attack Breakthrough",
+    "difficulty": "Medium",
+    "rating": 1400,
+    "fen": "r1bqr1k1/1p3ppp/p1pb1nn1/3p2B1/PP1P4/2NBPN2/2Q2PPP/1R3RK1 w - - 1 14",
+    "sideToMove": "White",
+    "prompt": "White to move in the Carlsbad structure. Your b4 and a4 pawns are primed on the queenside. Trigger the thematic pawn clash to create permanent Black weaknesses!",
+    "moves": [
+      "b5"
+    ],
+    "explanation": "b5! — Executing the minority attack fractures Black’s c6/d5 pawn shield, leaving behind a weak backward c6 pawn or an isolated d5 pawn."
+  },
+  {
+    "id": "str-carlsbad-minority-b4",
+    "category": "Strategy",
+    "theme": "Preparing the Minority Attack on the b-File",
+    "difficulty": "Medium",
+    "rating": 1350,
+    "fen": "r1b1r1k1/1p2qp1p/2p1n1p1/p2p3n/3P4/P1NBPN2/1PQ2PPP/1RR3K1 w - - 0 16",
+    "sideToMove": "White",
+    "prompt": "White to move. Your rooks sit behind the b- and c-files while Black played ...a5 to slow you down. Press forward with the queenside minority plan anyway!",
+    "moves": [
+      "b4"
+    ],
+    "explanation": "b4! — Challenging Black’s ...a5 stopper immediately opens queenside lines for your b1/c1 rooks and leaves Black’s pawns vulnerable."
+  },
+  {
+    "id": "str-winawer-bad-bishop-ba3",
+    "category": "Strategy",
+    "theme": "Activating and Trading a Bad Bishop",
+    "difficulty": "Medium",
+    "rating": 1420,
+    "fen": "r3k2r/pp1bnppp/2n1p3/q1ppP3/P2P4/2P2N2/2PQ1PPP/R1B1KB1R w KQkq - 1 10",
+    "sideToMove": "White",
+    "prompt": "White to move in the French Winawer. Your dark-squared bishop on c1 is hemmed in by c3-d4-e5, while Black eyes dark squares. Transform this piece immediately!",
+    "moves": [
+      "Ba3"
+    ],
+    "explanation": "Ba3! — Putting the c1 bishop on the open a3-f8 diagonal pressures c5 and seeks an advantageous trade of bad bishops or dark-square dominance."
+  },
+  {
+    "id": "str-caro-bad-bishop-bxd3",
+    "category": "Strategy",
+    "theme": "Exchanging the Caro-Kann Light-Squared Bishop",
+    "difficulty": "Easy",
+    "rating": 1160,
+    "fen": "r2qkbnr/pp1npppb/2p4p/7P/3P4/3B1NN1/PPP2PP1/R1BQK2R b KQkq - 2 9",
+    "sideToMove": "Black",
+    "prompt": "Black to move in the Classical Caro-Kann. White offered the bishop trade on d3 before you seal your pawn chain with ...e6. Resolve the tension accurately!",
+    "moves": [
+      "Bxd3"
+    ],
+    "explanation": "Bxd3! — Trading off your light-squared bishop cleanly before playing ...e6 avoids locking a passive bishop inside your pawn structure."
+  },
+  {
+    "id": "str-kid-space-d5",
+    "category": "Strategy",
+    "theme": "Space Gain in the King’s Indian Center",
+    "difficulty": "Easy",
+    "rating": 1140,
+    "fen": "r1bq1rk1/ppp2pbp/2np1np1/4p3/2PPP3/2N2N2/PP2BPPP/R1BQ1RK1 w - - 2 8",
+    "sideToMove": "White",
+    "prompt": "White to move. Black challenged the center with ...e5. Gain decisive queenside space and drive back the c6 knight!",
+    "moves": [
+      "d5"
+    ],
+    "explanation": "d5! — Closing the center gains a strong space advantage on the queenside, forcing ...Ne7 and freeing White’s b4-c5 expansion."
+  },
+  {
+    "id": "str-qgd-space-c5",
+    "category": "Strategy",
+    "theme": "Queenside Space Clamp with c4-c5",
+    "difficulty": "Medium",
+    "rating": 1310,
+    "fen": "r2qkb1r/3n1ppp/p1p1pn2/1p1p4/2PP2b1/1PN1PN2/P3BPPP/R1BQ1RK1 w kq - 2 9",
+    "sideToMove": "White",
+    "prompt": "White to move against Black’s Semi-Slav queenside setup. Fix Black’s pawns and seize permanent queenside territory!",
+    "moves": [
+      "c5"
+    ],
+    "explanation": "c5! — Advancing the c-pawn past d5 locks in a lasting queenside space clamp and restricts Black’s counterplay."
+  },
+  {
+    "id": "str-rauzer-space-e5",
+    "category": "Strategy",
+    "theme": "Central Space Wedge with e4-e5",
+    "difficulty": "Advanced",
+    "rating": 1580,
+    "fen": "r1bqk2r/4bpp1/p2ppn1p/1p6/3BPP2/2N5/PPPQ2PP/2KR1B1R w kq b6 0 12",
+    "sideToMove": "White",
+    "prompt": "White to move in the Sicilian Richter-Rauzer. Black’s king stays uncastled in the center while you stand ready to expand. Push forward to seize space and lines!",
+    "moves": [
+      "e5"
+    ],
+    "explanation": "e5! — Pushing e5 wins vital central space, opens files against Black’s king after ...dxe5 fxe5, and dislodges the f6 defender."
+  },
+  {
+    "id": "str-ruy-prophylaxis-h3",
+    "category": "Strategy",
+    "theme": "Prophylaxis: Preventing ...Bg4 in the Ruy Lopez",
+    "difficulty": "Easy",
+    "rating": 1120,
+    "fen": "r1bq1rk1/2p1bppp/p1np1n2/1p2p3/3PP3/1BP2N2/PP3PPP/RNBQR1K1 w - - 0 10",
+    "sideToMove": "White",
+    "prompt": "White to move in the Closed Ruy Lopez. Black would love to pin your f3 knight with ...Bg4 and attack d4. Play the classic prophylactic move!",
+    "moves": [
+      "h3"
+    ],
+    "explanation": "h3! — Preventing ...Bg4 preserves solid control over the d4 center before completing Nbd2-f1-g3 maneuvers."
+  },
+  {
+    "id": "str-italian-prophylaxis-re1",
+    "category": "Strategy",
+    "theme": "Prophylaxis and Piece Flexibility with Re1",
+    "difficulty": "Easy",
+    "rating": 1190,
+    "fen": "r1bq1rk1/bpp2pp1/p1np1n1p/4p3/4P3/1BPP1N1P/PP1N1PP1/R1BQ1RK1 w - - 1 10",
+    "sideToMove": "White",
+    "prompt": "White to move in the Giuoco Pianissimo. Overprotect e4, vacate f1 for a knight maneuver, and strengthen your central setup quietly!",
+    "moves": [
+      "Re1"
+    ],
+    "explanation": "Re1! — Overprotecting e4 anticipates future ...d5 breaks while clearing f1 for the thematic Nbd2-f1-g3 transfer."
+  },
+  {
+    "id": "str-petroff-open-file-re1",
+    "category": "Strategy",
+    "theme": "Seizing the Open e-File",
+    "difficulty": "Medium",
+    "rating": 1290,
+    "fen": "r4rk1/ppp1bppp/2n5/3q1b2/3P4/P1P2N2/4BPPP/R1BQ1RK1 w - - 0 14",
+    "sideToMove": "White",
+    "prompt": "White to move after the symmetrical central exchanges. Claim the open e-file right away to gain tempo against Black’s e7 bishop!",
+    "moves": [
+      "Re1"
+    ],
+    "explanation": "Re1! — Immediately seizing the only open central file creates latent pressure on e7 and restricts Black’s rook coordination."
+  },
+  {
+    "id": "str-iqp-advance-d5",
+    "category": "Strategy",
+    "theme": "Timed d4-d5 Isolani Liquidation Break",
+    "difficulty": "Advanced",
+    "rating": 1600,
+    "fen": "2rq1rk1/pb3ppp/1pn1pb2/8/3P4/2NB1N2/PP2QPPP/3RR1K1 w - - 0 15",
+    "sideToMove": "White",
+    "prompt": "White to move with an isolated d4 pawn. Your rooks stand behind the d- and e-files while Black’s f6 bishop just stepped out. Strike at the right moment!",
+    "moves": [
+      "d5"
+    ],
+    "explanation": "d5! — Dissolving the isolated pawn at the ideal moment opens the d- and e-files for White’s centralized rooks and bishops."
+  },
+  {
+    "id": "str-iqp-blockade-nb4",
+    "category": "Strategy",
+    "theme": "Fighting the IQP: Removing the Attacking Bishop",
+    "difficulty": "Medium",
+    "rating": 1390,
+    "fen": "r2q1rk1/pb2bppp/1pn1pn2/6B1/3P4/2NB1N2/PP2QPPP/3RR1K1 b - - 3 13",
+    "sideToMove": "Black",
+    "prompt": "Black to move against White’s isolated d4 pawn. White’s d3 bishop anchors the kingside attack and guards d5. Find the strong strategic jump that fights for the d5 blockade!",
+    "moves": [
+      "Nb4"
+    ],
+    "explanation": "Nb4! — Challenging White’s active d3 bishop weakens White’s dark-square grip and secures the d5 blockading square for Black’s knights and bishop."
+  },
+  {
+    "id": "str-kid-dark-complex-bg5",
+    "category": "Strategy",
+    "theme": "Dark-Square Complex Control",
+    "difficulty": "Medium",
+    "rating": 1430,
+    "fen": "r1bq1rk1/pp3pb1/3ppnp1/2pPn3/2P1P2p/2N1BP2/PP2B1PP/R2QKN1R w KQ - 0 12",
+    "sideToMove": "White",
+    "prompt": "White to move in the Saemisch King’s Indian. Black rushed ...h5-h4 on the kingside, leaving dark squares around f6 vulnerable. Seize dark-square dominance!",
+    "moves": [
+      "Bg5"
+    ],
+    "explanation": "Bg5! — Pinning the f6 knight and eyeing h4 dominates the dark squares and puts Black’s overextended kingside pawns under immediate pressure."
+  },
+  {
+    "id": "str-dragon-dark-squares-nc4",
+    "category": "Strategy",
+    "theme": "Seizing the c4 Dark-Square Outpost",
+    "difficulty": "Medium",
+    "rating": 1440,
+    "fen": "2rq1rk1/pp1bppbp/3p1np1/4n3/3NP3/1BN1BP2/PPPQ2PP/1K1R3R b - - 10 12",
+    "sideToMove": "Black",
+    "prompt": "Black to move in the Sicilian Dragon. Both sides have castled opposite wings and your knights patrol the center. Anchor a piece on the key queenside dark square!",
+    "moves": [
+      "Nc4"
+    ],
+    "explanation": "Nc4! — Landing on c4 attacks e3 and forces Bxc4 Rxc4, trading off White’s key dark-squared attacker and opening the c-file."
+  },
+  {
+    "id": "str-good-knight-tall-bishop",
+    "category": "Strategy",
+    "theme": "Good Knight vs Tall-Pawn Bad Bishop",
+    "difficulty": "Advanced",
+    "rating": 1620,
+    "fen": "6k1/2b2pp1/2p1p2p/1pPpP3/1P1P4/4K1P1/3N3P/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Every black queenside pawn stands on a dark square, locking in Black’s c7 bishop. Route your knight to exploit the light-square holes!",
+    "moves": [
+      "Nb3"
+    ],
+    "explanation": "Nb3! — Heading toward a5-c6 exploits the permanent light-square holes while Black’s bishop remains reduced to a tall pawn."
+  },
+  {
+    "id": "str-spanish-reroute-nf1",
+    "category": "Strategy",
+    "theme": "Classic Ruy Lopez Knight Rerouting",
+    "difficulty": "Medium",
+    "rating": 1460,
+    "fen": "r1bn1rk1/2q1bppp/p2p1n2/1ppPp3/4P3/2P2N1P/PPBN1PP1/R1BQR1K1 w - - 1 14",
+    "sideToMove": "White",
+    "prompt": "White to move in the Closed Ruy Lopez after closing the center with d4-d5. Re-route your queenside knight toward the kingside via the classic Spanish path!",
+    "moves": [
+      "Nf1"
+    ],
+    "explanation": "Nf1! — Begins the classic Nb1-d2-f1-g3(e3) transfer, sliding toward f5 and strengthening White’s kingside initiative."
   }
 ];

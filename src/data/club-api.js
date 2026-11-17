@@ -1,8 +1,9 @@
+import { t } from '../i18n/ui-strings.js';
 import { getFirebaseServices } from './firebase.js';
 
 async function requireServices() {
   const services = getFirebaseServices();
-  if (!services) throw new Error('The shared club service has not been configured yet.');
+  if (!services) throw new Error(t('errSharedNotConfigured'));
   return services;
 }
 
@@ -23,7 +24,7 @@ export async function sendEmailSignInLink(email) {
 export async function completeEmailSignInLink(email = window.localStorage.getItem('chess-club:email-for-sign-in')) {
   const { auth, authModule } = await requireServices();
   if (!authModule.isSignInWithEmailLink(auth, window.location.href)) return null;
-  if (!email) throw new Error('Enter the email address used to request this sign-in link.');
+  if (!email) throw new Error(t('errEnterSignInEmail'));
 
   const credential = await authModule.signInWithEmailLink(auth, email, window.location.href);
   window.localStorage.removeItem('chess-club:email-for-sign-in');
@@ -42,7 +43,7 @@ export async function signOut() {
 
 export async function upsertMyProfile(displayName) {
   const user = await currentUser();
-  if (!user) throw new Error('Sign in before creating a profile.');
+  if (!user) throw new Error(t('errSignInProfile'));
 
   const { db, firestoreModule } = await requireServices();
   const name = displayName.trim();
@@ -94,7 +95,7 @@ export async function listClubGames(clubId) {
 
 export async function saveLessonProgress({ clubId, lessonId, completedSteps, completedAt = null }) {
   const user = await currentUser();
-  if (!user) throw new Error('Sign in before saving progress.');
+  if (!user) throw new Error(t('errSignInProgress'));
 
   const { db, firestoreModule } = await requireServices();
   const progressId = `${user.uid}_${lessonId}`;
@@ -109,7 +110,7 @@ export async function saveLessonProgress({ clubId, lessonId, completedSteps, com
 
 export async function recordPuzzleAttempt({ clubId, puzzleId, correct, usedHint, elapsedSeconds }) {
   const user = await currentUser();
-  if (!user) throw new Error('Sign in before recording an attempt.');
+  if (!user) throw new Error(t('errSignInAttempt'));
 
   const { db, firestoreModule } = await requireServices();
   await firestoreModule.addDoc(firestoreModule.collection(db, 'clubs', clubId, 'puzzleAttempts'), {

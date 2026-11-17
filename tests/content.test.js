@@ -14,21 +14,21 @@ import {
 import { isStockfishSafeFen } from '../src/domain/stockfish-service.js';
 
 describe('training library integrity', () => {
-  it('exposes the full curriculum, puzzle catalog (310), and quiz bank (80)', () => {
-    expect(OPENINGS).toHaveLength(28);
-    expect(TRAPS).toHaveLength(14);
+  it('exposes the expanded curriculum (112), puzzle catalog (470), and quiz bank (80)', () => {
+    expect(OPENINGS).toHaveLength(48);
+    expect(TRAPS).toHaveLength(22);
     expect(MIDDLEGAME_LESSONS).toHaveLength(12);
-    expect(ENDGAMES).toHaveLength(16);
-    expect(PUZZLES).toHaveLength(310);
-    expect(TACTICS).toHaveLength(90);
+    expect(ENDGAMES).toHaveLength(30);
+    expect(PUZZLES).toHaveLength(470);
+    expect(TACTICS).toHaveLength(150);
     expect(QUIZZES).toHaveLength(80);
     expect(PUZZLE_CATEGORIES).toEqual(['All', 'Openings', 'Tactics', 'Strategy', 'Middlegame', 'Endgame']);
 
-    expect(getPuzzlesByCategory('Openings')).toHaveLength(55);
-    expect(getPuzzlesByCategory('Tactics')).toHaveLength(90);
-    expect(getPuzzlesByCategory('Strategy')).toHaveLength(55);
-    expect(getPuzzlesByCategory('Middlegame')).toHaveLength(55);
-    expect(getPuzzlesByCategory('Endgame')).toHaveLength(55);
+    expect(getPuzzlesByCategory('Openings')).toHaveLength(85);
+    expect(getPuzzlesByCategory('Tactics')).toHaveLength(150);
+    expect(getPuzzlesByCategory('Strategy')).toHaveLength(75);
+    expect(getPuzzlesByCategory('Middlegame')).toHaveLength(75);
+    expect(getPuzzlesByCategory('Endgame')).toHaveLength(85);
   });
 
   it('preserves all 17 legacy club tactic IDs', () => {
@@ -45,7 +45,7 @@ describe('training library integrity', () => {
   });
 
   it('has 100% unique IDs, Stockfish-safe FENs, and legal solution moves', () => {
-    expect(new Set(PUZZLES.map((p) => p.id)).size).toBe(310);
+    expect(new Set(PUZZLES.map((p) => p.id)).size).toBe(470);
     expect(new Set(QUIZZES.map((q) => q.id)).size).toBe(80);
 
     for (const puzzle of PUZZLES) {

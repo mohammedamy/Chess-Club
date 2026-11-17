@@ -45,6 +45,42 @@ export const PERSONALITY_WEIGHTS = {
     center: 1.15,
     simplification: 1.35,
   },
+  prophylactic: {
+    material: 1.06,
+    pst: 1.05,
+    mobility: 0.88,
+    structure: 1.8,
+    kingSafety: 1.75,
+    center: 1.05,
+    simplification: 1.5,
+  },
+  dynamic: {
+    material: 1.08,
+    pst: 1.2,
+    mobility: 1.38,
+    structure: 1.28,
+    kingSafety: 1.35,
+    center: 1.32,
+    simplification: 1.15,
+  },
+  hypermodern: {
+    material: 1.02,
+    pst: 1.18,
+    mobility: 1.26,
+    structure: 1.55,
+    kingSafety: 1.25,
+    center: 0.82,
+    simplification: 1.1,
+  },
+  romantic: {
+    material: 0.82,
+    pst: 1.12,
+    mobility: 1.68,
+    structure: 0.78,
+    kingSafety: 1.95,
+    center: 1.42,
+    simplification: 0.6,
+  },
 };
 
 // PeSTO middlegame / endgame material values (centipawns)
@@ -610,6 +646,7 @@ function evaluateStateBreakdown(state, personality = 'balanced') {
   let mobilityRaw = 0;
   let centerRaw = 0;
   let kingSafetyRaw = 0;
+  let hyperStructRaw = 0;
 
   const whitePawnFiles = new Int8Array(8);
   const blackPawnFiles = new Int8Array(8);
@@ -659,11 +696,34 @@ function evaluateStateBreakdown(state, personality = 'balanced') {
         }
         mobilityRaw += side * (mob * 4);
         if (f >= 2 && f <= 5 && r >= 2 && r <= 5) centerRaw += side * 14;
+        if (personality === 'hypermodern' && f >= 2 && f <= 5) {
+          if (side === 1 && r >= 2 && r <= 4) {
+            const hasPawnSupport =
+              (f > 0 && b[((r + 1) << 4) | (f - 1)] === WP) ||
+              (f < 7 && b[((r + 1) << 4) | (f + 1)] === WP);
+            if (hasPawnSupport) {
+              hyperStructRaw += 22;
+              if (b[((r - 1) << 4) | f] === -WP) hyperStructRaw += 16;
+            }
+          } else if (side === -1 && r >= 3 && r <= 5) {
+            const hasPawnSupport =
+              (f > 0 && b[((r - 1) << 4) | (f - 1)] === -WP) ||
+              (f < 7 && b[((r - 1) << 4) | (f + 1)] === -WP);
+            if (hasPawnSupport) {
+              hyperStructRaw -= 22;
+              if (b[((r + 1) << 4) | f] === WP) hyperStructRaw -= 16;
+            }
+          }
+        }
         const oppKDist = Math.abs(r - (side === 1 ? bkRow : wkRow)) + Math.abs(f - (side === 1 ? bkFile : wkFile));
         if (oppKDist <= 3) kingSafetyRaw += side * 14;
       } else if (type === WB) {
         if (side === 1) wBishops += 1;
         else bBishops += 1;
+        if (personality === 'hypermodern') {
+          if (side === 1 && r === 6 && (f === 1 || f === 6)) hyperStructRaw += 22;
+          else if (side === -1 && r === 1 && (f === 1 || f === 6)) hyperStructRaw -= 22;
+        }
         let mob = 0;
         for (let i = 0; i < 4; i += 1) {
           const d = BISHOP_DIRS[i];
@@ -693,7 +753,7 @@ function evaluateStateBreakdown(state, personality = 'balanced') {
         }
         mobilityRaw += side * (mob * 2);
         if ((side === 1 && r === 1) || (side === -1 && r === 6)) {
-          kingSafetyRaw += side * 16;
+          kingSafetyRaw += side * (personality === 'dynamic' ? 28 : 16);
         }
       } else if (type === WQ) {
         let mob = 0;
@@ -721,18 +781,20 @@ function evaluateStateBreakdown(state, personality = 'balanced') {
   const rawMaterial = Math.round((mgMat * mgWeight + egMat * egWeight) / 24);
   const rawPst = Math.round((mgPst * mgWeight + egPst * egWeight) / 24);
 
-  // Pawn structure & passed pawns + rook file bonuses
-  let structureRaw = (wBishops >= 2 ? 28 : 0) - (bBishops >= 2 ? 28 : 0);
+  // Pawn structure & passed pawns + rook file bonuses + personality-specific positional terms
+  const bishopPairBonus = personality === 'dynamic' ? 52 : 28;
+  let structureRaw = hyperStructRaw + (wBishops >= 2 ? bishopPairBonus : 0) - (bBishops >= 2 ? bishopPairBonus : 0);
+  const isoPenalty = personality === 'prophylactic' ? 26 : 18;
   for (let f = 0; f < 8; f += 1) {
     const wc = whitePawnFiles[f];
     const bc = blackPawnFiles[f];
     if (wc > 1) structureRaw -= 16 * (wc - 1);
     if (bc > 1) structureRaw += 16 * (bc - 1);
     if (wc > 0 && (f === 0 || whitePawnFiles[f - 1] === 0) && (f === 7 || whitePawnFiles[f + 1] === 0)) {
-      structureRaw -= 18 * wc;
+      structureRaw -= isoPenalty * wc;
     }
     if (bc > 0 && (f === 0 || blackPawnFiles[f - 1] === 0) && (f === 7 || blackPawnFiles[f + 1] === 0)) {
-      structureRaw += 18 * bc;
+      structureRaw += isoPenalty * bc;
     }
 
     // Passed pawns
@@ -758,26 +820,43 @@ function evaluateStateBreakdown(state, personality = 'balanced') {
     }
   }
 
-  // Open file rooks (scaled modestly into structure)
+  // Open file rooks (scaled modestly into structure, amplified for Fischer dynamic)
   for (let r = 0; r < 8; r += 1) {
     for (let f = 0; f < 8; f += 1) {
       const p = b[(r << 4) | f];
       if (p === WR) {
-        if (whitePawnFiles[f] === 0) structureRaw += blackPawnFiles[f] === 0 ? 22 : 11;
+        if (whitePawnFiles[f] === 0) {
+          structureRaw += blackPawnFiles[f] === 0 ? 22 : 11;
+          if (personality === 'dynamic') mobilityRaw += blackPawnFiles[f] === 0 ? 14 : 8;
+        }
       } else if (p === -WR) {
-        if (blackPawnFiles[f] === 0) structureRaw -= whitePawnFiles[f] === 0 ? 22 : 11;
+        if (blackPawnFiles[f] === 0) {
+          structureRaw -= whitePawnFiles[f] === 0 ? 22 : 11;
+          if (personality === 'dynamic') mobilityRaw -= whitePawnFiles[f] === 0 ? 14 : 8;
+        }
       }
     }
   }
 
+  // Morphy romantic rapid-development and uncastled-king initiative penalties in opening/middlegame
+  if (personality === 'romantic' && mgWeight > 10) {
+    for (const hf of [1, 2, 5, 6]) {
+      if (b[(7 << 4) | hf] === WN || b[(7 << 4) | hf] === WB) mobilityRaw -= 16;
+      if (b[(0 << 4) | hf] === -WN || b[(0 << 4) | hf] === -WB) mobilityRaw += 16;
+    }
+    if (wkRow === 7 && wkFile === 4) kingSafetyRaw -= 24;
+    if (bkRow === 0 && bkFile === 4) kingSafetyRaw += 24;
+  }
+
   // King pawn-shield in middlegame
   if (mgWeight > 6) {
+    const shieldStep = personality === 'prophylactic' ? 22 : 14;
     let wShield = 0;
     if (wkRow >= 6) {
       for (let df = -1; df <= 1; df += 1) {
         const ff = wkFile + df;
         if (ff >= 0 && ff < 8 && (b[((wkRow - 1) << 4) | ff] === WP || (wkRow >= 2 && b[((wkRow - 2) << 4) | ff] === WP))) {
-          wShield += 14;
+          wShield += shieldStep;
         }
       }
     } else {
@@ -788,7 +867,7 @@ function evaluateStateBreakdown(state, personality = 'balanced') {
       for (let df = -1; df <= 1; df += 1) {
         const ff = bkFile + df;
         if (ff >= 0 && ff < 8 && (b[((bkRow + 1) << 4) | ff] === -WP || (bkRow <= 5 && b[((bkRow + 2) << 4) | ff] === -WP))) {
-          bShield += 14;
+          bShield += shieldStep;
         }
       }
     } else {
@@ -911,11 +990,12 @@ export function searchClassicalPosition(
     };
   });
 
-  // Order initial root moves by captures/promotions/checks
+  // Order initial root moves by captures/promotions/checks (plus romantic forcing/castling bias)
   const basePriority = (entry) =>
     (entry.isCheckmate ? 10000 : 0) +
     (entry.san.includes('x') ? 200 : 0) +
-    (entry.san.includes('+') ? 100 : 0) +
+    (entry.san.includes('+') ? (personality === 'romantic' ? 160 : 100) : 0) +
+    (personality === 'romantic' && entry.san.startsWith('O-O') ? 140 : 0) +
     (entry.uci.length > 4 ? 150 : 0);
   rootEntries.sort((a, b) => basePriority(b) - basePriority(a));
 

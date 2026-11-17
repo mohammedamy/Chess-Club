@@ -171,4 +171,158 @@ export const ENDGAMES = [
       'Whenever the king blocks its own pawn on the queening square, White steals one move to advance the White king!',
       'Exception: bishop pawns (c/f) and rook pawns (a/h) allow sneaky stalemate tricks unless White\'s king is close enough.'
     ]},
+  { id:'saavedra-position', name:'The Saavedra Position', difficulty:'Master',
+    summary:'Discovered in 1895 by Fernando Saavedra from a study by Georges Barbier, this miracle endgame proves why automatic queening can throw away a win.',
+    fen:'8/8/1KP5/3r4/8/8/8/k7 w - - 0 1',
+    goal:'Walk the king down the b-file while shielding c7, then find c8=R!! to dodge stalemate and win.',
+    targetResult:'Win',
+    technique:[
+      'Start with c6-c7! Black replies 1...Rd6+ and chases White\'s king step by step down the b-file: 2. Kb5 Rd5+ 3. Kb4 Rd4+ 4. Kb3 Rd3+.',
+      'Step onto Kc2! where Black has no check along the d-file; Black sets a last-ditch swindle with 5...Rd4.',
+      'Never queen automatically: 6. c8=Q?? Rc4+! 7. Qxc4 is stalemate! Instead, underpromote with 6. c8=R!!.',
+      'White now threatens Rc1#, and after 6...Ra4 7. Kb3! attacks both the rook and the mating square c1.'
+    ]},
+  { id:'reti-study', name:'Réti\'s Endgame Study', difficulty:'Master',
+    summary:'Richard Réti\'s iconic 1921 composition shows the power of king geometry: a diagonal king march threatens two distant goals in the same tempo.',
+    fen:'7K/8/k1P5/7p/8/8/8/8 w - - 0 1',
+    goal:'March the White king diagonally across the board to simultaneously catch h5 and support c6.',
+    targetResult:'Draw',
+    technique:[
+      'Chasing h5 straight down the h-file fails, while pushing 1. c7? allows ...Kb7 to capture the pawn effortlessly.',
+      'Because a diagonal king step covers one rank and one file simultaneously, play 1. Kg7! h4 2. Kf6!.',
+      'From f6, White threatens both Ke5 (entering the square of the h-pawn) and Ke7/Ke6 (supporting the c6 pawn).',
+      'After 2...h3 3. Ke6! h2 4. c7 Kb7 5. Kd7, both pawns promote and White secures the draw (or 2...Kb6 3. Ke5! Kxc6 4. Kf4).'
+    ]},
+  { id:'two-bishops-mate', name:'Two Bishops Checkmate', difficulty:'Fundamental',
+    summary:'A pair of opposite-colored bishops works in parallel diagonal corridors to drive the lone king to the edge and corner it.',
+    fen:'8/8/8/3k4/8/8/3K4/2B2B2 w - - 0 1',
+    goal:'Coordinate your king and both bishops to restrict the Black king to a corner and force checkmate.',
+    targetResult:'Win',
+    technique:[
+      'Place the two bishops side by side so they control adjacent diagonals and build an impassable barrier.',
+      'Advance your king into the center (Kd3, Ke4) while using bishop moves to shrink the enemy king\'s box toward the edge.',
+      'Once the enemy king reaches a side edge, herd it toward a corner using your king for opposition while avoiding stalemate.',
+      'In the corner, one bishop guards the escape square along the edge while the other delivers diagonal checkmate supported by your king.'
+    ]},
+  { id:'bishop-knight-mate', name:'Bishop & Knight Checkmate', difficulty:'Master',
+    summary:'The hardest elementary checkmate: a lone king can only be mated in a corner matching the bishop\'s square color, requiring the knight W-maneuver.',
+    fen:'2k5/8/2K5/8/4B3/3N4/8/8 w - - 0 1',
+    goal:'Force the Black king into the light-squared corner (a8) using the W-maneuver and deliver mate.',
+    targetResult:'Win',
+    technique:[
+      'Checkmate with bishop and knight is only possible in a corner of the bishop\'s color — here a8 or h1 for the light-squared bishop on e4.',
+      'Coordinate your bishop (Be4-g6-f7-d5) and king (Kd6) to prevent the defender from slipping toward the safe dark corners.',
+      'Use the knight W-maneuver (Nd3-c5-a6) to control the dark squares on the 8th rank and herd the Black king toward a8.',
+      'Close the mating net in a8: White\'s king on b6/c7 and knight on a6 cut off escape while the light-squared bishop delivers mate on the a8-h1 diagonal.'
+    ]},
+  { id:'queen-vs-rook-philidor', name:'Queen vs Rook (Philidor Position)', difficulty:'Master',
+    summary:'François-André Philidor analyzed the decisive winning method in Queen vs Rook: force the defender\'s king and rook into mutual zugzwang.',
+    fen:'2k5/2r5/8/1K6/4Q3/8/8/8 w - - 0 1',
+    goal:'Crack Black\'s third-rank defense and drive the king and rook into Philidor\'s losing zugzwang.',
+    targetResult:'Win',
+    technique:[
+      'Black defends with the third-rank (7th-rank) setup, keeping the rook right next to the king on c7.',
+      'Advance your king (1. Kb6!) to push Black\'s king onto the 8th rank and sever the rook from its protective shield.',
+      'Use queen checks, pins, and triangulation to reach Philidor\'s zugzwang (e.g., Kc6 and Qe5 vs Kc8 and Rd7 with Black to move).',
+      'Always watch out for stalemate defenses and desperation rook checks aimed at trading queens.'
+    ]},
+  { id:'centurini-rule', name:'Centurini\'s Rule (Same-Colored Bishops)', difficulty:'Master',
+    summary:'Luigi Centurini (1847) showed when a same-colored bishop plus pawn defeats a defender whose king sits on the opposite color in front of the pawn.',
+    fen:'3k4/1K6/2P5/8/8/3B3b/8/8 w - - 0 1',
+    goal:'Deflect Black\'s bishop between the c8-h3 and a6-c8 diagonals to win control of the promotion square c8.',
+    targetResult:'Win',
+    technique:[
+      'Black\'s king on d8 sits on a dark square opposite to the light-squared bishops, so White cannot dislodge it with direct bishop checks.',
+      'The promotion square c8 lies on two light diagonals: the long c8-h3 line and the short a6-b7-c8 line (currently blocked on b7 by White\'s king).',
+      'Play 1. Kb8! to vacate b7 and prepare c7+ followed by Ba6, forcing Black\'s bishop off the long c8-h3 diagonal.',
+      'Once the defending bishop retreats onto the short a6-c8 diagonal, White intercepts along f1-a6 or challenges it on g2-b7 to promote.'
+    ]},
+  { id:'rook-vs-bishop-fortress', name:'Rook vs Bishop (Safe-Corner Fortress)', difficulty:'Critical',
+    summary:'Without pawns, Rook vs Bishop is a theoretical draw — provided the defender steers the king into the corner opposite in color to its bishop.',
+    fen:'k7/3R4/2K5/4b3/8/8/8/8 b - - 0 1',
+    goal:'Hold the draw in the safe light-squared corner (a8) by guarding b8 and a7 with your dark-squared bishop.',
+    targetResult:'Draw',
+    technique:[
+      'Black\'s king stands on the light square a8 while holding a dark-squared bishop (e5), making a8 the safe corner!',
+      'Both squares adjacent to a8 (b8 and a7) are dark, so Black\'s bishop can interpose against 8th-rank checks or escape via ...Ba7+.',
+      'Keep your bishop active along a long diagonal (...Bf4, ...Bg5) ready to drop to b8 or deliver a freeing check if White steps to Kb6.',
+      'Never get forced into the wrong dark-squared corner (h8 or a1), where a dark-squared bishop cannot defend the light escape squares.'
+    ]},
+  { id:'rook-vs-knight-edge', name:'Rook vs Knight on the Edge', difficulty:'Critical',
+    summary:'Rook vs Knight draws easily in the center, yet a king driven to the corner with a pinned or edge-bound knight often falls to tactical zugzwang.',
+    fen:'k7/1n6/2K5/3R4/8/8/8/8 w - - 0 1',
+    goal:'Use Rd7! to immobilize the edge-bound knight on b7 and win it or force checkmate.',
+    targetResult:'Win',
+    technique:[
+      'When the defending king and knight stay close together near the center, Rook vs Knight is a standard draw.',
+      'Forced onto the corner edge (Ka8 and Nb7), the knight loses central jumps and blocks its own king\'s breathing room.',
+      'Strike immediately with 1. Rd7!, tying the knight down and threatening both Rxb7 and Kb6.',
+      'After 1...Na5+ 2. Kb5 Nb7 3. Kb6 Kb8 4. Rxb7+, White captures the stranded knight and mates effortlessly.'
+    ]},
+  { id:'outside-passed-decoy', name:'Outside Passed Pawn Decoy', difficulty:'Fundamental',
+    summary:'Even with equal material on the board, an outside passed pawn acts as a magnet that pulls the enemy king away from the decisive wing.',
+    fen:'8/5ppp/4k3/4p3/P3P3/4K3/6PP/8 w - - 0 1',
+    goal:'Use the distant a4 passer as a decoy while preparing kingside pawns and king infiltration.',
+    targetResult:'Win',
+    technique:[
+      'Material is equal (4 pawns each), yet White holds an outside passed pawn on a4 far from the kingside pawns.',
+      'Avoid pushing 1. a5? too early — Black\'s king catches it on a6 and returns in time; instead improve with 1. g4! and bring your king toward d3-c4-b4.',
+      'Once Black\'s king is forced all the way to a6-a5 to capture the decoy pawn, White\'s king breaks straight into c5-d5-e5.',
+      'White\'s king then sweeps e5 and the undefended kingside pawns (f7, g7, h7) long before Black\'s king can make it back.'
+    ]},
+  { id:'protected-passed-pawn', name:'The Protected Passed Pawn', difficulty:'Fundamental',
+    summary:'A protected passed pawn permanently chains the defending king to its blockade, granting the attacker\'s king complete freedom to invade elsewhere.',
+    fen:'8/6pp/2k5/1pP5/1P6/4K3/6PP/8 w - - 0 1',
+    goal:'Keep Black\'s king tied to the protected c5 passer while marching your king into d4-e5 or the kingside.',
+    targetResult:'Win',
+    technique:[
+      'White\'s c5 passed pawn is solidly protected by b4 against Black\'s fixed b5 pawn, so Black can never undermine the base.',
+      'Black\'s king on c6 is handcuffed to stopping c5-c6-c7-c8=Q and cannot safely leave the queenside.',
+      'With the defender paralyzed, White\'s king advances actively (Kd4-e5 or Kf4-g5) to attack the kingside or outflank via d5.',
+      'Save the push c6 for the moment Black\'s king is driven away by zugzwang or distracted on the other wing.'
+    ]},
+  { id:'seventh-rank-pigs', name:'Seventh-Rank "Pigs" (Doubled Rooks)', difficulty:'Critical',
+    summary:'Aaron Nimzowitsch coined "pigs on the 7th" for doubled rooks on the opponent\'s second rank, devouring pawns and weaving mating nets.',
+    fen:'r2r2k1/pRR2ppp/8/8/8/7P/P4PP1/6K1 w - - 0 1',
+    goal:'Unleash the doubled rooks on the 7th rank with Rxf7! to shatter Black\'s kingside and weave a mating net.',
+    targetResult:'Win',
+    technique:[
+      'Material is completely equal, yet White\'s doubled rooks on b7 and c7 dominate the 7th rank while Black\'s rooks sit passively.',
+      'Strike at once with 1. Rxf7! — if Black plays 1...Rf8??, 2. Rxg7+ Kh8 3. Rxh7+ Kg8 4. Rbg7# delivers the Blind Swine mate!',
+      'After 1...Kh8 2. Rxg7, the doubled rooks sweep the kingside pawns while keeping Black\'s king trapped on the back rank.',
+      'Notice the vital h3 luft preventing any ...Rd1+ back-rank counterplay before the rooks go hunting.'
+    ]},
+  { id:'trebuchet-zugzwang', name:'The Trebuchet (Mutual Zugzwang)', difficulty:'Critical',
+    summary:'Named after the medieval siege engine, the Trebuchet is the purest mutual zugzwang in king-and-pawn endings: whoever has to move loses.',
+    fen:'8/8/8/1K1p4/3Pk3/8/8/8 w - - 0 1',
+    goal:'Step to Kc5! to drop Black into the classic Trebuchet zugzwang and win the d5 pawn.',
+    targetResult:'Win',
+    technique:[
+      'In the Trebuchet position (Kc5 and Pd4 vs Ke4 and Pd5), both pawns are locked and each king attacks the opponent\'s pawn.',
+      'Whichever side is to move must step away from defending its own pawn, immediately conceding it and losing the game.',
+      'With White to move here, play 1. Kc5! to guard d4, attack d5, and hand the move to Black.',
+      'After any Black king retreat (1...Kf5 or 1...Kd3), White captures 2. Kxd5 and marches the passed d-pawn home.'
+    ]},
+  { id:'bahr-rule', name:'Bahr\'s Rule (Rook Pawn + Blocked Pair)', difficulty:'Master',
+    summary:'Walter Bahr (1936) formulated a fast geometric rule for endings with a blocked pawn pair plus an outside rook pawn: a diagonal decides win vs draw.',
+    fen:'8/8/k7/P3p3/4P3/4K3/8/8 w - - 0 1',
+    goal:'Apply Bahr\'s Rule to verify why the blocked e4/e5 pair wins against Black\'s king on a6.',
+    targetResult:'Win',
+    technique:[
+      'Black\'s king on a6 stops the a5 pawn, forcing White to evaluate abandoning a5 to march toward the blocked e4/e5 pair.',
+      'Bahr\'s Rule draws a diagonal from the defending blocked pawn toward the a-pawn\'s promotion rank: the boundary runs through d5-c6-b7-a8.',
+      'Because Black\'s pawn on e5 lies beyond that critical diagonal (whereas shifting everything one file left to d4/d5 would be a draw), White wins!',
+      'Maneuver with 1. Kd3! — after 1...Kb5 2. a6! wins immediately, while 1...Kxa5 2. Kc4 wins e5 before Black\'s king can return.'
+    ]},
+  { id:'knight-bad-bishop-ending', name:'Good Knight vs Bad Bishop', difficulty:'Critical',
+    summary:'When pawns are fixed on the color of the opponent\'s bishop, a centralized knight dominates every weak square of the opposite color.',
+    fen:'8/3b2k1/p1p1p3/1p1pNp2/P2P1P2/2P1PKP1/8/8 w - - 0 1',
+    goal:'Exploit Black\'s light-squared pawn chains and passive bishop with your dominant dark-square knight.',
+    targetResult:'Win',
+    technique:[
+      'All six of Black\'s pawns (a6, b5, c6, d5, e6, f5) stand on light squares, locking Black\'s light-squared bishop into a passive defensive role.',
+      'White\'s knight on e5 controls dark squares throughout Black\'s camp and cannot be challenged by the bad bishop.',
+      'Open an entry point with 1. axb5 cxb5, then target Black\'s queenside weaknesses using dark-square jumps like Nd7-c5 or e5-c6-a5.',
+      'Once the knight wins material or ties Black down, White\'s king infiltrates along the dark squares to decide the game.'
+    ]},
 ];

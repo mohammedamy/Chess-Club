@@ -1,4 +1,5 @@
 import { Chess } from 'chess.js';
+import { localizeMoveGrade, translateMoveReason } from '../i18n/ui-strings.js';
 
 const PIECE_VALUE = { p: 1, n: 3, b: 3.2, r: 5, q: 9, k: 100 };
 
@@ -178,47 +179,48 @@ function countAttackedTargets(game, fromSq, moverColor) {
 /**
  * Generates a concise strategic or tactical coaching tag for a suggested move.
  */
-export function describeSuggestedMove(fen, uciMove, sanMove, pvSan = [], ChessCtor = Chess, whiteMate = null) {
+export function describeSuggestedMove(fen, uciMove, sanMove, pvSan = [], ChessCtor = Chess, whiteMate = null, lang = 'en') {
+  const wrapReason = (r) => translateMoveReason(r, lang);
   if (whiteMate != null || sanMove?.endsWith('#') || pvSan.some((m) => m.endsWith('#'))) {
-    return 'Checkmate sequence';
+    return wrapReason('Checkmate sequence');
   }
   const game = createChess(fen, ChessCtor);
   const moveObj = uciToMoveObj(uciMove);
   const played = moveObj ? game.move(moveObj) : null;
-  if (!played) return 'Positional improvement';
+  if (!played) return wrapReason('Positional improvement');
 
   if (played.flags.includes('k') || played.flags.includes('q')) {
-    return 'Castles to safety';
+    return wrapReason('Castles to safety');
   }
   const attackedCount = countAttackedTargets(game, played.to, played.color);
   if (game.in_check() && attackedCount >= 2) {
-    return 'Forks king and piece';
+    return wrapReason('Forks king and piece');
   }
   if (played.promotion) {
-    return 'Promotes passed pawn';
+    return wrapReason('Promotes passed pawn');
   }
   if (played.captured) {
-    return 'Captures material';
+    return wrapReason('Captures material');
   }
   if (attackedCount >= 2) {
-    return 'Forks two pieces';
+    return wrapReason('Forks two pieces');
   }
   if (game.in_check()) {
-    return 'Checks the king';
+    return wrapReason('Checks the king');
   }
   if (played.piece === 'p' && ['d4', 'd5', 'e4', 'e5', 'c4', 'c5'].includes(played.to)) {
-    return 'Strikes the center';
+    return wrapReason('Strikes the center');
   }
   if (played.piece === 'p' && ((played.color === 'w' && Number(played.to[1]) >= 6) || (played.color === 'b' && Number(played.to[1]) <= 3))) {
-    return 'Advances passed pawn';
+    return wrapReason('Advances passed pawn');
   }
   if ((played.piece === 'n' || played.piece === 'b') && ['1', '8'].includes(played.from[1])) {
-    return 'Develops minor piece';
+    return wrapReason('Develops minor piece');
   }
   if (played.piece === 'r' && (['d', 'e', 'c'].includes(played.to[0]) || ['2', '7'].includes(played.to[1]))) {
-    return 'Activates rook';
+    return wrapReason('Activates rook');
   }
-  return 'Positional improvement';
+  return wrapReason('Positional improvement');
 }
 
 /**
@@ -233,6 +235,7 @@ export function gradePlayedMove({
   playedUci = '',
   bestUci = '',
   bestSan = '',
+  lang = 'en',
 }) {
   const dir = moverColor === 'b' ? -1 : 1;
   const prevScore = scoreToComparableCp(prevWhiteCp, prevWhiteMate) * dir;
@@ -241,8 +244,9 @@ export function gradePlayedMove({
   const isEngineChoice = Boolean(playedUci && bestUci && playedUci === bestUci);
   const cpLoss = isEngineChoice ? 0 : rawLoss;
 
+  let res;
   if (isEngineChoice || cpLoss <= 8) {
-    return {
+    res = {
       grade: 'best',
       label: 'Best Move',
       symbol: '★',
@@ -250,9 +254,8 @@ export function gradePlayedMove({
       bestSan,
       summary: 'Top Stockfish choice — maximizes your position.',
     };
-  }
-  if (cpLoss <= 28) {
-    return {
+  } else if (cpLoss <= 28) {
+    res = {
       grade: 'excellent',
       label: 'Excellent',
       symbol: '!',
@@ -260,9 +263,8 @@ export function gradePlayedMove({
       bestSan,
       summary: `Strong move (−${(cpLoss / 100).toFixed(2)}). Best was ${bestSan || 'the engine line'}.`,
     };
-  }
-  if (cpLoss <= 70) {
-    return {
+  } else if (cpLoss <= 70) {
+    res = {
       grade: 'good',
       label: 'Good',
       symbol: '✓',
@@ -270,9 +272,8 @@ export function gradePlayedMove({
       bestSan,
       summary: `Playable move (−${(cpLoss / 100).toFixed(2)}). ${bestSan ? `Stronger was ${bestSan}.` : ''}`.trim(),
     };
-  }
-  if (cpLoss <= 145) {
-    return {
+  } else if (cpLoss <= 145) {
+    res = {
       grade: 'inaccuracy',
       label: 'Inaccuracy',
       symbol: '?!',
@@ -280,9 +281,8 @@ export function gradePlayedMove({
       bestSan,
       summary: `Slight slip (−${(cpLoss / 100).toFixed(2)}). Prefer ${bestSan || 'the engine candidate'}.`,
     };
-  }
-  if (cpLoss <= 300) {
-    return {
+  } else if (cpLoss <= 300) {
+    res = {
       grade: 'mistake',
       label: 'Mistake',
       symbol: '?',
@@ -290,15 +290,17 @@ export function gradePlayedMove({
       bestSan,
       summary: `Gives away −${(cpLoss / 100).toFixed(2)}. Better was ${bestSan || 'the engine line'}.`,
     };
+  } else {
+    res = {
+      grade: 'blunder',
+      label: 'Blunder',
+      symbol: '??',
+      cpLoss,
+      bestSan,
+      summary: `Major tactical miss (−${(cpLoss / 100).toFixed(2)}). ${bestSan ? `${bestSan} keeps control.` : ''}`.trim(),
+    };
   }
-  return {
-    grade: 'blunder',
-    label: 'Blunder',
-    symbol: '??',
-    cpLoss,
-    bestSan,
-    summary: `Major tactical miss (−${(cpLoss / 100).toFixed(2)}). ${bestSan ? `${bestSan} keeps control.` : ''}`.trim(),
-  };
+  return localizeMoveGrade(res, lang);
 }
 
 const PRESET_ENGINE_CONFIG = {

@@ -1,4 +1,5 @@
 import { Chess } from 'chess.js';
+import { isolateChessTokens } from '../i18n/ui-strings.js';
 import { isStockfishSafeFen } from './stockfish-service.js';
 
 export const STANDARD_START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -264,38 +265,50 @@ function looksLikeFen(text) {
   return parts.length >= 4 && parts[0].split('/').length === 8;
 }
 
-function buildGameTitle(headers, moves, result) {
+function buildGameTitle(headers, moves, result, lang = 'en') {
+  const isAr = lang === 'ar';
   if (headers.White || headers.Black) {
-    const w = headers.White || 'White';
-    const b = headers.Black || 'Black';
+    const w = headers.White || (isAr ? 'الأبيض' : 'White');
+    const b = headers.Black || (isAr ? 'الأسود' : 'Black');
     const res = result && result !== '*' ? ` (${result})` : '';
-    return `${w} vs ${b}${res}`;
+    return isAr ? isolateChessTokens(`${w} ضد ${b}${res}`, 'ar') : `${w} vs ${b}${res}`;
   }
   if (headers.Event) return headers.Event;
-  if (moves.length === 0) return 'Custom Position (FEN)';
-  return `Imported Game (${Math.ceil(moves.length / 2)} moves)`;
+  if (moves.length === 0) return isAr ? 'وضعية مخصّصة (FEN)' : 'Custom Position (FEN)';
+  return isAr
+    ? `مباراة مستوردة (${Math.ceil(moves.length / 2)} نقلة)`
+    : `Imported Game (${Math.ceil(moves.length / 2)} moves)`;
 }
 
 /**
  * Parses a single PGN chunk, pasted move sequence, UCI move list, or FEN position.
  */
-export function parseGameText(rawChunk, ChessCtor = Chess) {
+export function parseGameText(rawChunk, ChessCtor = Chess, { lang = 'en' } = {}) {
+  const isAr = lang === 'ar';
   const chunk = (rawChunk || '').replace(/^\uFEFF/, '').trim();
   if (!chunk) {
-    return { ok: false, error: 'Paste moves or open a .pgn / .txt file first.' };
+    return {
+      ok: false,
+      error: isAr
+        ? 'الصق النقلات أو افتح ملف ‎.pgn‏ / ‎.txt‏ أولاً.'
+        : 'Paste moves or open a .pgn / .txt file first.',
+    };
   }
 
   // Direct FEN input support
   if (looksLikeFen(chunk)) {
     const probe = new ChessCtor();
     if (!isStockfishSafeFen(chunk, ChessCtor) && !probe.load(chunk)) {
-      return { ok: false, error: 'Invalid FEN position string.' };
+      return {
+        ok: false,
+        error: isAr ? 'صيغة وضعية FEN غير صالحة.' : 'Invalid FEN position string.',
+      };
     }
     const headers = { FEN: chunk, SetUp: '1' };
     return {
       ok: true,
       game: {
-        title: 'Custom Position (FEN)',
+        title: isAr ? 'وضعية مخصّصة (FEN)' : 'Custom Position (FEN)',
         headers,
         startFen: chunk,
         moves: [],
@@ -310,7 +323,10 @@ export function parseGameText(rawChunk, ChessCtor = Chess) {
   if (headers.FEN) {
     const fenProbe = new ChessCtor();
     if (!isStockfishSafeFen(headers.FEN, ChessCtor) && !fenProbe.load(headers.FEN)) {
-      return { ok: false, error: `Invalid FEN header: ${headers.FEN}` };
+      return {
+        ok: false,
+        error: isAr ? `وسم FEN غير صالح: ${headers.FEN}` : `Invalid FEN header: ${headers.FEN}`,
+      };
     }
     startFen = headers.FEN;
   }
@@ -365,25 +381,35 @@ export function parseGameText(rawChunk, ChessCtor = Chess) {
   if (invalidToken && moves.length === 0) {
     return {
       ok: false,
-      error: `Could not recognize move "${invalidToken}". Paste valid PGN, SAN (e.g. 1. e4 e5), UCI (e2e4), or a FEN.`,
+      error: isAr
+        ? isolateChessTokens(
+            `تعذّر التعرّف على النقلة «${invalidToken}». الصق نص PGN صحيحاً أو SAN (مثل 1. e4 e5) أو UCI (e2e4) أو FEN.`,
+            'ar',
+          )
+        : `Could not recognize move "${invalidToken}". Paste valid PGN, SAN (e.g. 1. e4 e5), UCI (e2e4), or a FEN.`,
     };
   }
 
   if (candidateMoveCount === 0 && !headers.FEN) {
     return {
       ok: false,
-      error: 'No moves or FEN found in the text.',
+      error: isAr ? 'لم يتم العثور على نقلات أو وضعية FEN في النص.' : 'No moves or FEN found in the text.',
     };
   }
 
   const warning = invalidToken
-    ? `Loaded first ${moves.length} plies cleanly; stopped at unrecognized token "${invalidToken}".`
+    ? isAr
+      ? isolateChessTokens(
+          `تم تحميل أول ${moves.length} نصف نقلة بنجاح؛ توقف التحليل عند الرمز غير المعروف «${invalidToken}».`,
+          'ar',
+        )
+      : `Loaded first ${moves.length} plies cleanly; stopped at unrecognized token "${invalidToken}".`
     : null;
 
   return {
     ok: true,
     game: {
-      title: buildGameTitle(headers, moves, result),
+      title: buildGameTitle(headers, moves, result, lang),
       headers,
       startFen,
       moves,
@@ -396,22 +422,29 @@ export function parseGameText(rawChunk, ChessCtor = Chess) {
 /**
  * Parses one or more games from a PGN/text document or pasted clipboard string.
  */
-export function parseImportedGames(rawText, ChessCtor = Chess) {
+export function parseImportedGames(rawText, ChessCtor = Chess, { lang = 'en' } = {}) {
+  const isAr = lang === 'ar';
   const chunks = splitMultiGamePgn(rawText);
   if (chunks.length === 0) {
-    return { ok: false, error: 'The file or text input is empty.' };
+    return {
+      ok: false,
+      error: isAr ? 'الملف أو النص المدخل فارغ.' : 'The file or text input is empty.',
+    };
   }
 
   const games = [];
   let firstError = null;
   for (const chunk of chunks) {
-    const parsed = parseGameText(chunk, ChessCtor);
+    const parsed = parseGameText(chunk, ChessCtor, { lang });
     if (parsed.ok) games.push(parsed.game);
     else if (!firstError) firstError = parsed.error;
   }
 
   if (games.length === 0) {
-    return { ok: false, error: firstError || 'Unable to parse any valid chess game.' };
+    return {
+      ok: false,
+      error: firstError || (isAr ? 'تعذّر تحليل أي مباراة شطرنج صالحة.' : 'Unable to parse any valid chess game.'),
+    };
   }
 
   return { ok: true, games };

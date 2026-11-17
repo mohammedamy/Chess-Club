@@ -1,7 +1,8 @@
 import { Chess } from 'chess.js';
+import { isolateChessTokens, normalizeSearchText } from '../i18n/ui-strings.js';
 
 function normalizeText(value) {
-  return String(value || '').trim().toLowerCase();
+  return normalizeSearchText(value);
 }
 
 function stripCheckSuffix(san) {
@@ -19,6 +20,7 @@ export function filterPuzzles(
     query = '',
     unsolvedOnly = false,
     solvedSet = new Set(),
+    getSearchText = null,
   } = {},
 ) {
   const q = normalizeText(query);
@@ -29,7 +31,8 @@ export function filterPuzzles(
     if (difficulty && difficulty !== 'All' && p.difficulty !== difficulty) return false;
     if (unsolvedOnly && solved.has(p.id)) return false;
     if (q) {
-      const hay = `${p.theme || ''} ${p.category || ''} ${p.difficulty || ''} ${p.prompt || ''} ${p.id || ''}`.toLowerCase();
+      const extra = getSearchText ? getSearchText(p) : '';
+      const hay = normalizeText(`${p.theme || ''} ${p.category || ''} ${p.difficulty || ''} ${p.prompt || ''} ${p.id || ''} ${extra}`);
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -70,7 +73,9 @@ export function evaluatePuzzleMove({
   playedMoveObj,
   acceptAlso = [],
   ChessCtor = Chess,
+  lang = 'en',
 } = {}) {
+  const isAr = lang === 'ar';
   const expectedSan = solutionMoves[plyIndex];
   if (!expectedSan || !playedMoveObj) {
     return {
@@ -81,7 +86,7 @@ export function evaluatePuzzleMove({
       nextFen: fen,
       playedSan: '',
       expectedSan: expectedSan || '',
-      statusMessage: 'Invalid move or puzzle state.',
+      statusMessage: isAr ? 'نقلة غير صالحة أو حالة لغز غير مكتملة.' : 'Invalid move or puzzle state.',
     };
   }
 
@@ -105,7 +110,7 @@ export function evaluatePuzzleMove({
       nextFen: fen,
       playedSan: '',
       expectedSan,
-      statusMessage: 'Illegal move in this position.',
+      statusMessage: isAr ? 'نقلة غير قانونية في هذه الوضعية.' : 'Illegal move in this position.',
     };
   }
 
@@ -134,7 +139,12 @@ export function evaluatePuzzleMove({
       nextFen: fen,
       playedSan,
       expectedSan,
-      statusMessage: `${playedSan} is not the sharpest move here. Look closely at checks, targets, and the position’s key plan.`,
+      statusMessage: isAr
+        ? isolateChessTokens(
+            `${playedSan} ليست النقلة الأدق هنا. تفحّص الكشّات والأهداف والخطّة الرئيسية في الوضعية.`,
+            'ar',
+          )
+        : `${playedSan} is not the sharpest move here. Look closely at checks, targets, and the position’s key plan.`,
     };
   }
 
@@ -149,7 +159,9 @@ export function evaluatePuzzleMove({
       nextFen: probe.fen(),
       playedSan,
       expectedSan,
-      statusMessage: `Solved with ${playedSan}!`,
+      statusMessage: isAr
+        ? isolateChessTokens(`تم الحلّ بـ ${playedSan}!`, 'ar')
+        : `Solved with ${playedSan}!`,
     };
   }
 
@@ -165,7 +177,9 @@ export function evaluatePuzzleMove({
       nextFen: probe.fen(),
       playedSan,
       expectedSan,
-      statusMessage: `Solved with ${playedSan}!`,
+      statusMessage: isAr
+        ? isolateChessTokens(`تم الحلّ بـ ${playedSan}!`, 'ar')
+        : `Solved with ${playedSan}!`,
     };
   }
 
@@ -180,8 +194,12 @@ export function evaluatePuzzleMove({
     playedSan,
     expectedSan,
     statusMessage: finished
-      ? `Solved with ${playedSan}!`
-      : `Good find (${playedSan})! Opponent replies ${oppMove.san} — find the follow-up.`,
+      ? isAr
+        ? isolateChessTokens(`تم الحلّ بـ ${playedSan}!`, 'ar')
+        : `Solved with ${playedSan}!`
+      : isAr
+        ? isolateChessTokens(`نقلة رائعة (${playedSan})! ردّ الخصم بـ ${oppMove.san} — أوجد المتابعة.`, 'ar')
+        : `Good find (${playedSan})! Opponent replies ${oppMove.san} — find the follow-up.`,
   };
 }
 

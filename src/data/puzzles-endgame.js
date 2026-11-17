@@ -892,5 +892,457 @@ export const ENDGAME_PUZZLES = [
       "Bc2"
     ],
     "explanation": "Kf4 — Marching the king forward forces Black into cramped passivity."
+  },
+  {
+    "id": "end-saavedra-underpromo",
+    "category": "Endgame",
+    "theme": "Saavedra Underpromotion Study",
+    "difficulty": "Advanced",
+    "rating": 1760,
+    "fen": "8/2P5/8/8/3r4/8/2K5/k7 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move in the famous Saavedra study. Promoting to a queen allows a stalemate defense after ...Rc4+ and ...Rxc2! Find the winning underpromotion sequence.",
+    "moves": [
+      "c8=R",
+      "Ra4",
+      "Kb3"
+    ],
+    "explanation": "c8=R! — Promoting to a rook prevents ...Rc4+ stalemate; after 1...Ra4 2.Kb3 threatens both Kxa4 and mate on c1."
+  },
+  {
+    "id": "end-reti-diagonal-pursuit",
+    "category": "Endgame",
+    "theme": "Réti Diagonal King Pursuit",
+    "difficulty": "Advanced",
+    "rating": 1740,
+    "fen": "7K/8/k1P5/7p/8/8/8/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Black’s h-pawn looks unstoppable while White’s king sits far from the c6 pawn. Use king geometry to save the game in three moves!",
+    "moves": [
+      "Kg7",
+      "h4",
+      "Kf6"
+    ],
+    "explanation": "Kg7! then Kf6 — Moving diagonally threatens to enter the h-pawn’s square while rushing toward c6 to force a draw."
+  },
+  {
+    "id": "end-underpromo-knight-fork",
+    "category": "Endgame",
+    "theme": "Underpromotion to a Knight Fork",
+    "difficulty": "Medium",
+    "rating": 1440,
+    "fen": "8/4P1k1/3q4/8/8/5P2/6PP/7K w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Black threatens immediate perpetual checks or mate if you miss a tempo on e8. Find the forcing promotion that wins Black’s queen!",
+    "moves": [
+      "e8=N+",
+      "Kg6",
+      "Nxd6"
+    ],
+    "explanation": "e8=N+ — Underpromoting to a knight delivers a royal fork on king and queen, winning decisively after 1...Kg6 2.Nxd6."
+  },
+  {
+    "id": "end-lucena-bridge-rd4",
+    "category": "Endgame",
+    "theme": "Lucena Bridge Building (d4)",
+    "difficulty": "Medium",
+    "rating": 1460,
+    "fen": "8/3P3k/8/3K4/4R3/8/8/3r4 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. The d7 pawn is blocked by your own king on d5 while Black’s rook waits on d1. Build the shield to shelter your king from checks!",
+    "moves": [
+      "Rd4"
+    ],
+    "explanation": "Rd4 — Building the bridge on the 4th rank allows White’s king to step out and later block rear checks with Rd5."
+  },
+  {
+    "id": "end-lucena-bridge-rc4",
+    "category": "Endgame",
+    "theme": "Lucena Bridge Building (c4)",
+    "difficulty": "Medium",
+    "rating": 1430,
+    "fen": "8/2P4k/8/2K5/3R4/8/8/2r5 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Black’s rook pins the c7 pawn from c1. Activate your rook to build the Lucena bridge and escort the c-pawn home!",
+    "moves": [
+      "Rc4"
+    ],
+    "explanation": "Rc4 — Placing the rook on the 4th rank shields the king from checks as it emerges toward b6/b7 to free the c-pawn."
+  },
+  {
+    "id": "end-philidor-rear-check-re1",
+    "category": "Endgame",
+    "theme": "Philidor Defense: Rear Checking Distance",
+    "difficulty": "Medium",
+    "rating": 1340,
+    "fen": "3k4/8/3PK3/8/8/8/7R/r7 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. White pushed the pawn to d6 and threatens Rh8#. Find the only drawing defense from the back rank!",
+    "moves": [
+      "Re1+"
+    ],
+    "explanation": "Re1+ — Launching perpetual checks from the rear forces White’s king back and holds the Philidor draw."
+  },
+  {
+    "id": "end-philidor-3rd-rank-ra6",
+    "category": "Endgame",
+    "theme": "Philidor Defense: Third-Rank Cut-off",
+    "difficulty": "Medium",
+    "rating": 1360,
+    "fen": "4k3/8/8/4PK2/8/8/r7/1R6 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Before White advances e5-e6, seize the key defensive rank to stop White’s king from penetrating to the 6th rank!",
+    "moves": [
+      "Ra6"
+    ],
+    "acceptAlso": [
+      "Ke7",
+      "Rh2"
+    ],
+    "explanation": "Ra6 — Occupying the 6th rank (Black’s 3rd rank) denies White’s king the e6/f6 outpost until e6 forces Black’s rook to the rear."
+  },
+  {
+    "id": "end-opposition-flanking-kf4",
+    "category": "Endgame",
+    "theme": "Opposition and King Flanking",
+    "difficulty": "Medium",
+    "rating": 1310,
+    "fen": "8/3k4/4p3/3pP3/3P4/4K3/8/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Both centers are locked at d4/e5 against d5/e6. Outflank Black’s king to invade the kingside dark squares!",
+    "moves": [
+      "Kf4"
+    ],
+    "explanation": "Kf4! — Flanking toward f4 prepares Kg5-f6-e7 to outmaneuver Black’s king and pick off the fixed e6 pawn."
+  },
+  {
+    "id": "end-distant-opposition-ka2",
+    "category": "Endgame",
+    "theme": "Distant Opposition Precision",
+    "difficulty": "Advanced",
+    "rating": 1620,
+    "fen": "8/3k4/8/8/8/8/1P6/1K6 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Advancing immediately lets Black take the opposition and draw. Find the quiet waiting step that wins the distant opposition battle!",
+    "moves": [
+      "Ka2"
+    ],
+    "explanation": "Ka2! — Stepping diagonally takes the critical square sequence so White seizes direct opposition whenever Black’s king approaches."
+  },
+  {
+    "id": "end-triangulation-ke4",
+    "category": "Endgame",
+    "theme": "Corresponding Squares and Triangulation",
+    "difficulty": "Advanced",
+    "rating": 1640,
+    "fen": "8/8/1p1k4/1P1P4/3K4/8/8/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Black defends the b6 pawn with ...Kd6. Step carefully to keep Black in zugzwang and break into the pawns!",
+    "moves": [
+      "Ke4"
+    ],
+    "explanation": "Ke4! — Entering the winning corresponding-square circuit forces Black’s king away from d6/c5 so White infiltrates to c6 or f5."
+  },
+  {
+    "id": "end-triangulation-c-pawn",
+    "category": "Endgame",
+    "theme": "Outflanking Behind a Blocked Pawn",
+    "difficulty": "Medium",
+    "rating": 1290,
+    "fen": "2k5/8/2p5/2P5/3K4/8/8/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. With the c-pawns locked on c5 and c6, find the right king route to win the c6 pawn without allowing a draw!",
+    "moves": [
+      "Ke4"
+    ],
+    "acceptAlso": [
+      "Ke5"
+    ],
+    "explanation": "Ke4 — Advancing along the e-file outflanks Black’s king, reaching d6 or f6 to force Black off the defense of c6."
+  },
+  {
+    "id": "end-breakthrough-b6",
+    "category": "Endgame",
+    "theme": "Three-Pawn Queenside Breakthrough",
+    "difficulty": "Medium",
+    "rating": 1400,
+    "fen": "8/ppp3k1/8/PPP5/8/8/6K1/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Both kings are on the kingside while three pawns face three on the queenside. Sacrifice pawns to force a decisive promotion!",
+    "moves": [
+      "b6",
+      "cxb6",
+      "a6"
+    ],
+    "explanation": "b6! — After 1...cxb6 2.a6! (and 1...axb6 2.c6!), a White pawn breaks cleanly through to the 8th rank."
+  },
+  {
+    "id": "end-breakthrough-g6",
+    "category": "Endgame",
+    "theme": "Three-Pawn Kingside Breakthrough",
+    "difficulty": "Medium",
+    "rating": 1410,
+    "fen": "1k6/5ppp/8/5PPP/8/8/8/1K6 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Both kings sit far away on the b-file while 3v3 pawns face off on the kingside. Execute the winning breakthrough!",
+    "moves": [
+      "g6",
+      "hxg6",
+      "f6"
+    ],
+    "explanation": "g6! — After 1...hxg6 2.f6!, White guarantees an unstoppable promotion on g7 or h8."
+  },
+  {
+    "id": "end-wrong-rook-corner-nf4",
+    "category": "Endgame",
+    "theme": "Wrong-Rook-Pawn Fortress Sacrifice",
+    "difficulty": "Medium",
+    "rating": 1450,
+    "fen": "6k1/8/5BK1/7P/8/8/4n3/8 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. White threatens to advance the h-pawn with a dark-squared bishop that matches h8. Sacrifice your knight to reach a theoretical draw!",
+    "moves": [
+      "Nf4+"
+    ],
+    "explanation": "Nf4+! — Eliminating or decoupling the dangerous h-pawn allows Black to reach a safe drawn configuration."
+  },
+  {
+    "id": "end-wrong-rook-corner-kh2",
+    "category": "Endgame",
+    "theme": "Wrong-Color Bishop Corner Shelter",
+    "difficulty": "Easy",
+    "rating": 1080,
+    "fen": "8/8/8/8/7p/5k2/5b2/6K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Black holds an h-pawn and a dark-squared bishop while aiming for h1. Step into the safe corner to guarantee a draw!",
+    "moves": [
+      "Kh2"
+    ],
+    "acceptAlso": [
+      "Kh1"
+    ],
+    "explanation": "Kh2 / Kh1 — Since Black’s dark-squared bishop cannot cover the light h1 corner, White simply shuttles between h1 and g2 for an effortless draw."
+  },
+  {
+    "id": "end-queen-vs-c-pawn-ka1",
+    "category": "Endgame",
+    "theme": "Queen vs Seventh-Rank Bishop Pawn Trick",
+    "difficulty": "Medium",
+    "rating": 1350,
+    "fen": "8/8/8/8/8/1Q6/2p5/1k4K1 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. White’s queen pins the c2 pawn against your king. Find the stalemate corner defense instead of stepping behind the pawn!",
+    "moves": [
+      "Ka1"
+    ],
+    "explanation": "Ka1! — Stepping into the corner prevents Qxc2 because of stalemate, allowing Black to hold the well-known c2 pawn draw."
+  },
+  {
+    "id": "end-queen-vs-a-pawn-kb1",
+    "category": "Endgame",
+    "theme": "Queen vs Rook Pawn Stalemate Defense",
+    "difficulty": "Easy",
+    "rating": 1120,
+    "fen": "8/8/8/8/3Q4/8/p7/2k3K1 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Your a-pawn stands one step from queening while White’s queen circles nearby. Find the only move that keeps the draw alive!",
+    "moves": [
+      "Kb1"
+    ],
+    "explanation": "Kb1! — Threatening ...a1=Q while setting up the classic a2 rook-pawn stalemate trap forces White’s queen to keep checking."
+  },
+  {
+    "id": "end-queen-vs-e-pawn-qf3",
+    "category": "Endgame",
+    "theme": "Queen vs Center Pawn Pin",
+    "difficulty": "Easy",
+    "rating": 1140,
+    "fen": "7K/8/8/8/8/2Q5/4p3/3k4 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Unlike rook and bishop pawns, a center pawn cannot save Black with stalemate. Pin or check decisively to halt the e2 pawn!",
+    "moves": [
+      "Qf3"
+    ],
+    "acceptAlso": [
+      "Qa1+",
+      "Qd4+"
+    ],
+    "explanation": "Qf3 (or Qa1+ / Qd4+) — Center pawns lack stalemate tricks; pinning the e2 pawn or forcing Black’s king onto e1 lets White’s king march down and win."
+  },
+  {
+    "id": "end-shoulder-block-kf5",
+    "category": "Endgame",
+    "theme": "Shouldering the Defender Away (Kf5)",
+    "difficulty": "Easy",
+    "rating": 1090,
+    "fen": "8/8/2k5/8/4K3/7P/8/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Black’s king races toward the h3 rook pawn. Pushing h4 immediately draws — find the shouldering king move that keeps Black out!",
+    "moves": [
+      "Kf5"
+    ],
+    "acceptAlso": [
+      "Ke5"
+    ],
+    "explanation": "Kf5! (or Ke5) — Advancing the king to shoulder Black away from the f6/g7 corner guarantees White’s h-pawn promotes."
+  },
+  {
+    "id": "end-shoulder-block-kc5",
+    "category": "Endgame",
+    "theme": "Shouldering the Defender Away (Kc5)",
+    "difficulty": "Easy",
+    "rating": 1110,
+    "fen": "8/5k2/8/8/3K4/P7/8/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Black wants to slip across toward the a-pawn and reach the drawing corner. Step in aggressively to cut off Black’s king!",
+    "moves": [
+      "Kc5"
+    ],
+    "acceptAlso": [
+      "Kd5"
+    ],
+    "explanation": "Kc5 (or Kd5) — Stepping forward seizes the vital cutting squares and prevents Black’s king from ever reaching b7/a8."
+  },
+  {
+    "id": "end-tarrasch-behind-ra8",
+    "category": "Endgame",
+    "theme": "Tarrasch Rule: Rook Behind Passed Pawn",
+    "difficulty": "Medium",
+    "rating": 1320,
+    "fen": "2r3k1/5pp1/P6p/8/8/8/5PP1/1R4K1 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. White’s passed a-pawn has reached a6. Apply Tarrasch’s fundamental rook-ending principle to maximize your rook’s scope!",
+    "moves": [
+      "Ra8"
+    ],
+    "explanation": "Ra8! — Placing the rook behind the enemy passed pawn ties White’s rook down passively and preserves active counterchances."
+  },
+  {
+    "id": "end-tarrasch-skewer-rd8",
+    "category": "Endgame",
+    "theme": "Promotion Skewer on the Eighth Rank",
+    "difficulty": "Medium",
+    "rating": 1380,
+    "fen": "6k1/P4pp1/7p/8/8/8/r4PPP/3R2K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Black’s rook blockades the a7 pawn from a2. Deliver the decisive tactic that clears the promotion square!",
+    "moves": [
+      "Rd8+"
+    ],
+    "explanation": "Rd8+! — Forcing Black’s king to the 7th rank allows promotion with an immediate skewer winning Black’s rook on a2."
+  },
+  {
+    "id": "end-active-rook-rb2",
+    "category": "Endgame",
+    "theme": "Active Rook Counterplay Against Passed Pawn",
+    "difficulty": "Medium",
+    "rating": 1400,
+    "fen": "6k1/5pp1/7p/8/1P6/8/4rPPP/R5K1 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. White pushes a passed b-pawn while Black’s rook stands passively on the 2nd rank. Find the active rook move that saves the game!",
+    "moves": [
+      "Rb2"
+    ],
+    "explanation": "Rb2! — Attacking the b4 pawn immediately while threatening the back-rank pawns creates dynamic counterplay that holds the draw."
+  },
+  {
+    "id": "end-bad-good-bishop-h5",
+    "category": "Endgame",
+    "theme": "Good vs Bad Bishop Breakthrough",
+    "difficulty": "Advanced",
+    "rating": 1660,
+    "fen": "8/3b1k2/2p1p1p1/1pPpP1P1/1P1P2KP/3B4/8/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Black’s light-squared bishop is entombed behind its own light-square pawns. Find the three-move breakthrough that cracks open the kingside!",
+    "moves": [
+      "h5",
+      "gxh5+",
+      "Kxh5"
+    ],
+    "explanation": "h5! — After 1...gxh5+ 2.Kxh5!, White’s king and active dark-squared bishop invade the dark squares while Black’s bishop stays helpless."
+  },
+  {
+    "id": "end-minor-piece-fortress-h5",
+    "category": "Endgame",
+    "theme": "Minor-Piece Fortress Against a Rook",
+    "difficulty": "Advanced",
+    "rating": 1580,
+    "fen": "8/5k2/6p1/5p2/5P1P/5BK1/8/1r6 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move, down the exchange against a rook. Liquidate and freeze the remaining kingside pawns to lock in an unbreakable fortress draw!",
+    "moves": [
+      "h5"
+    ],
+    "explanation": "h5! — After ...gxh5 Bxh5+, Black has no second breakthrough left and White’s bishop and king effortlessly seal the fortress."
+  },
+  {
+    "id": "end-rook-stalemate-rh1",
+    "category": "Endgame",
+    "theme": "Stalemate Escape in a Lost Rook Endgame",
+    "difficulty": "Medium",
+    "rating": 1470,
+    "fen": "8/8/6k1/6p1/5pK1/5P2/7R/5r2 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move in a seemingly hopeless rook endgame. Find the shocking defensive resource that forces an immediate draw!",
+    "moves": [
+      "Rh1"
+    ],
+    "explanation": "Rh1! — Offering the rook on the back rank leaves Black no winning capture because 1...Rxh1 is stalemate and stepping away lets White save the game."
+  },
+  {
+    "id": "end-bishop-zugzwang-kg5",
+    "category": "Endgame",
+    "theme": "Opposite-Colored Bishop Counterplay & King Invasion",
+    "difficulty": "Advanced",
+    "rating": 1600,
+    "fen": "8/8/2k1p3/3pP3/2pP1K2/2P5/1B6/4b3 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Black threatens ...Bd2+ and ...Kc6-b5-a4. Step into an active king counterattack to neutralize Black’s bind and force a draw!",
+    "moves": [
+      "Kg5"
+    ],
+    "explanation": "Kg5! — Marching straight toward Black’s g/h weaknesses creates concrete counterplay that keeps Black from winning in the bishop endgame."
+  },
+  {
+    "id": "end-pawn-zugzwang-kd6",
+    "category": "Endgame",
+    "theme": "Pawn Ending Zugzwang Hold",
+    "difficulty": "Easy",
+    "rating": 1060,
+    "fen": "8/8/1p2k3/1P6/3K4/8/8/8 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move and defend a delicate 1-vs-1 pawn endgame. Find the only move that keeps White out of c5 and e5!",
+    "moves": [
+      "Kd6"
+    ],
+    "explanation": "Kd6! — Taking diagonal/key-square control covers both c5 and e5 simultaneously, leaving White unable to force zugzwang."
+  },
+  {
+    "id": "end-king-activity-ke2",
+    "category": "Endgame",
+    "theme": "King Activity Race in a Symmetrical Endgame",
+    "difficulty": "Medium",
+    "rating": 1280,
+    "fen": "8/5pk1/6p1/p6p/P6P/6P1/5P2/5K2 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Pawns are balanced on both wings, but Black’s isolated a5 pawn is exposed. Activate your king immediately to win the race!",
+    "moves": [
+      "Ke2"
+    ],
+    "explanation": "Ke2! — Centralizing the king rapidly toward d3-c4-b5 wins the queenside pawn before Black’s king can arrive in time."
+  },
+  {
+    "id": "end-king-activity-ke4",
+    "category": "Endgame",
+    "theme": "Outracing the Doubled Pawns with King Activity",
+    "difficulty": "Medium",
+    "rating": 1300,
+    "fen": "8/5p2/5pk1/8/5P2/5K2/7P/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move in a 2-vs-2 endgame where Black suffers from doubled f-pawns. Seize the active central square with your king to convert the advantage!",
+    "moves": [
+      "Ke4"
+    ],
+    "explanation": "Ke4! — Centralizing onto e4 fixes Black’s doubled pawns, seizes key space, and prepares Kd5 or f5 to break through."
   }
 ];

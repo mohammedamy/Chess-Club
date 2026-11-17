@@ -953,5 +953,289 @@ export const MIDDLEGAME_PUZZLES = [
       "Bxh4"
     ],
     "explanation": "c5 — A flank attack must be met by striking the center with ...c5."
+  },
+  {
+    "id": "mid-dragon-opp-storm-g4",
+    "category": "Middlegame",
+    "theme": "Opposite-Side Castling Pawn Storm (g4)",
+    "difficulty": "Medium",
+    "rating": 1360,
+    "fen": "r1r3k1/pp1bppbp/2np1np1/q7/3NP3/1BN1BP2/PPPQ2PP/2KR3R w - - 9 12",
+    "sideToMove": "White",
+    "prompt": "White to move in the Sicilian Dragon Yugoslav Attack. Both sides have castled on opposite flanks. Launch your kingside pawn storm before Black doubles on the c-file!",
+    "moves": [
+      "g4"
+    ],
+    "explanation": "g4! — Thrusting g4-g5 aims to open the h-file and kick away Black’s f6 defender as fast as possible in the opposite-wing race."
+  },
+  {
+    "id": "mid-english-opp-storm-g5",
+    "category": "Middlegame",
+    "theme": "English Attack Kingside Pawn Storm (g5)",
+    "difficulty": "Medium",
+    "rating": 1380,
+    "fen": "r2q1rk1/3nbppp/p2pbn2/1p2p3/4P1P1/1NN1BP2/PPPQ3P/2KR1B1R w - b6 0 12",
+    "sideToMove": "White",
+    "prompt": "White to move in the Najdorf English Attack. Black pushed ...b5 on the queenside; strike immediately on the kingside to seize time and dislodge the f6 knight!",
+    "moves": [
+      "g5"
+    ],
+    "explanation": "g5! — Driving the f6 knight back toward h5 or e8 allows White to advance h4-h5 and press the kingside attack."
+  },
+  {
+    "id": "mid-yugoslav-opp-storm-h4",
+    "category": "Middlegame",
+    "theme": "Opening the h-File with h4-h5",
+    "difficulty": "Medium",
+    "rating": 1400,
+    "fen": "r2qr1k1/p4pbp/2p1b1p1/2Bnp3/4N3/5P2/PPPQ2PP/2KR1B1R w - - 4 15",
+    "sideToMove": "White",
+    "prompt": "White to move against Black’s fianchettoed kingside. Your e4 knight and c5 bishop restrict Black’s pieces — launch the flank pawn to crack open the h-file!",
+    "moves": [
+      "h4"
+    ],
+    "explanation": "h4! — Advancing h4-h5 directly targets Black’s g6 hook to open the h-file for the rook on h1."
+  },
+  {
+    "id": "mid-dragon-counter-h5",
+    "category": "Middlegame",
+    "theme": "Stopping the Flank Pawn Storm in the Dragon",
+    "difficulty": "Medium",
+    "rating": 1420,
+    "fen": "2rq1rk1/pp1bppbp/3p1np1/4n3/3NP2P/1BN1BP2/PPPQ2P1/2KR3R b - h3 0 12",
+    "sideToMove": "Black",
+    "prompt": "Black to move. White just pushed h4 threatening h5 to rip open the h-file. Halt White’s kingside storm on the spot!",
+    "moves": [
+      "h5"
+    ],
+    "explanation": "h5! — Boldly halting White’s h-pawn keeps the kingside closed for now, freeing Black to unleash ...Nc4 and ...Rxc3 counterplay."
+  },
+  {
+    "id": "mid-dragon-exchange-sac-rxc3",
+    "category": "Middlegame",
+    "theme": "Classic Sicilian Exchange Sacrifice on c3",
+    "difficulty": "Advanced",
+    "rating": 1620,
+    "fen": "r1r3k1/pp2ppbp/3pbnp1/q7/3BP1PP/2N2P2/PPPQ4/1K1R1B1R b - h3 0 13",
+    "sideToMove": "Black",
+    "prompt": "Black to move in the Sicilian Dragon. Both queenside attackers eye c3 and a2 while White pushes on the kingside. Unleash the signature Sicilian exchange sacrifice!",
+    "moves": [
+      "Rxc3"
+    ],
+    "explanation": "Rxc3! — Shattering White’s queenside pawn cover creates devastating dark-square pressure around b1/a2 after ...Qxa2+ or ...Bxd4."
+  },
+  {
+    "id": "mid-dragon-exchange-sac-c3",
+    "category": "Middlegame",
+    "theme": "Counter-Attacking Exchange Sacrifice on c3",
+    "difficulty": "Advanced",
+    "rating": 1600,
+    "fen": "2rq1rk1/pp1bpp1p/3p1npQ/4n3/3NP1PP/2N2P2/PPP5/2KR1B1R b - - 0 13",
+    "sideToMove": "Black",
+    "prompt": "Black to move under kingside pressure after White’s queen reached h6. Create immediate queenside counterplay before White finishes mating threats!",
+    "moves": [
+      "Rxc3"
+    ],
+    "explanation": "Rxc3! — Smashing the c3 knight wrecks White’s king shelter and forces ...Qa5 pressure against a2, seizing vital initiative."
+  },
+  {
+    "id": "mid-sicilian-rxc3-b2",
+    "category": "Middlegame",
+    "theme": "Thematic ...Rxc3 Wrecking Queenside Shelter",
+    "difficulty": "Advanced",
+    "rating": 1590,
+    "fen": "2r3k1/pp1bppbp/3p1np1/q6P/2rNP1P1/2N1BP2/PPPQ4/1K1R3R b - - 0 16",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Your second rook on c8 backs up the rook already stationed on c4. Sacrifice the exchange to tear open White’s castled king!",
+    "moves": [
+      "Rxc3"
+    ],
+    "explanation": "Rxc3! — With two rooks stacked on the c-file and ...Qa5 waiting, eliminating the c3 defender leaves White’s king exposed along the dark squares."
+  },
+  {
+    "id": "mid-winawer-greek-gift-3ply",
+    "category": "Middlegame",
+    "theme": "Greek Gift Attack in the French Winawer",
+    "difficulty": "Advanced",
+    "rating": 1640,
+    "fen": "r1bq1rk1/pp2nppp/2n1p3/2ppP3/3P4/P1PB1N2/2P2PPP/R1BQK2R w KQ - 5 9",
+    "sideToMove": "White",
+    "prompt": "White to move after Black just castled ...O-O into a waiting Bd3 + Nf3 + e5 clamp. Execute the classic Greek Gift sacrifice and its crushing follow-up check!",
+    "moves": [
+      "Bxh7+",
+      "Kxh7",
+      "Ng5+"
+    ],
+    "explanation": "Bxh7+! — After 1...Kxh7 2.Ng5+, Black’s king is dragged forward before Qh5/Qd3+ delivers a decisive kingside storm."
+  },
+  {
+    "id": "mid-french-greek-gift",
+    "category": "Middlegame",
+    "theme": "Classical Greek Gift Sacrifice on h7",
+    "difficulty": "Medium",
+    "rating": 1440,
+    "fen": "r1bq1rk1/pp1n1ppp/2n1p3/2bpP3/5B2/2NB1N2/PPP2PPP/R2QK2R w KQ - 2 9",
+    "sideToMove": "White",
+    "prompt": "White to move. No defender guards h7 and Black’s light squares look weak. Unleash the classic bishop sacrifice to tear open the Black king!",
+    "moves": [
+      "Bxh7+"
+    ],
+    "explanation": "Bxh7+! — With Ng5+ and Qh5 poised behind the sacrifice, Black cannot accept safely without walking into a crushing attack."
+  },
+  {
+    "id": "mid-greek-gift-rh3",
+    "category": "Middlegame",
+    "theme": "Greek Gift Combined with Rook Lift",
+    "difficulty": "Advanced",
+    "rating": 1660,
+    "fen": "r1bq1rk1/pp1nbppp/2p1p3/3pP3/3P4/3B1R2/PPP2PPP/RNBQ2K1 w - - 0 10",
+    "sideToMove": "White",
+    "prompt": "White to move. Your rook has already lifted to f3 beside the d3 bishop. Combine the classic bishop sacrifice with a devastating rook check!",
+    "moves": [
+      "Bxh7+",
+      "Kxh7",
+      "Rh3+"
+    ],
+    "explanation": "Bxh7+! — After 1...Kxh7 2.Rh3+, the lifted rook joins Qh5 with decisive force along the h-file."
+  },
+  {
+    "id": "mid-uncastled-central-e5",
+    "category": "Middlegame",
+    "theme": "Central Break Against an Uncastled King",
+    "difficulty": "Easy",
+    "rating": 1180,
+    "fen": "r1bqk2r/pp1nbppp/2p1pn2/8/2BPP3/2N2N2/PP3PPP/R1BQR1K1 w kq - 2 9",
+    "sideToMove": "White",
+    "prompt": "White to move. Your rook sits on the e-file facing Black’s uncastled king on e8. Strike immediately to drive Black’s knight back and seize central space!",
+    "moves": [
+      "e5"
+    ],
+    "explanation": "e5! — Pushing e5 exploits Black’s lag in development, kicks the f6 knight away from defending the kingside, and blasts open lines toward e8."
+  },
+  {
+    "id": "mid-max-lange-central-e5",
+    "category": "Middlegame",
+    "theme": "Max Lange Central Thrust Against e8",
+    "difficulty": "Medium",
+    "rating": 1290,
+    "fen": "r1bqk2r/pppp1ppp/2n2n2/2b5/2BpP3/5N2/PPP2PPP/RNBQ1RK1 w kq - 2 6",
+    "sideToMove": "White",
+    "prompt": "White to move after castling early while Black’s king remains on e8. Drive a central wedge before Black stabilizes!",
+    "moves": [
+      "e5"
+    ],
+    "explanation": "e5! — Striking at the f6 knight immediately forces sharp complications (5...d5 6.exf6) while Black’s king stays uncastled."
+  },
+  {
+    "id": "mid-evans-bishop-sac-bxf7",
+    "category": "Middlegame",
+    "theme": "Evans Gambit Bishop Sacrifice on f7",
+    "difficulty": "Medium",
+    "rating": 1450,
+    "fen": "r2qk1nr/pppb1ppp/1b1p4/n7/2BPP3/1QN2N2/P4PPP/R1B2RK1 w kq - 7 12",
+    "sideToMove": "White",
+    "prompt": "White to move. Black threatens ...Nxc4 to eliminate your attacking bishop while its king sits on e8. Find the sharp sacrifice that exposes the enemy king!",
+    "moves": [
+      "Bxf7+"
+    ],
+    "explanation": "Bxf7+! — Sacrificing on f7 before losing the bishop strips Black’s castling rights and activates White’s queen and knights against the exposed king."
+  },
+  {
+    "id": "mid-italian-bishop-sac-bxf7",
+    "category": "Middlegame",
+    "theme": "Italian Game Double-Bishop Assault on f7",
+    "difficulty": "Medium",
+    "rating": 1410,
+    "fen": "r1bq1rk1/ppp2ppp/2n5/3B4/3P4/1Qb2N2/P4PPP/R1B2RK1 w - - 1 12",
+    "sideToMove": "White",
+    "prompt": "White to move. Both your queen on b3 and bishop on d5 aim at f7 while Black’s bishop just captured on c3. Strike before recapturing!",
+    "moves": [
+      "Bxf7+"
+    ],
+    "explanation": "Bxf7+! — Firing the intermediate sacrifice first tears open Black’s king cover before White builds a fierce attack after ...Rxf7 Ng5 or Qxc3."
+  },
+  {
+    "id": "mid-dragon-bishop-sac-bxh6",
+    "category": "Middlegame",
+    "theme": "Destructive Bishop Sacrifice on h6",
+    "difficulty": "Advanced",
+    "rating": 1650,
+    "fen": "2rq1rk1/pp1bppb1/3p1npp/4n3/3NP2P/1BN1BP2/PPPQ2P1/2KR3R w - - 0 13",
+    "sideToMove": "White",
+    "prompt": "White to move. Black just played ...h6 trying to keep White out of the h6 outpost, but your Qd2 + Be3 battery sits right on the c1-h6 diagonal. Crash through!",
+    "moves": [
+      "Bxh6"
+    ],
+    "explanation": "Bxh6! — Eliminating the h6 defender rips open the kingside and leaves Black’s dark squares around g7 and h8 completely defenseless."
+  },
+  {
+    "id": "mid-zukertort-rook-lift-rf3",
+    "category": "Middlegame",
+    "theme": "Zukertort Rook Lift to f3",
+    "difficulty": "Medium",
+    "rating": 1430,
+    "fen": "2r2rk1/pb2qppp/1pnbpn2/2ppN3/3P1P2/PP1BP3/1BPN2PP/R2Q1RK1 w - - 1 12",
+    "sideToMove": "White",
+    "prompt": "White to move with a commanding e5 outpost and strong bishops aimed at h7. Lift the f1 rook into the kingside attack!",
+    "moves": [
+      "Rf3"
+    ],
+    "explanation": "Rf3! — Lifting the rook prepares Rh3 and Bxh7+ attacks while keeping Black tied down against f4-f5 breakthroughs."
+  },
+  {
+    "id": "mid-stonewall-rook-lift-rh3",
+    "category": "Middlegame",
+    "theme": "Completing the Rook Lift on h3",
+    "difficulty": "Medium",
+    "rating": 1460,
+    "fen": "r2q1rk1/pb2nppp/1p1bpn2/2ppN3/3P1P2/2PBPR2/PP1N2PP/R1BQ2K1 w - - 2 11",
+    "sideToMove": "White",
+    "prompt": "White to move in the Stonewall Attack. Your rook already stands on f3 and your d3 bishop targets h7. Swing the rook onto the h-file!",
+    "moves": [
+      "Rh3"
+    ],
+    "explanation": "Rh3! — Shifting the rook to h3 turns up the pressure on h7 and pairs with Bxh7+ or Qe1-h4 mating patterns."
+  },
+  {
+    "id": "mid-qgd-qb-battery-qc2",
+    "category": "Middlegame",
+    "theme": "Building a Queen-Bishop Battery on the b1-h7 Diagonal",
+    "difficulty": "Easy",
+    "rating": 1160,
+    "fen": "r1bqr1k1/pp1nbppp/2p2n2/3p2B1/3P4/2NBP3/PP2NPPP/R2Q1RK1 w - - 6 10",
+    "sideToMove": "White",
+    "prompt": "White to move in the Carlsbad structure. Align your queen behind the d3 bishop to aim directly at Black’s castled h7 square!",
+    "moves": [
+      "Qc2"
+    ],
+    "explanation": "Qc2! — Forming the classic Qc2 + Bd3 battery targets h7, clears d1/e1 for rooks, and supports central or kingside advances."
+  },
+  {
+    "id": "mid-sicilian-center-counter-e5",
+    "category": "Middlegame",
+    "theme": "Counterattacking the Keres Wing Thrust in the Center",
+    "difficulty": "Easy",
+    "rating": 1190,
+    "fen": "rnbqkb1r/1p3ppp/p2ppn2/8/3NP1P1/2N1B3/PPP2P1P/R2QKB1R b KQkq g3 0 7",
+    "sideToMove": "Black",
+    "prompt": "Black to move. White launched an early 6.g4 Keres Attack on the kingside! Strike back in the center immediately before g5 kicks your knight!",
+    "moves": [
+      "e5"
+    ],
+    "explanation": "e5! — Meeting a premature flank push with a direct central counterstrike drives the d4 knight back and grabs vital central territory."
+  },
+  {
+    "id": "mid-wing-attack-center-d5",
+    "category": "Middlegame",
+    "theme": "Central Counterbreak Against Kingside Pawn Expansion",
+    "difficulty": "Medium",
+    "rating": 1340,
+    "fen": "r1b1kb1r/2qp1ppp/p1p1pn2/8/4PP2/2NB4/PPP3PP/R1BQ1RK1 b kq f3 0 9",
+    "sideToMove": "Black",
+    "prompt": "Black to move. White pushed e4-f4 preparing e5 against your f6 knight. Open and challenge the center right away!",
+    "moves": [
+      "d5"
+    ],
+    "explanation": "d5! — Striking at the center immediately prevents White from rolling over the kingside unchallenged with e5."
   }
 ];

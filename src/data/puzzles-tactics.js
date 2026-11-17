@@ -1337,5 +1337,923 @@ export const TACTICS_PUZZLES = [
       "exf8=Q+"
     ],
     "explanation": "1.exf8=Q+! promotes with check and eliminates Black’s back-rank defender."
+  },
+  {
+    "id": "tac-smothered-mate-corner",
+    "category": "Tactics",
+    "theme": "Corner Smothered Mate",
+    "difficulty": "Easy",
+    "rating": 1020,
+    "fen": "6rk/6pp/8/4N3/8/8/1q3PPP/4R1K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Black threatens ...Qb1#. Deliver smothered checkmate in one!",
+    "moves": [
+      "Nf7#"
+    ],
+    "explanation": "1.Nf7# delivers smothered mate because Black’s rook on g8 and pawns on g7 and h7 block every escape square."
+  },
+  {
+    "id": "tac-arabian-mate-black",
+    "category": "Tactics",
+    "theme": "Arabian Mate (Black)",
+    "difficulty": "Easy",
+    "rating": 1060,
+    "fen": "6k1/5ppp/8/8/8/5n2/6r1/2R4K b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Coordinate knight and rook for the Arabian Mate!",
+    "moves": [
+      "Rh2#"
+    ],
+    "explanation": "1...Rh2# delivers Arabian Mate; the f3 knight defends h2 and covers g1."
+  },
+  {
+    "id": "tac-epaulette-black",
+    "category": "Tactics",
+    "theme": "Epaulette Mate (Black)",
+    "difficulty": "Easy",
+    "rating": 1010,
+    "fen": "6k1/5ppp/8/2q5/8/8/8/3RKR2 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Deliver Epaulette Mate between White’s two rooks.",
+    "moves": [
+      "Qe3#"
+    ],
+    "explanation": "1...Qe3# traps the e1 king between its own rooks on d1 and f1."
+  },
+  {
+    "id": "tac-opera-one-move",
+    "category": "Tactics",
+    "theme": "Opera Mate",
+    "difficulty": "Easy",
+    "rating": 980,
+    "fen": "4kb1r/5ppp/8/6B1/8/8/5PPP/3R2K1 w k - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Deliver Opera Mate using the g5 bishop and open d-file!",
+    "moves": [
+      "Rd8#"
+    ],
+    "explanation": "1.Rd8# is checkmate; the g5 bishop guards d8 and covers e7 while f8 and f7 block the Black king."
+  },
+  {
+    "id": "tac-double-check-mate-1",
+    "category": "Tactics",
+    "theme": "Double Check Mate",
+    "difficulty": "Easy",
+    "rating": 1000,
+    "fen": "3qkr2/3p4/7p/8/4B3/8/5PPP/4R1K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Deliver an unstoppable double-check mate in one!",
+    "moves": [
+      "Bg6#"
+    ],
+    "explanation": "1.Bg6# unleashes double check from the bishop and e1 rook, sealing every flight square."
+  },
+  {
+    "id": "tac-hook-mate-black",
+    "category": "Tactics",
+    "theme": "Hook Mate (Black)",
+    "difficulty": "Easy",
+    "rating": 1040,
+    "fen": "6k1/5ppp/8/8/6p1/5n2/5Pr1/R5RK b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Use pawn, knight, and rook to complete the Hook Mate!",
+    "moves": [
+      "Rh2#"
+    ],
+    "explanation": "1...Rh2# completes the Hook Mate: the g4 pawn defends f3, the f3 knight protects h2 and covers g1, and White’s g1 rook blocks escape."
+  },
+  {
+    "id": "tac-family-fork-black",
+    "category": "Tactics",
+    "theme": "Family Fork (Black)",
+    "difficulty": "Easy",
+    "rating": 960,
+    "fen": "1r1q2k1/5pp1/7p/8/1n6/4Q3/6PP/R3K2R b KQ - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Fork White’s king, queen, and rook in one leap!",
+    "moves": [
+      "Nc2+"
+    ],
+    "explanation": "1...Nc2+ delivers a triple family fork against the e1 king, e3 queen, and a1 rook."
+  },
+  {
+    "id": "tac-skewer-rook-black",
+    "category": "Tactics",
+    "theme": "Rank Skewer (Black)",
+    "difficulty": "Easy",
+    "rating": 970,
+    "fen": "6k1/5ppp/8/8/8/8/1r6/4K2Q b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Skewer White’s king and queen along the back rank!",
+    "moves": [
+      "Rb1+"
+    ],
+    "explanation": "1...Rb1+ skewers the e1 king to the h1 queen along the 1st rank."
+  },
+  {
+    "id": "tac-skewer-bishop-black",
+    "category": "Tactics",
+    "theme": "Diagonal Skewer (Black)",
+    "difficulty": "Easy",
+    "rating": 1030,
+    "fen": "6k1/b4ppp/8/4R3/8/8/1K6/8 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Skewer White’s king and rook along the diagonal!",
+    "moves": [
+      "Bd4+"
+    ],
+    "explanation": "1...Bd4+ checks the b2 king and wins the e5 rook behind it."
+  },
+  {
+    "id": "tac-discovered-check-win-rook",
+    "category": "Tactics",
+    "theme": "Discovered Check Capture",
+    "difficulty": "Easy",
+    "rating": 1070,
+    "fen": "1n2k3/6r1/8/4B3/3P1P2/8/4R3/6K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Capture Black’s rook with a discovered check!",
+    "moves": [
+      "Bxg7+"
+    ],
+    "explanation": "1.Bxg7+ captures the g7 rook cleanly while uncovering a check from the e2 rook."
+  },
+  {
+    "id": "tac-knight-fork-queenside",
+    "category": "Tactics",
+    "theme": "Royal Fork on c7",
+    "difficulty": "Easy",
+    "rating": 920,
+    "fen": "r3k3/8/8/1N1q4/8/7P/2R2PP1/5RK1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Fork Black’s king, queen, and rook with your knight!",
+    "moves": [
+      "Nc7+"
+    ],
+    "explanation": "1.Nc7+ forks the e8 king, d5 queen, and a8 rook in one move."
+  },
+  {
+    "id": "tac-absolute-pin-pileup",
+    "category": "Tactics",
+    "theme": "Piling Onto a Pin",
+    "difficulty": "Easy",
+    "rating": 950,
+    "fen": "3qk3/3pr2p/6p1/2p2p2/8/8/4Q3/2B1R1K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Attack the pinned e7 rook to win material!",
+    "moves": [
+      "Bg5"
+    ],
+    "explanation": "1.Bg5 piles onto the pinned e7 rook along the e-file while Black’s pawn on c5 blocks any retreat or defense."
+  },
+  {
+    "id": "tac-trapped-bishop-2",
+    "category": "Tactics",
+    "theme": "Trapped Bishop on the Rim",
+    "difficulty": "Easy",
+    "rating": 1100,
+    "fen": "2r2rk1/1p3ppp/p1p2n2/8/B7/1P6/P1P2PPP/R4RK1 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Trap White’s stranded bishop on a4!",
+    "moves": [
+      "b5"
+    ],
+    "explanation": "1...b5! traps the a4 bishop with no safe retreat squares."
+  },
+  {
+    "id": "tac-backrank-deflect-black",
+    "category": "Tactics",
+    "theme": "Back-Rank Deflection (Black)",
+    "difficulty": "Medium",
+    "rating": 1220,
+    "fen": "4r1k1/5ppp/8/8/8/8/4qPPP/2Q1R1K1 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Deflect White’s queen from defending the back rank!",
+    "moves": [
+      "Qxe1+",
+      "Qxe1",
+      "Rxe1#"
+    ],
+    "explanation": "1...Qxe1+! deflects White’s queen from c1 so 2.Qxe1 walks into 2...Rxe1#."
+  },
+  {
+    "id": "tac-backrank-deflect-queen",
+    "category": "Tactics",
+    "theme": "Back-Rank Queen Deflection",
+    "difficulty": "Medium",
+    "rating": 1320,
+    "fen": "4r1k1/3q1ppp/8/8/8/7P/4QPP1/4R1K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Deflect Black’s queen from guarding e8 for back-rank mate!",
+    "moves": [
+      "Qxe8+",
+      "Qxe8",
+      "Rxe8#"
+    ],
+    "explanation": "1.Qxe8+! forces 1...Qxe8 2.Rxe8#, exploiting Black’s back-rank weakness."
+  },
+  {
+    "id": "tac-arabian-setup",
+    "category": "Tactics",
+    "theme": "Forcing the Arabian Mate",
+    "difficulty": "Medium",
+    "rating": 1450,
+    "fen": "5r1k/5p1p/5N2/6n1/8/7Q/1q5R/6K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Clear the h-file with a queen sacrifice to force Arabian Mate!",
+    "moves": [
+      "Qxh7+",
+      "Nxh7",
+      "Rxh7#"
+    ],
+    "explanation": "1.Qxh7+! forces 1...Nxh7 (since f6 protects h7), clearing the h-file for 2.Rxh7# Arabian Mate."
+  },
+  {
+    "id": "tac-hook-mate-central",
+    "category": "Tactics",
+    "theme": "Hook Mate Combination",
+    "difficulty": "Medium",
+    "rating": 1390,
+    "fen": "3r2k1/5p1p/1Q2N3/3q1P2/8/8/8/3R2K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Sacrifice the queen on d8 to complete the Hook Mate!",
+    "moves": [
+      "Qxd8+",
+      "Qxd8",
+      "Rxd8#"
+    ],
+    "explanation": "1.Qxd8+! forces 1...Qxd8 2.Rxd8#, a Hook Mate supported by the e6 knight and f5 pawn."
+  },
+  {
+    "id": "tac-epaulette-force",
+    "category": "Tactics",
+    "theme": "Forced Epaulette Mate",
+    "difficulty": "Medium",
+    "rating": 1440,
+    "fen": "3r1r2/4k3/1N1p1p2/N7/2Q5/8/8/6K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Drive the Black king onto e8 between its rooks for Epaulette Mate!",
+    "moves": [
+      "Nc6+",
+      "Ke8",
+      "Qe6#"
+    ],
+    "explanation": "1.Nc6+! forces 1...Ke8, after which 2.Qe6# delivers Epaulette Mate between the d8 and f8 rooks."
+  },
+  {
+    "id": "tac-boden-bishop-pair",
+    "category": "Tactics",
+    "theme": "Boden’s Queen Sacrifice",
+    "difficulty": "Medium",
+    "rating": 1340,
+    "fen": "2kr4/pp1n2pp/2p5/8/5B2/8/P1Q2PPP/5BK1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Sacrifice the queen on c6 to finish with Boden’s criss-cross bishop mate!",
+    "moves": [
+      "Qxc6+",
+      "bxc6",
+      "Ba6#"
+    ],
+    "explanation": "1.Qxc6+! forces 1...bxc6, opening the a6-c8 diagonal for 2.Ba6# checkmate."
+  },
+  {
+    "id": "tac-absolute-pin-black",
+    "category": "Tactics",
+    "theme": "Exploiting a Pin (Black)",
+    "difficulty": "Medium",
+    "rating": 1320,
+    "fen": "2r3k1/p4ppp/8/8/1b6/2N5/PP2PPPP/R3K3 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Exploit the absolute pin on the c3 knight to win material!",
+    "moves": [
+      "Rxc3"
+    ],
+    "explanation": "1...Rxc3! wins a full piece because 2.bxc3 walks into 2...Bxc3+, forking the e1 king and a1 rook."
+  },
+  {
+    "id": "tac-discovered-check-black",
+    "category": "Tactics",
+    "theme": "Discovered Check Wins Queen (Black)",
+    "difficulty": "Medium",
+    "rating": 1410,
+    "fen": "3r2k1/5ppp/8/3n4/Q7/8/3K1PPP/5R2 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Unleash a discovered check that wins White’s queen!",
+    "moves": [
+      "Nb6+"
+    ],
+    "explanation": "1...Nb6+ uncovers a check from the d8 rook to the d2 king while attacking the a4 queen."
+  },
+  {
+    "id": "tac-clearance-sac-mate",
+    "category": "Tactics",
+    "theme": "Clearance Sacrifice",
+    "difficulty": "Medium",
+    "rating": 1480,
+    "fen": "r4bk1/5ppR/8/8/8/2qQ4/2B2PP1/6K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Clear the h7 square with a forcing rook sacrifice for checkmate!",
+    "moves": [
+      "Rh8+",
+      "Kxh8",
+      "Qh7#"
+    ],
+    "explanation": "1.Rh8+! forces 1...Kxh8, clearing h7 for 2.Qh7# supported by the c2 bishop."
+  },
+  {
+    "id": "tac-clearance-black",
+    "category": "Tactics",
+    "theme": "File Clearance Sacrifice (Black)",
+    "difficulty": "Medium",
+    "rating": 1450,
+    "fen": "6k1/2b2ppp/2Qq4/8/8/8/R4PPr/5BK1 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Clear the h2 square with check so your queen delivers mate!",
+    "moves": [
+      "Rh1+",
+      "Kxh1",
+      "Qh2#"
+    ],
+    "explanation": "1...Rh1+! forces 2.Kxh1, vacating h2 for 2...Qh2# protected by the c7 bishop."
+  },
+  {
+    "id": "tac-interference-pawn",
+    "category": "Tactics",
+    "theme": "Rank Interference",
+    "difficulty": "Medium",
+    "rating": 1460,
+    "fen": "5rk1/pq5p/3P1p1Q/8/8/5P2/6PK/4R3 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Cut off the Black queen’s defense of g7 to force victory!",
+    "moves": [
+      "Re7",
+      "Qxe7",
+      "dxe7"
+    ],
+    "explanation": "1.Re7! interferes with Black’s queen guarding g7 and threatens Qg7#, forcing 1...Qxe7 2.dxe7 to win the queen."
+  },
+  {
+    "id": "tac-decoy-queen-mate",
+    "category": "Tactics",
+    "theme": "Decoy into Corner Mate",
+    "difficulty": "Medium",
+    "rating": 1400,
+    "fen": "1Q3rk1/4ppp1/7p/6q1/8/8/5PPP/3R2K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Sacrifice the queen on f8 to drag Black’s king into a back-rank mate!",
+    "moves": [
+      "Qxf8+",
+      "Kxf8",
+      "Rd8#"
+    ],
+    "explanation": "1.Qxf8+! forces 1...Kxf8, walking into 2.Rd8# checkmate."
+  },
+  {
+    "id": "tac-xray-backrank-win",
+    "category": "Tactics",
+    "theme": "Back-Rank X-Ray",
+    "difficulty": "Medium",
+    "rating": 1370,
+    "fen": "3qr1k1/5ppp/8/8/8/8/3Q1PPP/3R2K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Exploit the X-ray along the d-file to win Black’s queen!",
+    "moves": [
+      "Qxd8"
+    ],
+    "explanation": "1.Qxd8! wins a full queen via X-ray along the d-file because 1...Rxd8 walks into 2.Rxd8#."
+  },
+  {
+    "id": "tac-xray-black",
+    "category": "Tactics",
+    "theme": "Diagonal X-Ray (Black)",
+    "difficulty": "Medium",
+    "rating": 1430,
+    "fen": "r1r3k1/pp3pp1/b6p/1q6/8/4B3/PP3PPP/R2Q1RK1 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Use the a6 bishop’s X-ray through f1 to win material!",
+    "moves": [
+      "Qxf1+",
+      "Qxf1",
+      "Bxf1"
+    ],
+    "explanation": "1...Qxf1+! exploits the a6 bishop’s X-ray on f1 to win a full exchange."
+  },
+  {
+    "id": "tac-trapped-queen-1",
+    "category": "Tactics",
+    "theme": "Trapped Queen",
+    "difficulty": "Medium",
+    "rating": 1340,
+    "fen": "r1b2rk1/5ppp/1pp1p3/p1p5/3PP3/q1P2N2/P1QBBPPP/R4RK1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "Black’s queen raided a3 prematurely. Retreat the bishop to trap it!",
+    "moves": [
+      "Bc1"
+    ],
+    "explanation": "1.Bc1! attacks the a3 queen and leaves it with no safe square — moving any slower lets Black escape via ...Ba6."
+  },
+  {
+    "id": "tac-desperado-bishop",
+    "category": "Tactics",
+    "theme": "Desperado Bishop",
+    "difficulty": "Medium",
+    "rating": 1420,
+    "fen": "r1rq2k1/5ppp/pnp5/1p2p3/2B1P1b1/1P1P1N2/P3QPPP/R4RK1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White’s c4 bishop is trapped by ...b5 and ...Nb6. Turn it into a desperado capture with check!",
+    "moves": [
+      "Bxf7+"
+    ],
+    "explanation": "1.Bxf7+! wins a pawn with check — if 1...Kxf7, 2.Nxe5+ wins back a piece, and 1...Kh8 still lets White emerge ahead."
+  },
+  {
+    "id": "tac-smothered-queenside",
+    "category": "Tactics",
+    "theme": "Queenside Smothered Mate",
+    "difficulty": "Advanced",
+    "rating": 1740,
+    "fen": "5rk1/5ppp/8/Q7/4q3/8/PPn2PPP/1KR4R b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Execute a queenside smothered checkmate in three moves!",
+    "moves": [
+      "Na3+",
+      "Ka1",
+      "Qb1+",
+      "Rxb1",
+      "Nc2#"
+    ],
+    "explanation": "1...Na3+! (double check) 2.Ka1 Qb1+! 3.Rxb1 Nc2# forces White’s rook to smother its own king in the a1 corner."
+  },
+  {
+    "id": "tac-opera-white-sac",
+    "category": "Tactics",
+    "theme": "Opera Mate Deflection",
+    "difficulty": "Advanced",
+    "rating": 1670,
+    "fen": "2q1kb1r/5ppp/2n5/6B1/8/2Q5/5PPP/3R2K1 w k - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Eliminate the c6 defender with a queen sacrifice for Opera Mate!",
+    "moves": [
+      "Qxc6+",
+      "Qxc6",
+      "Rd8#"
+    ],
+    "explanation": "1.Qxc6+! forces 1...Qxc6, removing the defender of d8 for 2.Rd8# Opera Mate."
+  },
+  {
+    "id": "tac-opera-black",
+    "category": "Tactics",
+    "theme": "Opera Mate (Black)",
+    "difficulty": "Advanced",
+    "rating": 1700,
+    "fen": "3r2k1/5ppp/2q5/8/6b1/2N5/5PPP/2Q1KB1R b K - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Sacrifice your queen on c3 to deliver Opera Mate!",
+    "moves": [
+      "Qxc3+",
+      "Qxc3",
+      "Rd1#"
+    ],
+    "explanation": "1...Qxc3+! forces 2.Qxc3, clearing the way for 2...Rd1# Opera Mate supported by the g4 bishop."
+  },
+  {
+    "id": "tac-battery-remove-guard",
+    "category": "Tactics",
+    "theme": "Removing the Guard for Battery Mate",
+    "difficulty": "Advanced",
+    "rating": 1720,
+    "fen": "3q1rk1/5ppp/5n2/8/4B2Q/7P/1B3PP1/2R3K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Eliminate the f6 knight guarding h7 to force victory!",
+    "moves": [
+      "Bxf6",
+      "g6",
+      "Bxd8"
+    ],
+    "explanation": "1.Bxf6! removes the defender of h7; capturing on f6 allows 2.Qxh7#, so Black loses the queen."
+  },
+  {
+    "id": "tac-arabian-sac",
+    "category": "Tactics",
+    "theme": "Arabian Mate Sacrifice (Black)",
+    "difficulty": "Advanced",
+    "rating": 1760,
+    "fen": "6k1/5pp1/7p/8/6N1/5n2/1r2q3/2R2Q1K b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Clear the 2nd rank with a queen sacrifice for Arabian Mate!",
+    "moves": [
+      "Qh2+",
+      "Nxh2",
+      "Rxh2#"
+    ],
+    "explanation": "1...Qh2+! forces 2.Nxh2 (since the f3 knight guards h2 and g1), clearing the rank for 2...Rxh2# Arabian Mate."
+  },
+  {
+    "id": "tac-clearance-bishop-sac",
+    "category": "Tactics",
+    "theme": "Bishop Clearance Sacrifice",
+    "difficulty": "Advanced",
+    "rating": 1790,
+    "fen": "5rkr/5ppp/4B3/q7/8/1Q6/5PPP/4R1K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Clear the e-file with a forcing bishop sacrifice for checkmate!",
+    "moves": [
+      "Bxf7+",
+      "Rxf7",
+      "Re8#"
+    ],
+    "explanation": "1.Bxf7+! forces 1...Rxf7 (clearing the e-file and pinning the rook), leading to 2.Re8# checkmate."
+  },
+  {
+    "id": "tac-xray-diagonal-battery",
+    "category": "Tactics",
+    "theme": "Diagonal X-Ray Breakthrough",
+    "difficulty": "Advanced",
+    "rating": 1690,
+    "fen": "6rk/4qp1p/5b2/8/3Q4/7P/1B3PP1/6K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Exploit the b2 bishop’s X-ray along the long diagonal to win a full piece!",
+    "moves": [
+      "Qxf6+",
+      "Qxf6",
+      "Bxf6+"
+    ],
+    "explanation": "1.Qxf6+! forces 1...Qxf6, after which 2.Bxf6+ wins a clean piece thanks to the pin along the long diagonal."
+  },
+  {
+    "id": "tac-desperado-stalemate-save",
+    "category": "Tactics",
+    "theme": "Crazy Rook Desperado Draw",
+    "difficulty": "Expert",
+    "rating": 2080,
+    "fen": "6k1/4Rpp1/8/8/1p6/pP6/P1q5/K7 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White faces ...Qc1#. Unleash a desperado rook sacrifice to force a stalemate draw!",
+    "moves": [
+      "Re8+",
+      "Kh7",
+      "Rh8+"
+    ],
+    "explanation": "1.Re8+! Kh7 2.Rh8+! forces perpetual check or stalemate (2...Kxh8 is immediate stalemate!)."
+  },
+  {
+    "id": "tac-bishop-skewer-queen",
+    "category": "Tactics",
+    "theme": "Diagonal Skewer on King & Queen",
+    "difficulty": "Easy",
+    "rating": 1050,
+    "fen": "6q1/8/4k3/8/8/8/2B2PPP/6K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Deliver a diagonal check that wins Black’s queen!",
+    "moves": [
+      "Bb3+",
+      "Kf5",
+      "Bxg8"
+    ],
+    "explanation": "1.Bb3+! skewers the e6 king and g8 queen along the a2-g8 diagonal."
+  },
+  {
+    "id": "tac-backrank-overload-deflection",
+    "category": "Tactics",
+    "theme": "Overloaded Defender Deflection",
+    "difficulty": "Medium",
+    "rating": 1410,
+    "fen": "2q2rk1/5ppp/8/8/8/2Q4P/4RPP1/4R1K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Both Black heavy pieces cling to the back rank — deflect the f8 rook!",
+    "moves": [
+      "Qxc8",
+      "Rxc8",
+      "Re8+",
+      "Rxe8",
+      "Rxe8#"
+    ],
+    "explanation": "1.Qxc8! forces 1...Rxc8 (or lose the queen), pulling the rook off f8 so 2.Re8+! Rxe8 3.Rxe8# forces mate."
+  },
+  {
+    "id": "tac-backrank-overload-black",
+    "category": "Tactics",
+    "theme": "Back-Rank Overload (Black)",
+    "difficulty": "Medium",
+    "rating": 1420,
+    "fen": "4r1k1/4rpp1/7p/8/8/2q5/5PPP/2Q2RK1 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Sacrifice your queen on c1 to deflect the f1 rook from back-rank defense!",
+    "moves": [
+      "Qxc1",
+      "Rxc1",
+      "Re1+",
+      "Rxe1",
+      "Rxe1#"
+    ],
+    "explanation": "1...Qxc1! drags the f1 rook away from e1, leading to 2.Rxc1 Re1+! 3.Rxe1 Rxe1#."
+  },
+  {
+    "id": "tac-epaulette-white-mate",
+    "category": "Tactics",
+    "theme": "Epaulette Checkmate",
+    "difficulty": "Easy",
+    "rating": 1000,
+    "fen": "3rkr2/8/8/8/2Q5/8/5PPP/6K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Deliver Epaulette checkmate where Black’s own rooks trap their king!",
+    "moves": [
+      "Qe6#"
+    ],
+    "explanation": "1.Qe6# is checkmate! Black’s rooks on d8 and f8 block both horizontal escape squares while the queen covers d7, e7, and f7."
+  },
+  {
+    "id": "tac-knight-fork-black-queen",
+    "category": "Tactics",
+    "theme": "Royal Knight Fork (Black)",
+    "difficulty": "Easy",
+    "rating": 980,
+    "fen": "6k1/5ppp/8/8/3n4/7P/5PP1/2Q3K1 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Fork White’s king and queen with a single knight jump!",
+    "moves": [
+      "Ne2+",
+      "Kh2",
+      "Nxc1"
+    ],
+    "explanation": "1...Ne2+! checks the g1 king while attacking the c1 queen."
+  },
+  {
+    "id": "tac-pawn-attack-pinned-knight",
+    "category": "Tactics",
+    "theme": "Attacking the Pinned Piece",
+    "difficulty": "Easy",
+    "rating": 980,
+    "fen": "4k3/5pp1/4n2p/8/3P4/8/4RPPP/6K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Black’s knight is pinned to its king on the e-file — attack it with a pawn!",
+    "moves": [
+      "d5"
+    ],
+    "explanation": "1.d5! attacks the pinned e6 knight with a unit of lesser value, winning a full piece cleanly."
+  },
+  {
+    "id": "tac-d-file-battery-sac",
+    "category": "Tactics",
+    "theme": "d-File Battery Deflection",
+    "difficulty": "Medium",
+    "rating": 1350,
+    "fen": "3r2k1/p1q2ppp/8/8/8/3Q4/3R1PPP/6K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Smash through the overloaded d8 defender on the d-file!",
+    "moves": [
+      "Qxd8+",
+      "Qxd8",
+      "Rxd8#"
+    ],
+    "explanation": "1.Qxd8+! eliminates the rook and drags Black’s queen away from c7, allowing 2.Rxd8#."
+  },
+  {
+    "id": "tac-pin-smash-f6",
+    "category": "Tactics",
+    "theme": "Crushing the Pinned Knight",
+    "difficulty": "Medium",
+    "rating": 1360,
+    "fen": "3r2k1/pp3ppp/2p2n2/6B1/8/2Q5/PPP2PPP/4R1K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Black’s f6 knight is pinned to the back rank — shatter the kingside!",
+    "moves": [
+      "Bxf6",
+      "gxf6",
+      "Qxf6"
+    ],
+    "explanation": "1.Bxf6! destroys Black’s kingside pawn cover after 1...gxf6 2.Qxf6."
+  },
+  {
+    "id": "tac-underpromo-smothered-mate",
+    "category": "Tactics",
+    "theme": "Knight Underpromotion Checkmate",
+    "difficulty": "Expert",
+    "rating": 2090,
+    "fen": "6br/5Ppk/6pp/8/q7/8/5PPP/6K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Black threatens back-rank mate — underpromote to deliver an instant checkmate!",
+    "moves": [
+      "f8=N#"
+    ],
+    "explanation": "1.f8=N# is checkmate! Promoting to a queen or rook fails to mate and loses to Black’s back-rank threat."
+  },
+  {
+    "id": "tac-smothered-classic-3ply",
+    "category": "Tactics",
+    "theme": "Philidor Smothered Mate Finale",
+    "difficulty": "Medium",
+    "rating": 1470,
+    "fen": "r4r1k/p5pp/1p5N/8/8/1Q6/P4PPP/4R1K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Sacrifice your queen on g8 to force classic smothered checkmate!",
+    "moves": [
+      "Qg8+",
+      "Rxg8",
+      "Nf7#"
+    ],
+    "explanation": "1.Qg8+! forces 1...Rxg8 (since the h6 knight covers g8), smothering Black’s king for 2.Nf7#."
+  },
+  {
+    "id": "tac-skewer-second-rank",
+    "category": "Tactics",
+    "theme": "2nd-Rank Skewer (Black)",
+    "difficulty": "Easy",
+    "rating": 990,
+    "fen": "7k/8/8/8/8/8/Q4K2/7r b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Deliver a check along the 2nd rank to skewer and win White’s queen!",
+    "moves": [
+      "Rh2+",
+      "Kg3",
+      "Rxa2"
+    ],
+    "explanation": "1...Rh2+! skewers the f2 king and a2 queen along the 2nd rank."
+  },
+  {
+    "id": "tac-legals-mate-3ply",
+    "category": "Tactics",
+    "theme": "Légal's Double-Knight Checkmate",
+    "difficulty": "Medium",
+    "rating": 1380,
+    "fen": "r2qkbnr/ppp2ppp/2np4/4N3/2B1P1b1/2N5/PPPP1PPP/R1BQ1RK1 w kq - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Complete Légal's Trap after ignoring the pin on f3!",
+    "moves": [
+      "Bxf7+",
+      "Ke7",
+      "Nd5#"
+    ],
+    "explanation": "1.Bxf7+! forces 1...Ke7, and 2.Nd5# delivers checkmate while Black’s g4 bishop watches helplessly."
+  },
+  {
+    "id": "tac-greek-gift-3ply-equal",
+    "category": "Tactics",
+    "theme": "Greek Gift 3-Ply Breakthrough",
+    "difficulty": "Medium",
+    "rating": 1460,
+    "fen": "r1bq1rk1/pp1n1ppp/2n1p3/3pP3/1b1P4/2NB1N2/PPP2PPP/R1BQ1RK1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Launch the classic Greek Gift sacrifice on h7 to hunt Black’s king!",
+    "moves": [
+      "Bxh7+",
+      "Kxh7",
+      "Ng5+"
+    ],
+    "explanation": "1.Bxh7+! Kxh7 2.Ng5+! strips away Black’s kingside shelter before White’s queen enters at h5."
+  },
+  {
+    "id": "tac-decoy-g7-bishop-fork",
+    "category": "Tactics",
+    "theme": "Queen Attraction into Royal Fork",
+    "difficulty": "Advanced",
+    "rating": 1740,
+    "fen": "5rk1/pp3pbp/2pq4/8/6Q1/6N1/PPP2PPP/5RK1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Sacrifice the queen on g7 to decoy the king into a winning royal knight fork!",
+    "moves": [
+      "Qxg7+",
+      "Kxg7",
+      "Nf5+",
+      "Kg6",
+      "Nxd6"
+    ],
+    "explanation": "1.Qxg7+! forces 1...Kxg7 (avoiding any defense of g7), after which 2.Nf5+! regains the queen with an extra piece."
+  },
+  {
+    "id": "tac-backrank-pin-capture-black",
+    "category": "Tactics",
+    "theme": "Exploiting the Back-Rank Overload (Black)",
+    "difficulty": "Medium",
+    "rating": 1390,
+    "fen": "3r2k1/p4ppp/8/8/8/q7/P2Q1PPP/3R2K1 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. White’s d1 rook is tied to the back rank — capture the d2 queen cleanly!",
+    "moves": [
+      "Rxd2"
+    ],
+    "explanation": "1...Rxd2! wins a full queen because 2.Rxd2 walks into 2...Qc1+! 3.Rd1 Qxd1# back-rank mate."
+  },
+  {
+    "id": "tac-backrank-pin-capture-white",
+    "category": "Tactics",
+    "theme": "Exploiting the Back-Rank Overload",
+    "difficulty": "Medium",
+    "rating": 1380,
+    "fen": "3r2k1/p2q1ppp/Q7/8/8/8/P4PPP/3R2K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Black’s d8 rook is overloaded guarding the back rank — win the d7 queen!",
+    "moves": [
+      "Rxd7"
+    ],
+    "explanation": "1.Rxd7! wins Black’s queen cleanly because 1...Rxd7 allows 2.Qc8+! Rd8 3.Qxd8#."
+  },
+  {
+    "id": "tac-skewer-third-rank-black",
+    "category": "Tactics",
+    "theme": "3rd-Rank Skewer (Black)",
+    "difficulty": "Easy",
+    "rating": 970,
+    "fen": "7k/8/8/8/8/Q3K3/8/7r b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move. Check White’s king along the 3rd rank to skewer and win the a3 queen!",
+    "moves": [
+      "Rh3+",
+      "Ke4",
+      "Rxa3"
+    ],
+    "explanation": "1...Rh3+! skewers the e3 king and the undefended a3 queen along the 3rd rank."
+  },
+  {
+    "id": "tac-anastasia-mate-3ply",
+    "category": "Tactics",
+    "theme": "Anastasia's Mate Sacrifice",
+    "difficulty": "Medium",
+    "rating": 1450,
+    "fen": "2r2r1k/p1p1Nppp/2p5/8/4Q3/4R3/PPP2PPP/6K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Sacrifice your queen on h7 to execute Anastasia's Mate!",
+    "moves": [
+      "Qxh7+",
+      "Kxh7",
+      "Rh3#"
+    ],
+    "explanation": "1.Qxh7+! forces 1...Kxh7 (the e7 knight covers g8 and g6), clearing the h-file for 2.Rh3#."
+  },
+  {
+    "id": "tac-hook-mate-clean",
+    "category": "Tactics",
+    "theme": "Hook Mate Finale",
+    "difficulty": "Easy",
+    "rating": 1030,
+    "fen": "7k/4p1p1/5N2/6P1/8/8/4R3/6K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Swing your rook to deliver Hook Mate in one move!",
+    "moves": [
+      "Rh2#"
+    ],
+    "explanation": "1.Rh2# delivers Hook Mate: the f6 knight covers h7 while Black’s g7 pawn blocks the escape."
+  },
+  {
+    "id": "tac-pawn-fork-rook-knight",
+    "category": "Tactics",
+    "theme": "Central Pawn Fork",
+    "difficulty": "Easy",
+    "rating": 940,
+    "fen": "4k3/pp3ppp/3r1n2/8/4P3/2N5/PPP1BPPP/4R1K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Advance your central pawn to fork Black’s rook and knight at once!",
+    "moves": [
+      "e5",
+      "Re6",
+      "exf6"
+    ],
+    "explanation": "1.e5! forks the d6 rook and f6 knight cleanly."
+  },
+  {
+    "id": "tac-smothered-queenside-sac",
+    "category": "Tactics",
+    "theme": "Queenside Smothered Mate",
+    "difficulty": "Advanced",
+    "rating": 1710,
+    "fen": "k1r5/pp5p/N1p5/4Q3/8/8/5PPP/6K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Sacrifice your queen on b8 to force a queenside smothered checkmate!",
+    "moves": [
+      "Qb8+",
+      "Rxb8",
+      "Nc7#"
+    ],
+    "explanation": "1.Qb8+! forces 1...Rxb8 (since the a6 knight guards b8), clearing c7 for 2.Nc7#."
+  },
+  {
+    "id": "tac-pin-bishop-cross-win",
+    "category": "Tactics",
+    "theme": "Cross-Pin on the Diagonal",
+    "difficulty": "Medium",
+    "rating": 1390,
+    "fen": "5k2/4rppp/8/8/8/4N3/5PPP/2B3K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Pin Black’s e7 rook directly to its king along the a3-f8 diagonal!",
+    "moves": [
+      "Ba3"
+    ],
+    "explanation": "1.Ba3! establishes a lethal pin on the e7 rook against the f8 king."
+  },
+  {
+    "id": "tac-queen-fork-e4-rook",
+    "category": "Tactics",
+    "theme": "Double-Diagonal Queen Fork",
+    "difficulty": "Easy",
+    "rating": 980,
+    "fen": "r7/5ppk/8/8/8/2q5/4QPPP/3R2K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Centralize your queen with check to fork Black’s king and undefended a8 rook!",
+    "moves": [
+      "Qe4+",
+      "g6",
+      "Qxa8"
+    ],
+    "explanation": "1.Qe4+! checks the h7 king along the b1-h7 diagonal while eyeing the undefended a8 rook on the perpendicular diagonal."
   }
 ];

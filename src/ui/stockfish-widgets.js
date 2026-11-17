@@ -1,5 +1,14 @@
 import { computeEvalDisagreement, formatEngineThought } from '../domain/engine-arena.js';
 import { evalToWinPercent, formatEvalScore } from '../domain/stockfish-service.js';
+import {
+  getLang,
+  isolateChessTokens,
+  localizeEngineProfile,
+  localizeMoveGrade,
+  t,
+  tSide,
+  translateMoveReason,
+} from '../i18n/ui-strings.js';
 import { iconSvg } from './icons.js';
 
 const ARROW_COLORS = [
@@ -34,7 +43,7 @@ function squareToPercentCenter(square, flipped) {
 export function createEvalBar() {
   const bar = document.createElement('div');
   bar.className = 'eval-bar';
-  bar.setAttribute('aria-label', 'Stockfish 19 evaluation bar');
+  bar.setAttribute('aria-label', t('evalBarAria'));
   bar.style.setProperty('--eval-white-pct', '50%');
   bar.innerHTML = `
     <div class="eval-bar-track">
@@ -154,7 +163,7 @@ export function updateBoardArrows(svgEl, lines = [], { flipped = false, show = t
  * Create the live Stockfish 19 analysis & move-grade inspector panel.
  */
 export function createStockfishPanel({
-  title = 'Stockfish 19 Live Analysis',
+  title = t('sfLiveAnalysis'),
   showArrows = true,
   onToggleArrows = null,
   onApplyMove = null,
@@ -166,12 +175,12 @@ export function createStockfishPanel({
   panel.innerHTML = `
     <div class="sf-head">
       <div class="sf-title-wrap">
-        <span class="sf-badge">${iconSvg('coach', 14)} ${title}</span>
-        <span class="sf-meta tabular-nums" data-sf-meta>Ready</span>
+        <span class="sf-badge">${iconSvg('coach', 14)} ${escapeText(title)}</span>
+        <span class="sf-meta tabular-nums" data-sf-meta>${escapeText(t('ready'))}</span>
       </div>
       <div class="sf-head-actions">
         <button type="button" class="btn-chip ${showArrows ? 'active' : ''}" data-sf-arrows-toggle>
-          Arrows
+          ${escapeText(t('arrows'))}
         </button>
       </div>
     </div>
@@ -181,11 +190,11 @@ export function createStockfishPanel({
         <span class="sf-grade-text" data-sf-grade-text></span>
       </div>
       <button type="button" class="btn-ghost-xs hidden" data-sf-retry>
-        ${iconSvg('refresh', 13)} Retry Move
+        ${iconSvg('refresh', 13)} ${escapeText(t('retryMove'))}
       </button>
     </div>
     <div class="sf-lines" data-sf-lines>
-      <div class="sf-empty">Evaluating top variations...</div>
+      <div class="sf-empty">${escapeText(t('sfEvalPending'))}</div>
     </div>
   `;
 
@@ -226,21 +235,23 @@ export function createStockfishPanel({
  */
 export function updateStockfishPanel(panel, snapshot, lastMoveGrade = null, { showArrows = true } = {}) {
   if (!panel) return;
+  const lang = getLang();
   const toggleBtn = panel.querySelector('[data-sf-arrows-toggle]');
   if (toggleBtn) toggleBtn.classList.toggle('active', Boolean(showArrows));
 
   const metaEl = panel.querySelector('[data-sf-meta]');
   if (metaEl) {
     if (!snapshot) {
-      metaEl.textContent = 'Idle';
+      metaEl.textContent = t('idle', {}, lang);
     } else if (snapshot.gameOver) {
-      metaEl.textContent = snapshot.whiteMate != null ? 'Checkmate' : 'Game Over';
+      metaEl.textContent = snapshot.whiteMate != null ? t('checkmate', {}, lang) : t('gameOver', {}, lang);
     } else if (snapshot.unsafeFen) {
-      metaEl.textContent = 'Check FEN';
+      metaEl.textContent = t('checkFen', {}, lang);
     } else {
-      const status = snapshot.evaluating ? 'Thinking' : 'Ready';
-      const npsTxt = snapshot.nps > 0 ? ` · ${Math.round(snapshot.nps / 1000)}k n/s` : '';
-      metaEl.textContent = `${status} · d${snapshot.depth || 0}${npsTxt}`;
+      const status = snapshot.evaluating ? t('thinking', {}, lang) : t('ready', {}, lang);
+      const depthTok = lang === 'ar' ? `ع${snapshot.depth || 0}` : `d${snapshot.depth || 0}`;
+      const npsTxt = snapshot.nps > 0 ? ` · ${t('npsUnit', { k: Math.round(snapshot.nps / 1000) }, lang)}` : '';
+      metaEl.textContent = `${status} · ${depthTok}${npsTxt}`;
     }
   }
 
@@ -248,14 +259,15 @@ export function updateStockfishPanel(panel, snapshot, lastMoveGrade = null, { sh
   const gradeBadge = panel.querySelector('[data-sf-grade-badge]');
   const gradeText = panel.querySelector('[data-sf-grade-text]');
   const retryBtn = panel.querySelector('[data-sf-retry]');
+  const locGrade = localizeMoveGrade(lastMoveGrade, lang);
   if (gradeBox && gradeBadge && gradeText) {
-    if (lastMoveGrade) {
+    if (locGrade) {
       gradeBox.classList.remove('hidden');
-      gradeBadge.className = `grade-pill tabular-nums grade-${lastMoveGrade.grade}`;
-      gradeBadge.textContent = `${lastMoveGrade.symbol} ${lastMoveGrade.label}`;
-      gradeText.textContent = lastMoveGrade.summary;
+      gradeBadge.className = `grade-pill tabular-nums grade-${locGrade.grade}`;
+      gradeBadge.textContent = `${locGrade.symbol} ${locGrade.label}`;
+      gradeText.textContent = locGrade.summary;
       if (retryBtn) {
-        const allowRetry = ['inaccuracy', 'mistake', 'blunder'].includes(lastMoveGrade.grade) && Boolean(panel._onRetryMove);
+        const allowRetry = ['inaccuracy', 'mistake', 'blunder'].includes(locGrade.grade) && Boolean(panel._onRetryMove);
         retryBtn.classList.toggle('hidden', !allowRetry);
       }
     } else {
@@ -268,16 +280,16 @@ export function updateStockfishPanel(panel, snapshot, lastMoveGrade = null, { sh
   if (!linesBox) return;
 
   if (!snapshot) {
-    linesBox.innerHTML = '<div class="sf-empty">Enable Stockfish 19 to see top lines.</div>';
+    linesBox.innerHTML = `<div class="sf-empty">${escapeText(t('sfEnablePrompt', {}, lang))}</div>`;
     return;
   }
   if (snapshot.gameOver) {
-    linesBox.innerHTML = '<div class="sf-empty">Position is terminal. Reset or load a new line.</div>';
+    linesBox.innerHTML = `<div class="sf-empty">${escapeText(t('sfTerminalPrompt', {}, lang))}</div>`;
     return;
   }
   const lines = snapshot.lines || [];
   if (!lines.length) {
-    linesBox.innerHTML = '<div class="sf-empty">Computing Stockfish 19 MultiPV lines...</div>';
+    linesBox.innerHTML = `<div class="sf-empty">${escapeText(t('sfComputingPrompt', {}, lang))}</div>`;
     return;
   }
 
@@ -286,15 +298,16 @@ export function updateStockfishPanel(panel, snapshot, lastMoveGrade = null, { sh
     .map((line, idx) => {
       const score = formatEvalScore(line.whiteCp, line.whiteMate);
       const pvTail = (line.pvSan || []).slice(1, 5).join(' ');
+      const reasonTxt = translateMoveReason(line.reason || 'Engine candidate', lang);
       return `
         <div class="pv-row pv-rank-${idx + 1}">
-          <button type="button" class="pv-move-btn tabular-nums" data-uci="${line.uci}" title="Play ${line.bestMoveSan}">
+          <button type="button" class="pv-move-btn tabular-nums" data-uci="${line.uci}" title="${escapeText(t('playCandidateTip', { san: line.bestMoveSan }, lang))}">
             ${line.bestMoveSan}
           </button>
           <span class="pv-score tabular-nums">${score}</span>
           <div class="pv-detail">
-            <span class="pv-reason">${line.reason || 'Engine candidate'}</span>
-            ${pvTail ? `<span class="pv-tail tabular-nums">${pvTail}</span>` : ''}
+            <span class="pv-reason">${escapeText(reasonTxt)}</span>
+            ${pvTail ? `<span class="pv-tail tabular-nums">${escapeText(pvTail)}</span>` : ''}
           </div>
         </div>
       `;
@@ -308,10 +321,11 @@ export function updateStockfishPanel(panel, snapshot, lastMoveGrade = null, { sh
 export function createDualEvalStrip() {
   const el = document.createElement('div');
   el.className = 'dual-eval-strip';
+  const lang = getLang();
   el.innerHTML = `
-    <span class="eval-side white-side tabular-nums" data-w-eval>W: 0.00</span>
-    <span class="eval-delta tabular-nums tone-aligned" data-delta>Aligned</span>
-    <span class="eval-side black-side tabular-nums" data-b-eval>B: 0.00</span>
+    <span class="eval-side white-side tabular-nums" data-w-eval>${escapeText(t('sideW', {}, lang))}: 0.00</span>
+    <span class="eval-delta tabular-nums tone-aligned" data-delta>${escapeText(t('alignedDelta', {}, lang))}</span>
+    <span class="eval-side black-side tabular-nums" data-b-eval>${escapeText(t('sideB', {}, lang))}: 0.00</span>
   `;
   return el;
 }
@@ -319,14 +333,15 @@ export function createDualEvalStrip() {
 /**
  * Update the dual-engine evaluation comparison strip in place.
  */
-export function updateDualEvalStrip(stripEl, { whiteName = 'White', blackName = 'Black', whiteSnap = null, blackSnap = null } = {}) {
+export function updateDualEvalStrip(stripEl, { whiteName = tSide('White'), blackName = tSide('Black'), whiteSnap = null, blackSnap = null } = {}) {
   if (!stripEl) return;
-  const cmp = computeEvalDisagreement(whiteSnap, blackSnap);
+  const lang = getLang();
+  const cmp = computeEvalDisagreement(whiteSnap, blackSnap, lang);
   const wEl = stripEl.querySelector('[data-w-eval]');
   const dEl = stripEl.querySelector('[data-delta]');
   const bEl = stripEl.querySelector('[data-b-eval]');
-  if (wEl) wEl.textContent = `${whiteName}: ${cmp.whiteText}`;
-  if (bEl) bEl.textContent = `${blackName}: ${cmp.blackText}`;
+  if (wEl) wEl.textContent = isolateChessTokens(`${whiteName}: ${cmp.whiteText}`, lang);
+  if (bEl) bEl.textContent = isolateChessTokens(`${blackName}: ${cmp.blackText}`, lang);
   if (dEl) {
     dEl.textContent = cmp.agreementLabel;
     dEl.className = `eval-delta tabular-nums tone-${cmp.tone}`;
@@ -337,24 +352,26 @@ export function updateDualEvalStrip(stripEl, { whiteName = 'White', blackName = 
  * Create a live telemetry card displaying an Arena engine's thinking monologue, HCE factors, and top variations.
  */
 export function createEngineThoughtCard({ side = 'w', profile, tierLabel = '' } = {}) {
+  const lang = getLang();
+  const locProf = localizeEngineProfile(profile, lang);
   const card = document.createElement('section');
   card.className = `engine-thought-card side-${side}`;
-  const sideLabel = side === 'w' ? 'W' : 'B';
+  const sideLabel = side === 'w' ? t('sideW', {}, lang) : t('sideB', {}, lang);
   card.innerHTML = `
     <div class="etc-head">
       <div class="etc-identity">
-        <span class="etc-side ${side === 'w' ? 'white' : 'black'}">${sideLabel}</span>
+        <span class="etc-side ${side === 'w' ? 'white' : 'black'}">${escapeText(sideLabel)}</span>
         <div>
-          <div class="etc-name">${escapeText(profile?.name || 'Engine')}</div>
-          <div class="etc-arch">${escapeText(tierLabel || profile?.styleTag || '')} · ${escapeText(profile?.architecture || '')}</div>
+          <div class="etc-name">${escapeText(locProf?.name || t('engineFallbackName', {}, lang))}</div>
+          <div class="etc-arch">${escapeText(tierLabel || locProf?.styleTag || '')} · ${escapeText(locProf?.architecture || '')}</div>
         </div>
       </div>
-      <span class="etc-status tabular-nums" data-etc-status>Ready</span>
+      <span class="etc-status tabular-nums" data-etc-status>${escapeText(t('ready', {}, lang))}</span>
     </div>
-    <p class="thought-monologue" data-thought-text>Standby — awaiting position evaluation.</p>
+    <p class="thought-monologue" data-thought-text>${escapeText(t('standbyEval', {}, lang))}</p>
     <div class="factor-strip hidden" data-factor-strip></div>
     <div class="sf-lines" data-etc-lines>
-      <div class="sf-empty">No search variations yet.</div>
+      <div class="sf-empty">${escapeText(t('noSearchVariations', {}, lang))}</div>
     </div>
   `;
   return card;
@@ -376,31 +393,38 @@ export function updateEngineThoughtCard(
   } = {},
 ) {
   if (!cardEl) return;
+  const lang = getLang();
+  const locProf = localizeEngineProfile(profile, lang);
   cardEl.classList.toggle('active-turn', Boolean(isActiveTurn));
 
   const statusEl = cardEl.querySelector('[data-etc-status]');
   if (statusEl) {
+    const depthPrefix = lang === 'ar' ? 'ع' : 'd';
     if (isThinking) {
-      const npsTxt = snapshot?.nps > 0 ? ` · ${Math.round(snapshot.nps / 1000)}k n/s` : '';
-      statusEl.textContent = `Thinking · d${snapshot?.depth || 0}${npsTxt}`;
+      const npsTxt = snapshot?.nps > 0 ? ` · ${t('npsUnit', { k: Math.round(snapshot.nps / 1000) }, lang)}` : '';
+      statusEl.textContent = `${t('thinking', {}, lang)} · ${depthPrefix}${snapshot?.depth || 0}${npsTxt}`;
     } else if (chosenSan) {
-      const msTxt = elapsedMs != null ? ` · ${elapsedMs}ms` : '';
-      const dTxt = snapshot?.depth ? ` · d${snapshot.depth}` : '';
-      statusEl.textContent = `Played ${chosenSan}${dTxt}${msTxt}`;
+      const msTxt = elapsedMs != null ? ` · ${elapsedMs}${lang === 'ar' ? 'م.ث' : 'ms'}` : '';
+      const dTxt = snapshot?.depth ? ` · ${depthPrefix}${snapshot.depth}` : '';
+      statusEl.textContent = isolateChessTokens(
+        t('playedAt', { san: chosenSan, depth: dTxt, ms: msTxt }, lang),
+        lang,
+      );
     } else if (snapshot?.depth) {
-      statusEl.textContent = `Analyzed · d${snapshot.depth}`;
+      statusEl.textContent = t('analyzedAt', { depth: snapshot.depth }, lang);
     } else {
-      statusEl.textContent = 'Ready';
+      statusEl.textContent = t('ready', {}, lang);
     }
   }
 
   const thoughtEl = cardEl.querySelector('[data-thought-text]');
   if (thoughtEl) {
     thoughtEl.textContent = formatEngineThought(snapshot, {
-      profile,
+      profile: locProf,
       tierLabel,
       chosenSan,
       isThinking,
+      lang,
     });
   }
 
@@ -410,14 +434,14 @@ export function updateEngineThoughtCard(
     if (bd) {
       const fmtCp = (cp) => `${cp > 0 ? '+' : ''}${(cp / 100).toFixed(2)}`;
       const items = [
-        ['Mat', bd.material],
-        ['Pos', bd.pst],
-        ['Mob', bd.mobility],
-        ['Struct', bd.structure],
-        ['King', bd.kingSafety],
+        [t('factorMat', {}, lang), bd.material],
+        [t('factorPos', {}, lang), bd.pst],
+        [t('factorMob', {}, lang), bd.mobility],
+        [t('factorStruct', {}, lang), bd.structure],
+        [t('factorKing', {}, lang), bd.kingSafety],
       ];
       factorEl.innerHTML = items
-        .map(([lbl, val]) => `<span class="factor-chip tabular-nums">${lbl}: <strong>${fmtCp(val)}</strong></span>`)
+        .map(([lbl, val]) => `<span class="factor-chip tabular-nums">${escapeText(lbl)}: <strong dir="ltr">${fmtCp(val)}</strong></span>`)
         .join('');
       factorEl.classList.remove('hidden');
     } else {
@@ -430,7 +454,7 @@ export function updateEngineThoughtCard(
   if (!linesEl) return;
   const lines = snapshot?.lines || [];
   if (!lines.length) {
-    linesEl.innerHTML = `<div class="sf-empty">${isThinking ? 'Computing candidate variations...' : 'Standby for next turn.'}</div>`;
+    linesEl.innerHTML = `<div class="sf-empty">${escapeText(isThinking ? t('computingVariations', {}, lang) : t('standbyNextTurn', {}, lang))}</div>`;
     return;
   }
 
@@ -440,12 +464,13 @@ export function updateEngineThoughtCard(
       const score = formatEvalScore(line.whiteCp, line.whiteMate);
       const pvTail = (line.pvSan || []).slice(1, 5).join(' ');
       const isChosen = Boolean(chosenSan && line.bestMoveSan === chosenSan);
+      const reasonTxt = translateMoveReason(line.reason || 'Candidate line', lang);
       return `
         <div class="pv-row pv-rank-${idx + 1}${isChosen ? ' pv-chosen' : ''}">
           <span class="pv-move-pill tabular-nums">${escapeText(line.bestMoveSan)}</span>
           <span class="pv-score tabular-nums">${score}</span>
           <div class="pv-detail">
-            <span class="pv-reason">${escapeText(line.reason || 'Candidate line')}</span>
+            <span class="pv-reason">${escapeText(reasonTxt)}</span>
             ${pvTail ? `<span class="pv-tail tabular-nums">${escapeText(pvTail)}</span>` : ''}
           </div>
         </div>

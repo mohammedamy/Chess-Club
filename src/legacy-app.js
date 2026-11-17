@@ -58,6 +58,38 @@ import {
 } from './domain/puzzle-engine.js';
 import { iconSvg } from './ui/icons.js';
 import {
+  applyLanguageDom,
+  formatDateLocalized,
+  getLang,
+  isolateChessTokens,
+  localizeArenaPreset,
+  localizeBoardThemeName,
+  localizeComment,
+  localizeEndgame,
+  localizeEngineProfile,
+  localizeEngineTier,
+  localizeFamousGame,
+  localizeMiddlegame,
+  localizeMoveGrade,
+  localizeOpening,
+  localizePieceStyle,
+  localizePuzzle,
+  localizeQuiz,
+  localizeSandboxPreset,
+  localizeTrap,
+  normalizeSearchText,
+  setLang,
+  t,
+  tBinaryKind,
+  tCategory,
+  tDifficulty,
+  tGameReason,
+  tMatchType,
+  tPieceName,
+  tSide,
+  toggleLang,
+} from './i18n/ui.js';
+import {
   createBoardArrowsSvg,
   createDualEvalStrip,
   createEngineThoughtCard,
@@ -158,6 +190,7 @@ function loadPreferences() {
 }
 
 function applyPreferences() {
+  applyLanguageDom(getLang());
   const theme = BOARD_THEMES[State.preferences.board] || BOARD_THEMES.walnut;
   const root = document.documentElement;
   root.style.setProperty('--board-light', theme.light);
@@ -478,7 +511,7 @@ async function loadCurrentUser() {
       if (State.completingEmailLink && savedEmail) await completeEmailSignInLink(savedEmail);
       const user = await currentFirebaseUser();
       if (user) {
-        const name = user.displayName || (user.email ? user.email.split('@')[0] : 'Club member');
+        const name = user.displayName || (user.email ? user.email.split('@')[0] : t('clubMemberFallback'));
         State.user = { id: user.uid, name, rating: 1200, wins: 0, losses: 0, draws: 0 };
         await upsertMyProfile(name);
         State.sharedClubs = await listMyClubs();
@@ -605,7 +638,9 @@ function stopCoachFullGameScan() {
 }
 
 function makeMaxBoardButton() {
-  const btn = el(`<button type="button" class="btn ghost sm ${State.boardMaximized ? 'active' : ''}" title="${State.boardMaximized ? 'Restore balanced panel' : 'Maximize board size'}">${iconSvg(State.boardMaximized ? 'compress' : 'expand', 13)} <span>${State.boardMaximized ? 'Fit' : 'Max'}</span></button>`);
+  const title = State.boardMaximized ? t('fitBoardTip') : t('maxBoardTip');
+  const label = State.boardMaximized ? t('fitLabel') : t('maxLabel');
+  const btn = el(`<button type="button" class="btn ghost sm ${State.boardMaximized ? 'active' : ''}" title="${escapeHtml(title)}">${iconSvg(State.boardMaximized ? 'compress' : 'expand', 13)} <span>${escapeHtml(label)}</span></button>`);
   btn.onclick = () => {
     State.boardMaximized = !State.boardMaximized;
     render();
@@ -619,10 +654,10 @@ function buildMoveTransportBar({ ply = 0, total = 0, onNavigate }) {
   const cur = Math.max(0, Math.min(total, Number(ply) || 0));
 
   const btns = [
-    { action: 'first', html: `${iconSvg('first', 13)}<span>First</span>`, disabled: cur <= 0, title: 'First move (Home)' },
-    { action: 'back', html: `${iconSvg('prev', 13)}<span>Back</span>`, disabled: cur <= 0, title: 'Previous move (Left Arrow)' },
-    { action: 'forward', html: `<span>Forward</span>${iconSvg('next', 13)}`, disabled: cur >= total, title: 'Next move (Right Arrow)' },
-    { action: 'last', html: `<span>Last</span>${iconSvg('last', 13)}`, disabled: cur >= total, title: 'Last move (End)' },
+    { action: 'first', html: `${iconSvg('first', 13)}<span>${escapeHtml(t('first'))}</span>`, disabled: cur <= 0, title: t('firstMoveTip') },
+    { action: 'back', html: `${iconSvg('prev', 13)}<span>${escapeHtml(t('back'))}</span>`, disabled: cur <= 0, title: t('prevMoveTip') },
+    { action: 'forward', html: `<span>${escapeHtml(t('forward'))}</span>${iconSvg('next', 13)}`, disabled: cur >= total, title: t('nextMoveTip') },
+    { action: 'last', html: `<span>${escapeHtml(t('last'))}</span>${iconSvg('last', 13)}`, disabled: cur >= total, title: t('lastMoveTip') },
   ];
 
   btns.forEach(({ action, html, disabled, title }) => {
@@ -755,23 +790,23 @@ function renderHeader() {
   c.className = 'container';
 
   const brand = el(`<div class="brand">
-    <div class="seal" role="img" aria-label="Edugates International School logo"></div>
+    <div class="seal" role="img" aria-label="${escapeHtml(t('logoAlt'))}"></div>
     <div class="brand-text">
-      <span class="title">Edugates International School</span>
-      <span class="sub">Chess Club</span>
+      <span class="title">${escapeHtml(t('schoolName'))}</span>
+      <span class="sub">${escapeHtml(t('clubSub'))}</span>
     </div>
   </div>`);
   brand.onclick = () => navigate('home');
 
   const navItems = [
-    ['home', 'Hall', 'hall'],
-    ['coach', 'Coach', 'coach'],
-    ['puzzles', 'Puzzles', 'puzzles'],
-    ['openings', 'Openings', 'openings'],
-    ['strategy', 'Strategy', 'strategy'],
-    ['endgames', 'Endgames', 'endgames'],
-    ['play-menu', 'Play', 'play'],
-    ['club', 'Club', 'club'],
+    ['home', t('navHall'), 'hall'],
+    ['coach', t('navCoach'), 'coach'],
+    ['puzzles', t('navPuzzles'), 'puzzles'],
+    ['openings', t('navOpenings'), 'openings'],
+    ['strategy', t('navStrategy'), 'strategy'],
+    ['endgames', t('navEndgames'), 'endgames'],
+    ['play-menu', t('navPlay'), 'play'],
+    ['club', t('navClub'), 'club'],
   ];
 
   const nav = document.createElement('nav');
@@ -779,7 +814,7 @@ function renderHeader() {
   navItems.forEach(([p, label, icon]) => {
     const b = document.createElement('button');
     b.type = 'button';
-    b.innerHTML = `${iconSvg(icon, 15)} <span>${label}</span>`;
+    b.innerHTML = `${iconSvg(icon, 15)} <span>${escapeHtml(label)}</span>`;
     const isActive =
       State.page === p ||
       (p === 'play-menu' && ['vs-human', 'vs-engine', 'engine-arena'].includes(State.page));
@@ -790,14 +825,20 @@ function renderHeader() {
 
   const actions = document.createElement('div');
   actions.className = 'header-actions';
-  const customizeBtn = el(`<button class="customize-button" type="button" title="Board & Piece Studio">${iconSvg('spark', 14)} <span>Board</span></button>`);
+  const langBtn = el(`<button class="lang-switch-btn" type="button" id="langSwitchBtn" title="${escapeHtml(t('langSwitchTitle'))}">${iconSvg('globe', 14)} <span>${escapeHtml(t('langSwitchText'))}</span></button>`);
+  langBtn.onclick = () => {
+    toggleLang();
+    render();
+  };
+
+  const customizeBtn = el(`<button class="customize-button" type="button" title="${escapeHtml(t('boardStudioTitle'))}">${iconSvg('spark', 14)} <span>${escapeHtml(t('boardBtn'))}</span></button>`);
   customizeBtn.onclick = showCustomization;
 
   const pill = el(`<div class="user-pill">
     <div class="avatar">${(State.user.name[0] || '?').toUpperCase()}</div>
     <div class="name">${escapeHtml(State.user.name)}</div>
     <div class="rating tabular-nums">${State.user.rating}</div>
-    <button type="button" id="logoutBtn" title="Switch or sign out">${sharedClub ? 'Sign out' : 'Switch'}</button>
+    <button type="button" id="logoutBtn" title="${escapeHtml(t('switchOrSignOutTitle'))}">${escapeHtml(sharedClub ? t('signOut') : t('switchUser'))}</button>
   </div>`);
   pill.querySelector('#logoutBtn').onclick = async () => {
     stockfishClient.stop();
@@ -815,6 +856,7 @@ function renderHeader() {
     render();
   };
 
+  actions.appendChild(langBtn);
   actions.appendChild(customizeBtn);
   actions.appendChild(pill);
   c.appendChild(brand);
@@ -828,20 +870,38 @@ function renderHeader() {
 // CUSTOMIZATION MODAL
 // =========================================================
 function showCustomization() {
+  const lang = getLang();
   const back = document.createElement('div');
   back.className = 'modal-backdrop';
   const modal = document.createElement('div');
   modal.className = 'modal customization-modal';
-  modal.innerHTML = `<button class="modal-close" type="button" aria-label="Close">×</button>
-    <h2>Board &amp; Piece Studio</h2>
-    <p class="custom-intro">Choose your board palette and piece finish. Preferences save automatically on this device.</p>
-    <div class="custom-section"><h3>Board Theme</h3><div class="choice-grid board-choices"></div></div>
-    <div class="custom-section"><h3>Piece Style</h3><div class="choice-grid piece-choices"></div></div>
-    <label class="coordinate-toggle"><input type="checkbox" ${State.preferences.coordinates ? 'checked' : ''}/> Show board coordinates</label>`;
+  modal.innerHTML = `<button class="modal-close" type="button" aria-label="${escapeHtml(t('close'))}">×</button>
+    <h2>${escapeHtml(t('boardStudioTitle'))}</h2>
+    <p class="custom-intro">${escapeHtml(t('boardStudioIntro'))}</p>
+    <div class="custom-section">
+      <h3>${escapeHtml(t('languageLabel'))}</h3>
+      <div class="pill-switch" id="studioLangSwitch">
+        <button type="button" data-lang="en" class="${lang === 'en' ? 'active' : ''}">${escapeHtml(t('langOptionEn'))}</button>
+        <button type="button" data-lang="ar" class="${lang === 'ar' ? 'active' : ''}">${escapeHtml(t('langOptionAr'))}</button>
+      </div>
+    </div>
+    <div class="custom-section"><h3>${escapeHtml(t('boardThemeLabel'))}</h3><div class="choice-grid board-choices"></div></div>
+    <div class="custom-section"><h3>${escapeHtml(t('pieceStyleLabel'))}</h3><div class="choice-grid piece-choices"></div></div>
+    <label class="coordinate-toggle"><input type="checkbox" ${State.preferences.coordinates ? 'checked' : ''}/> ${escapeHtml(t('showCoordinates'))}</label>`;
+
+  modal.querySelectorAll('#studioLangSwitch button').forEach((btn) => {
+    btn.onclick = () => {
+      setLang(btn.dataset.lang);
+      back.remove();
+      render();
+      showCustomization();
+    };
+  });
 
   const boardChoices = modal.querySelector('.board-choices');
-  Object.entries(BOARD_THEMES).forEach(([id, t]) => {
-    const btn = el(`<button class="visual-choice ${State.preferences.board === id ? 'selected' : ''}" type="button"><span class="board-swatch" style="--swatch-light:${t.light};--swatch-dark:${t.dark}"></span><strong>${t.name}</strong></button>`);
+  Object.entries(BOARD_THEMES).forEach(([id, themeObj]) => {
+    const label = localizeBoardThemeName(id, themeObj.name, lang);
+    const btn = el(`<button class="visual-choice ${State.preferences.board === id ? 'selected' : ''}" type="button"><span class="board-swatch" style="--swatch-light:${themeObj.light};--swatch-dark:${themeObj.dark}"></span><strong>${escapeHtml(label)}</strong></button>`);
     btn.onclick = () => {
       State.preferences.board = id;
       savePreferences();
@@ -852,8 +912,9 @@ function showCustomization() {
   });
 
   const pieceChoices = modal.querySelector('.piece-choices');
-  Object.entries(PIECE_STYLES).forEach(([id, t]) => {
-    const btn = el(`<button class="visual-choice piece-choice ${State.preferences.pieces === id ? 'selected' : ''}" type="button"><span class="piece-preview ${id}">${PIECE_SVG.N}${PIECE_SVG.q}</span><strong>${t.name}</strong><small>${t.note}</small></button>`);
+  Object.entries(PIECE_STYLES).forEach(([id, styleObj]) => {
+    const loc = localizePieceStyle(id, styleObj, lang);
+    const btn = el(`<button class="visual-choice piece-choice ${State.preferences.pieces === id ? 'selected' : ''}" type="button"><span class="piece-preview ${id}">${PIECE_SVG.N}${PIECE_SVG.q}</span><strong>${escapeHtml(loc.name)}</strong><small>${escapeHtml(loc.note)}</small></button>`);
     btn.onclick = () => {
       State.preferences.pieces = id;
       savePreferences();
@@ -863,7 +924,7 @@ function showCustomization() {
     pieceChoices.appendChild(btn);
   });
 
-  modal.querySelector('input').onchange = (e) => {
+  modal.querySelector('.coordinate-toggle input').onchange = (e) => {
     State.preferences.coordinates = e.target.checked;
     savePreferences();
   };
@@ -886,24 +947,31 @@ function renderLogin() {
   card.className = 'card ornate login-card';
   const memberCount = Object.keys(State.members).length;
   card.innerHTML = `
-    <div class="crest" role="img" aria-label="Edugates International School logo"></div>
-    <h1>Edugates International School</h1>
-    <div style="font-family:'JetBrains Mono',monospace;color:var(--gold);letter-spacing:.22em;text-transform:uppercase;font-size:.76rem;margin-top:.15rem">Chess Club</div>
+    <div class="login-lang-bar">
+      <button type="button" class="login-lang-btn" id="loginLangBtn" title="${escapeHtml(t('langSwitchTitle'))}">${iconSvg('globe', 14)} <span>${escapeHtml(t('langSwitchText'))}</span></button>
+    </div>
+    <div class="crest" role="img" aria-label="${escapeHtml(t('logoAlt'))}"></div>
+    <h1>${escapeHtml(t('schoolName'))}</h1>
+    <div style="font-family:'JetBrains Mono',monospace;color:var(--gold);letter-spacing:.22em;text-transform:uppercase;font-size:.76rem;margin-top:.15rem">${escapeHtml(t('clubSub'))}</div>
     <div class="ornament"></div>
-    <p class="italic" style="color:var(--ink-soft)">Study 70 masterclasses, solve 310 verified puzzles &amp; 80 quizzes, and train live with Stockfish 19.</p>
-    <div style="text-align:left;margin-top:.9rem">
-      <label for="newName">Take a Seat</label>
+    <p class="italic" style="color:var(--ink-soft)">${escapeHtml(t('loginSubtitle', { studies: OPENINGS.length + TRAPS.length + MIDDLEGAME_LESSONS.length + ENDGAMES.length, puzzles: PUZZLES.length, quizzes: QUIZZES.length }))}</p>
+    <div style="text-align:start;margin-top:.9rem">
+      <label for="newName">${escapeHtml(t('takeSeat'))}</label>
       <div style="display:flex;gap:.5rem">
-        <input id="newName" name="newName" autocomplete="name" placeholder="Student name (e.g. Layla Al-Mansoor)" />
-        <button class="btn gold" id="joinBtn" type="button">Enter Club</button>
+        <input id="newName" name="newName" autocomplete="name" placeholder="${escapeHtml(t('namePlaceholder'))}" />
+        <button class="btn gold" id="joinBtn" type="button">${escapeHtml(t('enterClub'))}</button>
       </div>
     </div>
     ${memberCount > 0 ? `<hr class="fancy" />
-    <div style="text-align:left">
-      <label>Returning Club Members</label>
+    <div style="text-align:start">
+      <label>${escapeHtml(t('returningMembers'))}</label>
       <div class="members-grid" id="memberGrid"></div>
     </div>` : ''}
   `;
+  card.querySelector('#loginLangBtn').onclick = () => {
+    toggleLang();
+    render();
+  };
   card.querySelector('#joinBtn').onclick = async () => {
     const name = card.querySelector('#newName').value.trim();
     if (!name) {
@@ -911,7 +979,7 @@ function renderLogin() {
       return;
     }
     if (name.length > 30) {
-      alert('Name must be 30 characters or fewer.');
+      alert(t('nameTooLong'));
       return;
     }
     const id = await registerMember(name);
@@ -927,17 +995,17 @@ function renderLogin() {
     Object.values(State.members)
       .sort((a, b) => b.rating - a.rating)
       .forEach((m) => {
-        const t = el(`<div class="member-tile">
+        const tEl = el(`<div class="member-tile">
           <div class="avatar">${(m.name[0] || '?').toUpperCase()}</div>
           <div class="nm">${escapeHtml(m.name)}</div>
           <div class="rt tabular-nums">${m.rating}</div>
         </div>`);
-        t.onclick = async () => {
+        tEl.onclick = async () => {
           await setUser(m.id);
           State.page = 'home';
           render();
         };
-        grid.appendChild(t);
+        grid.appendChild(tEl);
       });
   }
   stage.appendChild(card);
@@ -949,14 +1017,22 @@ function renderSharedLogin() {
   stage.className = 'login-stage';
   const card = document.createElement('div');
   card.className = 'card ornate login-card';
-  const action = State.completingEmailLink ? 'Complete sign-in' : 'Send link';
+  const action = State.completingEmailLink ? t('completeSignIn') : t('sendLink');
   card.innerHTML = `
-    <div class="crest" role="img" aria-label="Edugates International School logo"></div>
-    <h1>Edugates International School</h1>
+    <div class="login-lang-bar">
+      <button type="button" class="login-lang-btn" id="loginLangBtn" title="${escapeHtml(t('langSwitchTitle'))}">${iconSvg('globe', 14)} <span>${escapeHtml(t('langSwitchText'))}</span></button>
+    </div>
+    <div class="crest" role="img" aria-label="${escapeHtml(t('logoAlt'))}"></div>
+    <h1>${escapeHtml(t('schoolName'))}</h1>
+    <div style="font-family:'JetBrains Mono',monospace;color:var(--gold);letter-spacing:.22em;text-transform:uppercase;font-size:.76rem;margin-top:.15rem">${escapeHtml(t('clubSub'))}</div>
     <div class="ornament"></div>
-    <p class="italic" style="color:var(--ink-soft)">${State.completingEmailLink ? 'Enter the school email address that received the sign-in link.' : 'Enter your school email and we will send a secure sign-in link.'}</p>
+    <p class="italic" style="color:var(--ink-soft)">${escapeHtml(State.completingEmailLink ? t('sharedCompleteHint') : t('sharedSendHint'))}</p>
     ${State.authError ? `<p role="alert" style="color:var(--burgundy)">${escapeHtml(State.authError)}</p>` : ''}
-    <div style="text-align:left;margin-top:1rem"><label for="email">School email</label><div style="display:flex;gap:.5rem"><input id="email" type="email" autocomplete="email" required placeholder="you@school.edu" /><button class="btn gold" id="emailBtn" type="button">${action}</button></div></div>`;
+    <div style="text-align:start;margin-top:1rem"><label for="email">${escapeHtml(t('schoolEmailLabel'))}</label><div style="display:flex;gap:.5rem"><input id="email" type="email" autocomplete="email" required placeholder="${escapeHtml(t('schoolEmailPlaceholder'))}" /><button class="btn gold" id="emailBtn" type="button">${escapeHtml(action)}</button></div></div>`;
+  card.querySelector('#loginLangBtn').onclick = () => {
+    toggleLang();
+    render();
+  };
   const submit = async () => {
     const email = card.querySelector('#email').value.trim();
     if (!email) {
@@ -968,7 +1044,7 @@ function renderSharedLogin() {
     try {
       if (State.completingEmailLink) {
         const user = await completeEmailSignInLink(email);
-        const name = user.email ? user.email.split('@')[0] : 'Club member';
+        const name = user.email ? user.email.split('@')[0] : t('clubMemberFallback');
         State.user = { id: user.uid, name, rating: 1200, wins: 0, losses: 0, draws: 0 };
         await upsertMyProfile(name);
         State.sharedClubs = await listMyClubs();
@@ -977,7 +1053,7 @@ function renderSharedLogin() {
         render();
       } else {
         await sendEmailSignInLink(email);
-        button.textContent = 'Check your email';
+        button.textContent = t('checkYourEmail');
       }
     } catch (error) {
       State.authError = error.message;
@@ -1005,23 +1081,24 @@ function renderHome() {
   grid.className = 'hall-grid';
   const sum = trainingSummary();
   const daily = dailyPuzzle();
+  const locDaily = localizePuzzle(daily);
   const quizMeta = State.training.quizzes || {};
 
   // Card 1: Student Welcome + Stats
   const welcome = el(`<section class="bento-card bento-welcome">
     <div>
-      <h1>Welcome, <em>${escapeHtml(State.user.name)}</em></h1>
-      <p style="margin-top:.3rem">Edugates Study Hall — every opening line, tactic, strategic plan, and Stockfish 19 insight fits at a glance.</p>
+      <h1>${t('welcomeUser', { name: `<em>${escapeHtml(State.user.name)}</em>` })}</h1>
+      <p style="margin-top:.3rem">${escapeHtml(t('hallIntro'))}</p>
     </div>
     <div class="welcome-stats">
-      <div class="stat-box"><strong class="tabular-nums">${State.user.rating}</strong><span>Club Elo</span></div>
-      <div class="stat-box"><strong class="tabular-nums">${State.training.streak || 0}</strong><span>Puzzle Streak</span></div>
-      <div class="stat-box"><strong class="tabular-nums">${sum.solvedPuzzles}/${PUZZLES.length}</strong><span>Solved</span></div>
+      <div class="stat-box"><strong class="tabular-nums">${State.user.rating}</strong><span>${escapeHtml(t('clubElo'))}</span></div>
+      <div class="stat-box"><strong class="tabular-nums">${State.training.streak || 0}</strong><span>${escapeHtml(t('puzzleStreak'))}</span></div>
+      <div class="stat-box"><strong class="tabular-nums">${sum.solvedPuzzles}/${PUZZLES.length}</strong><span>${escapeHtml(t('solvedLabel'))}</span></div>
     </div>
     <div style="display:flex;gap:.45rem;flex-wrap:wrap">
-      <button type="button" class="btn gold sm" id="hallCoach">${iconSvg('coach', 14)} Open Coach</button>
-      <button type="button" class="btn ghost sm" style="color:var(--cream);border-color:var(--gold)" id="hallArena">${iconSvg('duel', 14)} Engine Duel</button>
-      <button type="button" class="btn ghost sm" style="color:var(--cream);border-color:var(--gold)" id="hallPlay">${iconSvg('play', 14)} Play Game</button>
+      <button type="button" class="btn gold sm" id="hallCoach">${iconSvg('coach', 14)} ${escapeHtml(t('openCoach'))}</button>
+      <button type="button" class="btn ghost sm" style="color:var(--cream);border-color:var(--gold)" id="hallArena">${iconSvg('duel', 14)} ${escapeHtml(t('engineDuel'))}</button>
+      <button type="button" class="btn ghost sm" style="color:var(--cream);border-color:var(--gold)" id="hallPlay">${iconSvg('play', 14)} ${escapeHtml(t('playGame'))}</button>
     </div>
   </section>`);
   welcome.querySelector('#hallCoach').onclick = () => navigate('coach');
@@ -1033,16 +1110,16 @@ function renderHome() {
   const coachCard = el(`<section class="bento-card coach-launch">
     <div>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:.4rem">
-        <h3>${iconSvg('coach', 16)} Stockfish 19 Coach</h3>
-        <span class="tag green">MultiPV 3</span>
+        <h3>${iconSvg('coach', 16)} ${escapeHtml(t('sfCoachTitle'))}</h3>
+        <span class="tag green">${escapeHtml(t('multiPvTag'))}</span>
       </div>
-      <p class="small" style="margin-top:.25rem">Live evaluation bar, suggested candidate arrows on the board, SAN coaching tags, and blunder protection.</p>
+      <p class="small" style="margin-top:.25rem">${escapeHtml(t('coachCardDesc'))}</p>
     </div>
     <div style="display:flex;gap:.35rem;flex-wrap:wrap">
-      <button type="button" class="btn sm" id="goGuided">Guided Sparring</button>
-      <button type="button" class="btn ghost sm" id="goSandbox">FEN Lab</button>
-      <button type="button" class="btn ghost sm" id="goImportPgn">${iconSvg('upload', 13)} Import PGN / Text</button>
-      <button type="button" class="btn ghost sm" id="goBlunder">Blunder Check</button>
+      <button type="button" class="btn sm" id="goGuided">${escapeHtml(t('guidedSparring'))}</button>
+      <button type="button" class="btn ghost sm" id="goSandbox">${escapeHtml(t('fenLab'))}</button>
+      <button type="button" class="btn ghost sm" id="goImportPgn">${iconSvg('upload', 13)} ${escapeHtml(t('importPgnText'))}</button>
+      <button type="button" class="btn ghost sm" id="goBlunder">${escapeHtml(t('blunderCheck'))}</button>
     </div>
   </section>`);
   coachCard.querySelector('#goGuided').onclick = () => {
@@ -1068,15 +1145,15 @@ function renderHome() {
   const dailyCard = el(`<section class="bento-card quiz-launch">
     <div>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:.4rem">
-        <h3>${iconSvg('spark', 16)} Daily Training</h3>
-        <span class="tag gold tabular-nums">${daily.rating} Elo</span>
+        <h3>${iconSvg('spark', 16)} ${escapeHtml(t('dailyTraining'))}</h3>
+        <span class="tag gold tabular-nums">${escapeHtml(t('eloTag', { rating: daily.rating }))}</span>
       </div>
-      <p class="small" style="margin-top:.2rem"><strong>${escapeHtml(daily.theme)}</strong> (${escapeHtml(daily.category)} · ${escapeHtml(daily.sideToMove)})</p>
-      <p class="small">Quiz Sprints completed: <strong class="tabular-nums">${quizMeta.completedSprints || 0}</strong> · Best accuracy: <strong class="tabular-nums">${quizMeta.bestAccuracy || 0}%</strong></p>
+      <p class="small" style="margin-top:.2rem"><strong>${escapeHtml(locDaily.theme)}</strong> (${escapeHtml(tCategory(daily.category))} · ${escapeHtml(tSide(daily.sideToMove))})</p>
+      <p class="small">${escapeHtml(t('quizSprintsStats', { count: quizMeta.completedSprints || 0, acc: quizMeta.bestAccuracy || 0 }))}</p>
     </div>
     <div style="display:flex;gap:.4rem;flex-wrap:wrap">
-      <button type="button" class="btn gold sm" id="solveDaily">${iconSvg('puzzles', 14)} Solve Daily</button>
-      <button type="button" class="btn ghost sm" id="startSprint">${iconSvg('trophy', 14)} 10-Quiz Sprint</button>
+      <button type="button" class="btn gold sm" id="solveDaily">${iconSvg('puzzles', 14)} ${escapeHtml(t('solveDaily'))}</button>
+      <button type="button" class="btn ghost sm" id="startSprint">${iconSvg('trophy', 14)} ${escapeHtml(t('quizSprint10'))}</button>
     </div>
   </section>`);
   dailyCard.querySelector('#solveDaily').onclick = () => openPuzzleInSolver(daily);
@@ -1091,21 +1168,28 @@ function renderHome() {
   // Card 4: Complete Library Tracks
   const tracks = el(`<section class="bento-card library-tracks">
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <h3>Study &amp; Training Library</h3>
-      <span class="small tabular-nums">70 Studies · 310 Puzzles · 80 Quizzes</span>
+      <h3>${escapeHtml(t('studyLibraryTitle'))}</h3>
+      <span class="small tabular-nums">${escapeHtml(t('libraryCounts', { studies: OPENINGS.length + TRAPS.length + MIDDLEGAME_LESSONS.length + ENDGAMES.length, puzzles: PUZZLES.length, quizzes: QUIZZES.length }))}</span>
     </div>
     <div class="track-strip">
       <button type="button" class="track-tile" id="trkOpenings">
-        <div class="track-top"><span>${iconSvg('openings', 15)} Openings &amp; Traps</span><span class="track-count tabular-nums">${sum.completedOpenings + sum.completedTraps}/${OPENINGS.length + TRAPS.length}</span></div>
-        <small>${OPENINGS.length} opening repertoires &amp; ${TRAPS.length} tactical traps with interactive drill mode.</small>
+        <div class="track-top"><span>${iconSvg('openings', 15)} ${escapeHtml(t('openingsAndTraps'))}</span><span class="track-count tabular-nums">${sum.completedOpenings + sum.completedTraps}/${OPENINGS.length + TRAPS.length}</span></div>
+        <small>${escapeHtml(t('openingsTrackDesc', { openings: OPENINGS.length, traps: TRAPS.length }))}</small>
       </button>
       <button type="button" class="track-tile" id="trkPuzzles">
-        <div class="track-top"><span>${iconSvg('puzzles', 15)} Puzzle Vault &amp; Quizzes</span><span class="track-count tabular-nums">${sum.solvedPuzzles}/${PUZZLES.length}</span></div>
-        <small>Openings (55), Tactics (90), Strategy (55), Middlegame (55), Endgame (55) + 80 Quizzes.</small>
+        <div class="track-top"><span>${iconSvg('puzzles', 15)} ${escapeHtml(t('puzzleVaultQuizzes'))}</span><span class="track-count tabular-nums">${sum.solvedPuzzles}/${PUZZLES.length}</span></div>
+        <small>${escapeHtml(t('puzzleTrackDesc', {
+          openings: getPuzzlesByCategory('Openings').length,
+          tactics: getPuzzlesByCategory('Tactics').length,
+          strategy: getPuzzlesByCategory('Strategy').length,
+          middlegame: getPuzzlesByCategory('Middlegame').length,
+          endgame: getPuzzlesByCategory('Endgame').length,
+          quizzes: QUIZZES.length,
+        }))}</small>
       </button>
       <button type="button" class="track-tile" id="trkMastery">
-        <div class="track-top"><span>${iconSvg('strategy', 15)} Strategy &amp; Endgames</span><span class="track-count tabular-nums">${sum.completedStrategy + sum.completedEndgames}/${MIDDLEGAME_LESSONS.length + ENDGAMES.length}</span></div>
-        <small>${MIDDLEGAME_LESSONS.length} middlegame masterclasses &amp; ${ENDGAMES.length} playable endgames.</small>
+        <div class="track-top"><span>${iconSvg('strategy', 15)} ${escapeHtml(t('strategyAndEndgames'))}</span><span class="track-count tabular-nums">${sum.completedStrategy + sum.completedEndgames}/${MIDDLEGAME_LESSONS.length + ENDGAMES.length}</span></div>
+        <small>${escapeHtml(t('masteryTrackDesc', { middlegame: MIDDLEGAME_LESSONS.length, endgames: ENDGAMES.length }))}</small>
       </button>
     </div>
   </section>`);
@@ -1303,7 +1387,7 @@ function buildMovesPanel(
   {
     currentPly = null,
     onSelectPly = null,
-    title = 'Moves',
+    title = t('movesTitle'),
     extraHeaderEl = null,
   } = {},
 ) {
@@ -1322,7 +1406,7 @@ function buildMovesPanel(
   const headActions = document.createElement('div');
   headActions.style.cssText = 'display:flex;align-items:center;gap:.3rem';
   if (onSelectPly && total > 0) {
-    const startBtn = el(`<button type="button" class="moves-start-btn ${activePly === 0 ? 'current' : ''}">Start</button>`);
+    const startBtn = el(`<button type="button" class="moves-start-btn ${activePly === 0 ? 'current' : ''}">${escapeHtml(t('startBtn'))}</button>`);
     startBtn.onclick = () => onSelectPly(0);
     headActions.appendChild(startBtn);
   }
@@ -1333,7 +1417,7 @@ function buildMovesPanel(
   const ml = document.createElement('div');
   ml.className = 'moves-list tabular-nums';
   if (total === 0) {
-    ml.appendChild(el(`<div class="small italic" style="grid-column:span 3;color:var(--ink-soft)">No moves yet.</div>`));
+    ml.appendChild(el(`<div class="small italic" style="grid-column:span 3;color:var(--ink-soft)">${escapeHtml(t('noMovesYet'))}</div>`));
   } else {
     const renderMoveCell = (plyIdx) => {
       const item = moves[plyIdx];
@@ -1476,7 +1560,7 @@ function loadParsedGamesIntoCoach(games, sourceName = '') {
 }
 
 function openGameInCoachAnalyzer({
-  title = 'Game Analysis',
+  title = '',
   headers = {},
   startFen = STANDARD_START_FEN,
   moves = [],
@@ -1518,13 +1602,16 @@ async function handleGameFileImport(file) {
     const buffer = await file.arrayBuffer();
     const binKind = detectBinaryFileSignature(new Uint8Array(buffer));
     if (binKind) {
-      State.coachImportError = `"${file.name}" is a ${binKind}, not a .pgn or .txt notation file. Open a PGN / text file or paste moves below.`;
+      State.coachImportError = t('binaryFileError', {
+        name: file.name,
+        kind: tBinaryKind(binKind),
+      });
       render();
       return;
     }
     const text = new TextDecoder('utf-8').decode(buffer);
     State.coachPasteBuffer = text;
-    const parsed = parseImportedGames(text, Chess);
+    const parsed = parseImportedGames(text, Chess, { lang: getLang() });
     if (!parsed.ok) {
       State.coachImportError = parsed.error;
       render();
@@ -1532,7 +1619,7 @@ async function handleGameFileImport(file) {
     }
     loadParsedGamesIntoCoach(parsed.games, file.name);
   } catch (err) {
-    State.coachImportError = err instanceof Error ? err.message : 'Unable to read that file.';
+    State.coachImportError = err instanceof Error ? err.message : t('unreadableFileError');
     render();
   }
 }
@@ -1729,6 +1816,7 @@ async function handleCoachHumanMove(moveObj) {
 
 function renderCoach() {
   ensureCoachGame();
+  const lang = getLang();
   const pos = buildPositionAtPly(State.coachInitialFen, State.coachMoves, State.coachPly, Chess);
   State.coachGame = pos.game;
   const g = pos.game;
@@ -1742,31 +1830,32 @@ function renderCoach() {
   // Top Header Bar
   const bar = el(`<div class="view-bar">
     <div style="display:flex;align-items:center;gap:.55rem;flex-wrap:wrap">
-      <h1>${iconSvg('coach', 18)} Stockfish 19 Coach</h1>
+      <h1>${iconSvg('coach', 18)} ${escapeHtml(t('sfCoachTitle'))}</h1>
       <div class="pill-switch" id="coachModes">
-        <button type="button" data-mode="guided" class="${State.coachMode === 'guided' ? 'active' : ''}">Guided</button>
-        <button type="button" data-mode="pgn-analysis" class="${State.coachMode === 'pgn-analysis' ? 'active' : ''}">Game Analysis</button>
-        <button type="button" data-mode="sandbox" class="${State.coachMode === 'sandbox' ? 'active' : ''}">FEN Lab</button>
-        <button type="button" data-mode="blunder-check" class="${State.coachMode === 'blunder-check' ? 'active' : ''}">Blunder Check</button>
+        <button type="button" data-mode="guided" class="${State.coachMode === 'guided' ? 'active' : ''}">${escapeHtml(t('modeGuided'))}</button>
+        <button type="button" data-mode="pgn-analysis" class="${State.coachMode === 'pgn-analysis' ? 'active' : ''}">${escapeHtml(t('modeGameAnalysis'))}</button>
+        <button type="button" data-mode="sandbox" class="${State.coachMode === 'sandbox' ? 'active' : ''}">${escapeHtml(t('modeFenLab'))}</button>
+        <button type="button" data-mode="blunder-check" class="${State.coachMode === 'blunder-check' ? 'active' : ''}">${escapeHtml(t('modeBlunderCheck'))}</button>
       </div>
     </div>
     <div class="view-bar-meta">
-      <button type="button" class="toggle-btn ${State.coachImportDrawerOpen ? 'active' : ''}" id="coachImportBtn">${iconSvg('upload', 13)} Import PGN / Text</button>
+      <button type="button" class="toggle-btn ${State.coachImportDrawerOpen ? 'active' : ''}" id="coachImportBtn">${iconSvg('upload', 13)} ${escapeHtml(t('importPgnText'))}</button>
       ${State.coachMode === 'guided' || State.coachMode === 'blunder-check' ? `
-        <select id="coachLvl" aria-label="Coach sparring strength" style="width:auto;padding:.24rem .5rem;font-size:.84rem">
+        <select id="coachLvl" aria-label="${escapeHtml(t('coachStrengthAria'))}" style="width:auto;padding:.24rem .5rem;font-size:.84rem">
           ${[1, 2, 3, 4, 5]
             .map((n) => {
               const cfg = resolveEngineLevelConfig(n);
-              return `<option value="${n}" ${State.coachEngineLevel === n ? 'selected' : ''}>Lvl ${n}: ${cfg.label}</option>`;
+              const tierLabel = localizeEngineTier('sf19-nnue', { value: n, label: cfg.label }, lang).label;
+              return `<option value="${n}" ${State.coachEngineLevel === n ? 'selected' : ''}>${escapeHtml(t('levelOption', { n, label: tierLabel }))}</option>`;
             })
             .join('')}
         </select>
         <div class="pill-switch" id="coachSide">
-          <button type="button" data-c="w" class="${State.coachPlayerColor === 'w' ? 'active' : ''}">White</button>
-          <button type="button" data-c="b" class="${State.coachPlayerColor === 'b' ? 'active' : ''}">Black</button>
+          <button type="button" data-c="w" class="${State.coachPlayerColor === 'w' ? 'active' : ''}">${escapeHtml(t('white'))}</button>
+          <button type="button" data-c="b" class="${State.coachPlayerColor === 'b' ? 'active' : ''}">${escapeHtml(t('black'))}</button>
         </div>
       ` : ''}
-      <button type="button" class="btn gold sm" id="coachNew">${iconSvg('refresh', 14)} New</button>
+      <button type="button" class="btn gold sm" id="coachNew">${iconSvg('refresh', 14)} ${escapeHtml(t('newBtn'))}</button>
     </div>
   </div>`);
 
@@ -1842,7 +1931,7 @@ function renderCoach() {
       onNavigate: (nextPly) => navigateCoachPly(nextPly),
     }),
   );
-  const flipBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 14)} Flip</button>`);
+  const flipBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 14)} ${escapeHtml(t('flip'))}</button>`);
   flipBtn.onclick = () => {
     State.flipBoard = !State.flipBoard;
     render();
@@ -1857,14 +1946,15 @@ function renderCoach() {
   side.className = 'play-sidebar';
 
   if (State.coachPendingBlunder) {
-    const alert = el(`<div class="puzzle-feedback wrong">
-      <div><strong>${State.coachPendingBlunder.label} (${State.coachPendingBlunder.symbol})</strong> — ${escapeHtml(State.coachPendingBlunder.summary)}</div>
+    const locBlunder = localizeMoveGrade(State.coachPendingBlunder, lang);
+    const alertBox = el(`<div class="puzzle-feedback wrong">
+      <div><strong>${escapeHtml(locBlunder.label)} (${escapeHtml(locBlunder.symbol)})</strong> — ${escapeHtml(locBlunder.summary)}</div>
       <div style="display:flex;gap:.4rem;margin-top:.4rem">
-        <button type="button" class="btn sm" id="retryBlunder">${iconSvg('refresh', 13)} Retry Move</button>
-        <button type="button" class="btn ghost sm" id="playAnyway">Play On Anyway</button>
+        <button type="button" class="btn sm" id="retryBlunder">${iconSvg('refresh', 13)} ${escapeHtml(t('retryMove'))}</button>
+        <button type="button" class="btn ghost sm" id="playAnyway">${escapeHtml(t('playAnyway'))}</button>
       </div>
     </div>`);
-    alert.querySelector('#retryBlunder').onclick = () => {
+    alertBox.querySelector('#retryBlunder').onclick = () => {
       if (State.coachMoves.length > 0 && State.coachPly === State.coachMoves.length) {
         State.coachMoves.pop();
         State.coachPly = State.coachMoves.length;
@@ -1873,29 +1963,33 @@ function renderCoach() {
       }
       navigateCoachPly(State.coachPly);
     };
-    alert.querySelector('#playAnyway').onclick = () => {
+    alertBox.querySelector('#playAnyway').onclick = () => {
       State.coachPendingBlunder = null;
       coachEngineReply();
     };
-    side.appendChild(alert);
+    side.appendChild(alertBox);
   } else if (g.game_over()) {
     const outcome = g.in_checkmate()
-      ? `Checkmate! ${g.turn() === 'w' ? 'Black' : 'White'} wins.`
-      : 'Draw reached (stalemate / insufficient material / repetition).';
-    side.appendChild(el(`<div class="status-banner">${outcome}</div>`));
+      ? t('checkmateWinner', { winner: g.turn() === 'w' ? tSide('Black') : tSide('White') })
+      : t('drawReached');
+    side.appendChild(el(`<div class="status-banner">${escapeHtml(outcome)}</div>`));
   } else if (State.coachThinking) {
-    side.appendChild(el(`<div class="status-banner">Stockfish 19 is replying... <span class="spinner"></span></div>`));
+    side.appendChild(el(`<div class="status-banner">${escapeHtml(t('sfReplying'))} <span class="spinner"></span></div>`));
   } else {
+    const moveLabel =
+      State.coachPly === 0
+        ? t('moveStart')
+        : `${reviewMove?.moveNumber}${reviewMove?.color === 'w' ? '.' : '...'} ${reviewMove?.san}`;
     const plyStatus =
       totalPlies > 0
-        ? `Move ${State.coachPly === 0 ? 'Start' : `${reviewMove?.moveNumber}${reviewMove?.color === 'w' ? '.' : '...'} ${reviewMove?.san}`} (${State.coachPly}/${totalPlies})`
-        : `${g.turn() === 'w' ? 'White' : 'Black'} to move`;
+        ? t('movePrefix', { label: moveLabel, ply: State.coachPly, total: totalPlies })
+        : t('sideToMove', { side: tSide(g.turn() === 'w' ? 'White' : 'Black') });
     const modeNote =
       State.coachMode === 'pgn-analysis'
-        ? `${plyStatus} — step moves or play variations`
+        ? t('pgnNote', { status: plyStatus })
         : State.coachMode === 'sandbox'
-          ? `${plyStatus} — click any Stockfish chip to step forward`
-          : `${g.turn() === State.coachPlayerColor ? 'Your turn' : 'Engine turn'} · ${plyStatus}`;
+          ? t('sandboxNote', { status: plyStatus })
+          : `${g.turn() === State.coachPlayerColor ? t('yourTurn') : t('engineTurn')} · ${plyStatus}`;
     side.appendChild(el(`<div class="status-banner">${escapeHtml(modeNote)}</div>`));
   }
 
@@ -1907,28 +2001,28 @@ function renderCoach() {
     impBox.className = 'import-panel';
     impBox.innerHTML = `
       <div class="import-panel-head">
-        <strong style="font-size:.92rem">${iconSvg('file', 14)} Open PGN / Text File or Paste Moves</strong>
+        <strong style="font-size:.92rem">${iconSvg('file', 14)} ${escapeHtml(t('openPgnTitle'))}</strong>
         <div style="display:flex;gap:.3rem;align-items:center">
-          <select id="famousGameSel" style="width:auto;padding:.18rem .4rem;font-size:.78rem" aria-label="Load classic sample game">
-            <option value="">Classic Samples...</option>
-            ${FAMOUS_SAMPLE_GAMES.map((fg, i) => `<option value="${i}">${escapeHtml(fg.label)}</option>`).join('')}
+          <select id="famousGameSel" style="width:auto;padding:.18rem .4rem;font-size:.78rem" aria-label="${escapeHtml(t('loadClassicSampleAria'))}">
+            <option value="">${escapeHtml(t('classicSamples'))}</option>
+            ${FAMOUS_SAMPLE_GAMES.map((fg, i) => `<option value="${i}">${escapeHtml(localizeFamousGame(fg, lang).label)}</option>`).join('')}
           </select>
-          ${totalPlies > 0 ? `<button type="button" class="btn-ghost-xs" id="closeImpDrawer">Close</button>` : ''}
+          ${totalPlies > 0 ? `<button type="button" class="btn-ghost-xs" id="closeImpDrawer">${escapeHtml(t('close'))}</button>` : ''}
         </div>
       </div>
       <div class="import-dropzone" id="pgnDropZone">
-        <span class="small">Drop a <strong>.pgn</strong> or <strong>.txt</strong> game file here</span>
+        <span class="small">${escapeHtml(t('dropPgnHere'))}</span>
         <label class="btn ghost sm" style="margin:0;text-transform:none;cursor:pointer;padding:.24rem .6rem;font-size:.8rem">
-          ${iconSvg('upload', 13)} Open File
+          ${iconSvg('upload', 13)} ${escapeHtml(t('openFile'))}
           <input type="file" id="pgnFileInput" accept=".pgn,.txt,.fen,text/plain" style="display:none" />
         </label>
       </div>
-      <textarea id="pgnPasteArea" class="import-textarea" placeholder="Paste full PGN with tags, move text (e.g. 1. e4 e5 2. Nf3 Nc6 3. Bb5), UCI moves (e2e4 e7e5), or a FEN...">${escapeHtml(State.coachPasteBuffer)}</textarea>
+      <textarea id="pgnPasteArea" class="import-textarea" placeholder="${escapeHtml(t('pgnPastePlaceholder'))}">${escapeHtml(State.coachPasteBuffer)}</textarea>
       <div style="display:flex;gap:.35rem;flex-wrap:wrap;justify-content:space-between;align-items:center">
-        <span class="small">Supports .pgn, .txt, multi-game files, comments, &amp; variations</span>
+        <span class="small">${escapeHtml(t('supportedFormatsNote'))}</span>
         <div style="display:flex;gap:.35rem">
-          <button type="button" class="btn ghost sm" id="clearPasteBtn" style="padding:.24rem .55rem;font-size:.8rem">Clear</button>
-          <button type="button" class="btn gold sm" id="loadPasteBtn" style="padding:.24rem .7rem;font-size:.82rem">${iconSvg('paste', 13)} Analyze Pasted Text</button>
+          <button type="button" class="btn ghost sm" id="clearPasteBtn" style="padding:.24rem .55rem;font-size:.8rem">${escapeHtml(t('clear'))}</button>
+          <button type="button" class="btn gold sm" id="loadPasteBtn" style="padding:.24rem .7rem;font-size:.82rem">${iconSvg('paste', 13)} ${escapeHtml(t('analyzePastedText'))}</button>
         </div>
       </div>
       ${State.coachImportError ? `<div class="puzzle-feedback wrong" style="margin-top:0">${escapeHtml(State.coachImportError)}</div>` : ''}
@@ -1946,8 +2040,8 @@ function renderCoach() {
       const sample = FAMOUS_SAMPLE_GAMES[Number(e.target.value)];
       if (sample) {
         State.coachPasteBuffer = sample.pgn;
-        const parsed = parseImportedGames(sample.pgn, Chess);
-        if (parsed.ok) loadParsedGamesIntoCoach(parsed.games, 'Classic Library');
+        const parsed = parseImportedGames(sample.pgn, Chess, { lang });
+        if (parsed.ok) loadParsedGamesIntoCoach(parsed.games, localizeFamousGame(sample, lang).label);
       }
     };
     const fileInput = impBox.querySelector('#pgnFileInput');
@@ -1977,7 +2071,7 @@ function renderCoach() {
       render();
     };
     impBox.querySelector('#loadPasteBtn').onclick = () => {
-      const parsed = parseImportedGames(State.coachPasteBuffer, Chess);
+      const parsed = parseImportedGames(State.coachPasteBuffer, Chess, { lang });
       if (!parsed.ok) {
         State.coachImportError = parsed.error;
         render();
@@ -1989,9 +2083,9 @@ function renderCoach() {
   }
 
   if (totalPlies > 0 || State.coachGameMeta) {
-    const titleTxt = State.coachGameMeta?.title || `Live Coach Session (${Math.ceil(totalPlies / 2)} moves)`;
+    const titleTxt = State.coachGameMeta?.title || t('liveCoachSession', { moves: Math.ceil(totalPlies / 2) });
     const pgnText = exportGameToPgn({
-      headers: State.coachGameMeta?.headers || { White: State.user?.name || 'White', Black: 'Analysis' },
+      headers: State.coachGameMeta?.headers || { White: State.user?.name || t('white'), Black: t('analysisFallbackHeader') },
       startFen: State.coachInitialFen,
       moves: State.coachMoves,
       result: State.coachGameMeta?.result || '*',
@@ -2001,18 +2095,18 @@ function renderCoach() {
     metaBar.className = 'game-meta-bar';
     metaBar.innerHTML = `
       <div class="game-meta-top">
-        <span class="game-meta-title">${escapeHtml(titleTxt)}</span>
+        <span class="game-meta-title">${escapeHtml(isolateChessTokens(titleTxt, lang))}</span>
         <div class="game-meta-actions">
-          ${State.coachImportedGames.length > 1 ? `<select id="multiGameSel" style="width:auto;padding:.15rem .35rem;font-size:.76rem" aria-label="Select game from archive">
+          ${State.coachImportedGames.length > 1 ? `<select id="multiGameSel" style="width:auto;padding:.15rem .35rem;font-size:.76rem" aria-label="${escapeHtml(t('selectArchiveGameAria'))}">
             ${State.coachImportedGames.map((gm, idx) => `<option value="${idx}" ${idx === State.coachSelectedGameIdx ? 'selected' : ''}>#${idx + 1}: ${escapeHtml(gm.title)}</option>`).join('')}
           </select>` : ''}
-          ${totalPlies > 0 ? `<button type="button" class="btn-ghost-xs" id="scanGameBtn">${iconSvg('scan', 12)} ${State.coachFullScanRunning ? `Stop (${State.coachFullScanDone}/${totalPlies})` : 'Scan All Moves'}</button>` : ''}
-          <button type="button" class="btn-ghost-xs" id="copyPgnBtn">${iconSvg('paste', 12)} Copy PGN</button>
-          <button type="button" class="btn-ghost-xs" id="savePgnBtn">${iconSvg('download', 12)} .pgn</button>
+          ${totalPlies > 0 ? `<button type="button" class="btn-ghost-xs" id="scanGameBtn">${iconSvg('scan', 12)} ${escapeHtml(State.coachFullScanRunning ? t('stopScan', { done: State.coachFullScanDone, total: totalPlies }) : t('scanAllMoves'))}</button>` : ''}
+          <button type="button" class="btn-ghost-xs" id="copyPgnBtn">${iconSvg('paste', 12)} ${escapeHtml(t('copyPgn'))}</button>
+          <button type="button" class="btn-ghost-xs" id="savePgnBtn">${iconSvg('download', 12)} ${escapeHtml(t('pgnExtLabel'))}</button>
         </div>
       </div>
       ${State.coachGameMeta?.warning ? `<div class="small" style="color:var(--burgundy)">${escapeHtml(State.coachGameMeta.warning)}</div>` : ''}
-      ${reviewMove?.comment ? `<div class="pgn-comment-box">${escapeHtml(reviewMove.comment)}</div>` : ''}
+      ${reviewMove?.comment ? `<div class="pgn-comment-box">${escapeHtml(localizeComment(reviewMove.comment, lang))}</div>` : ''}
     `;
 
     const multiSel = metaBar.querySelector('#multiGameSel');
@@ -2024,7 +2118,7 @@ function renderCoach() {
     metaBar.querySelector('#copyPgnBtn').onclick = async () => {
       try {
         await navigator.clipboard?.writeText(pgnText);
-        metaBar.querySelector('#copyPgnBtn').textContent = 'Copied!';
+        metaBar.querySelector('#copyPgnBtn').textContent = t('copied');
       } catch {
         downloadPgnFile('chess-club-analysis.pgn', pgnText);
       }
@@ -2038,16 +2132,16 @@ function renderCoach() {
         accSummary.keyPlies.find((p) => p > State.coachPly) ?? accSummary.keyPlies[0] ?? null;
       const accBar = el(`<div class="accuracy-strip">
         <div class="acc-side">
-          <span class="small">White Accuracy</span>
+          <span class="small">${escapeHtml(t('whiteAccuracy'))}</span>
           <strong class="tabular-nums">${accSummary.whiteAccuracy != null ? `${accSummary.whiteAccuracy}%` : '--'}</strong>
           <span class="acc-counts tabular-nums">${accSummary.counts.w.inaccuracy}?! · ${accSummary.counts.w.mistake}? · ${accSummary.counts.w.blunder}??</span>
         </div>
         <div class="acc-side">
-          <span class="small">Black Accuracy</span>
+          <span class="small">${escapeHtml(t('blackAccuracy'))}</span>
           <strong class="tabular-nums">${accSummary.blackAccuracy != null ? `${accSummary.blackAccuracy}%` : '--'}</strong>
           <span class="acc-counts tabular-nums">${accSummary.counts.b.inaccuracy}?! · ${accSummary.counts.b.mistake}? · ${accSummary.counts.b.blunder}??</span>
         </div>
-        ${nextKey != null ? `<button type="button" class="btn gold sm" id="nextKeyBtn" style="padding:.24rem .55rem;font-size:.78rem">Next Key Move</button>` : '<span class="solved-badge">Clean Game</span>'}
+        ${nextKey != null ? `<button type="button" class="btn gold sm" id="nextKeyBtn" style="padding:.24rem .55rem;font-size:.78rem">${escapeHtml(t('nextKeyMove'))}</button>` : `<span class="solved-badge">${escapeHtml(t('cleanGame'))}</span>`}
       </div>`);
       const nextKeyBtn = accBar.querySelector('#nextKeyBtn');
       if (nextKeyBtn) nextKeyBtn.onclick = () => navigateCoachPly(nextKey);
@@ -2061,15 +2155,15 @@ function renderCoach() {
     fenBox.style.padding = '.55rem .7rem';
     fenBox.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;gap:.4rem;margin-bottom:.35rem">
-        <strong style="font-size:.9rem">Position Sandbox / FEN Lab</strong>
+        <strong style="font-size:.9rem">${escapeHtml(t('sandboxPanelTitle'))}</strong>
         <select id="presetSel" style="width:auto;padding:.2rem .4rem;font-size:.82rem">
-          <option value="">Load Study Preset...</option>
-          ${SANDBOX_PRESETS.map((p, idx) => `<option value="${idx}">${escapeHtml(p.label)}</option>`).join('')}
+          <option value="">${escapeHtml(t('loadStudyPreset'))}</option>
+          ${SANDBOX_PRESETS.map((p, idx) => `<option value="${idx}">${escapeHtml(localizeSandboxPreset(p, lang).label)}</option>`).join('')}
         </select>
       </div>
       <div class="fen-bar">
-        <input id="fenIn" value="${escapeHtml(g.fen())}" aria-label="FEN string" />
-        <button type="button" class="btn sm" id="loadFen">Load FEN</button>
+        <input id="fenIn" value="${escapeHtml(g.fen())}" aria-label="${escapeHtml(t('fenInputAria'))}" />
+        <button type="button" class="btn sm" id="loadFen">${escapeHtml(t('loadFen'))}</button>
       </div>
       ${State.coachFenError ? `<div class="small" style="color:var(--burgundy);margin-top:.25rem">${escapeHtml(State.coachFenError)}</div>` : ''}
     `;
@@ -2081,7 +2175,7 @@ function renderCoach() {
     fenBox.querySelector('#loadFen').onclick = () => {
       const candidate = fenBox.querySelector('#fenIn').value.trim();
       if (!isStockfishSafeFen(candidate, Chess)) {
-        State.coachFenError = 'FEN is invalid or unsupported (must have both kings, legal pawn ranks, and opponent not already in check).';
+        State.coachFenError = t('invalidFenError');
         render();
         return;
       }
@@ -2091,7 +2185,7 @@ function renderCoach() {
   }
 
   const sfPanel = createStockfishPanel({
-    title: 'Stockfish 19 MultiPV 3',
+    title: t('sfMultiPv3'),
     showArrows: State.showCoachArrows,
     onToggleArrows: () => {
       State.showCoachArrows = !State.showCoachArrows;
@@ -2173,6 +2267,10 @@ function getFilteredPuzzles() {
     query: State.puzzleQuery,
     unsolvedOnly: State.puzzleUnsolvedOnly,
     solvedSet: solvedPuzzleSet(),
+    getSearchText: (p) => {
+      const ar = localizePuzzle(p, 'ar');
+      return `${ar.theme || ''} ${ar.prompt || ''} ${tCategory(p.category, 'ar')} ${tDifficulty(p.difficulty, 'ar')}`;
+    },
   });
 }
 
@@ -2183,16 +2281,16 @@ function renderPuzzles() {
   const solvedCount = solvedPuzzleSet().size;
   const bar = el(`<div class="view-bar">
     <div style="display:flex;align-items:center;gap:.55rem;flex-wrap:wrap">
-      <h1>${iconSvg('puzzles', 18)} Puzzles &amp; Quizzes</h1>
+      <h1>${iconSvg('puzzles', 18)} ${escapeHtml(t('puzzlesAndQuizzes'))}</h1>
       <div class="pill-switch" id="pzModeSwitch">
-        <button type="button" data-v="catalog" class="${State.puzzleView === 'catalog' ? 'active' : ''}">Catalog (${PUZZLES.length})</button>
-        <button type="button" data-v="solver" class="${State.puzzleView === 'solver' ? 'active' : ''}">Active Solver</button>
-        <button type="button" data-v="quiz" class="${State.puzzleView === 'quiz' ? 'active' : ''}">Quiz Sprint (${QUIZZES.length})</button>
+        <button type="button" data-v="catalog" class="${State.puzzleView === 'catalog' ? 'active' : ''}">${escapeHtml(t('catalogTab', { n: PUZZLES.length }))}</button>
+        <button type="button" data-v="solver" class="${State.puzzleView === 'solver' ? 'active' : ''}">${escapeHtml(t('activeSolverTab'))}</button>
+        <button type="button" data-v="quiz" class="${State.puzzleView === 'quiz' ? 'active' : ''}">${escapeHtml(t('quizSprintTab', { n: QUIZZES.length }))}</button>
       </div>
     </div>
     <div class="view-bar-meta">
-      <span class="badge elo tabular-nums">${solvedCount}/${PUZZLES.length} Solved</span>
-      <span class="badge tabular-nums">Streak ${State.training.streak || 0}</span>
+      <span class="badge elo tabular-nums">${escapeHtml(t('solvedProgress', { solved: solvedCount, total: PUZZLES.length }))}</span>
+      <span class="badge tabular-nums">${escapeHtml(t('streakCount', { n: State.training.streak || 0 }))}</span>
     </div>
   </div>`);
 
@@ -2222,6 +2320,7 @@ function renderPuzzles() {
 }
 
 function renderPuzzleCatalog() {
+  const lang = getLang();
   const box = document.createElement('div');
   box.style.cssText = 'flex:1;min-height:0;display:flex;flex-direction:column;gap:.5rem;overflow:hidden';
 
@@ -2234,20 +2333,20 @@ function renderPuzzleCatalog() {
     <div class="toggle-row" id="catTabs">
       ${PUZZLE_CATEGORIES.map((cat) => {
         const count = cat === 'All' ? PUZZLES.length : getPuzzlesByCategory(cat).length;
-        return `<button type="button" class="toggle-btn ${State.puzzleCategory === cat ? 'active' : ''}" data-cat="${cat}">${cat} <span class="tabular-nums">(${count})</span></button>`;
+        return `<button type="button" class="toggle-btn ${State.puzzleCategory === cat ? 'active' : ''}" data-cat="${cat}">${escapeHtml(tCategory(cat, lang))} <span class="tabular-nums">(${count})</span></button>`;
       }).join('')}
     </div>
-    <div style="display:flex;gap:.35rem;margin-left:auto;flex-wrap:wrap;align-items:center">
-      <input id="pzSearch" placeholder="Search theme..." value="${escapeHtml(State.puzzleQuery)}" />
-      <select id="pzDiff" aria-label="Filter difficulty">
+    <div style="display:flex;gap:.35rem;margin-inline-start:auto;flex-wrap:wrap;align-items:center">
+      <input id="pzSearch" placeholder="${escapeHtml(t('searchThemePlaceholder'))}" value="${escapeHtml(State.puzzleQuery)}" />
+      <select id="pzDiff" aria-label="${escapeHtml(t('filterDifficultyAria'))}">
         ${['All', 'Easy', 'Medium', 'Advanced', 'Expert']
-          .map((d) => `<option value="${d}" ${State.puzzleDifficulty === d ? 'selected' : ''}>${d}</option>`)
+          .map((d) => `<option value="${d}" ${State.puzzleDifficulty === d ? 'selected' : ''}>${escapeHtml(tDifficulty(d, lang))}</option>`)
           .join('')}
       </select>
       <label style="display:inline-flex;align-items:center;gap:.25rem;margin:0;text-transform:none;font-size:.84rem;cursor:pointer">
-        <input type="checkbox" id="pzUnsolved" style="width:auto" ${State.puzzleUnsolvedOnly ? 'checked' : ''} /> Unsolved
+        <input type="checkbox" id="pzUnsolved" style="width:auto" ${State.puzzleUnsolvedOnly ? 'checked' : ''} /> ${escapeHtml(t('unsolved'))}
       </label>
-      <button type="button" class="btn gold sm" id="pzRandom">${iconSvg('spark', 13)} Random</button>
+      <button type="button" class="btn gold sm" id="pzRandom">${iconSvg('spark', 13)} ${escapeHtml(t('random'))}</button>
     </div>
   </div>`);
 
@@ -2289,21 +2388,23 @@ function renderPuzzleCatalog() {
   const grid = document.createElement('div');
   grid.className = 'puzzle-grid';
   if (paged.items.length === 0) {
-    grid.innerHTML = `<div class="card" style="grid-column:1/-1"><p class="italic">No puzzles match those filters.</p></div>`;
+    grid.innerHTML = `<div class="card" style="grid-column:1/-1"><p class="italic">${escapeHtml(t('noPuzzlesMatch'))}</p></div>`;
   } else {
     paged.items.forEach((p) => {
+      const locP = localizePuzzle(p, lang);
       const isSolved = solved.has(p.id);
       const plies = Math.ceil((p.moves?.length || 1) / 2);
+      const pliesTxt = lang === 'ar' ? `${plies}ن` : `${plies}m`;
       const tile = el(`<button type="button" class="puzzle-tile ${isSolved ? 'solved' : ''}">
         <div class="puzzle-tile-top">
-          <span class="tag ${p.category === 'Tactics' ? 'burg' : p.category === 'Endgame' ? 'green' : 'gold'}">${escapeHtml(p.category)}</span>
-          <span class="mono tabular-nums" style="font-size:.74rem;color:var(--ink-soft)">${p.rating} · ${plies}m</span>
+          <span class="tag ${p.category === 'Tactics' ? 'burg' : p.category === 'Endgame' ? 'green' : 'gold'}">${escapeHtml(tCategory(p.category, lang))}</span>
+          <span class="mono tabular-nums" style="font-size:.74rem;color:var(--ink-soft)">${p.rating} · ${pliesTxt}</span>
         </div>
-        <h4>${escapeHtml(p.theme)}</h4>
-        <p>${escapeHtml(p.prompt)}</p>
+        <h4>${escapeHtml(locP.theme)}</h4>
+        <p>${escapeHtml(locP.prompt)}</p>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto">
-          <span class="small">${escapeHtml(p.difficulty)} · ${escapeHtml(p.sideToMove)}</span>
-          ${isSolved ? '<span class="solved-badge">Solved</span>' : '<span class="small" style="color:var(--gold)">Solve →</span>'}
+          <span class="small">${escapeHtml(tDifficulty(p.difficulty, lang))} · ${escapeHtml(tSide(p.sideToMove, lang))}</span>
+          ${isSolved ? `<span class="solved-badge">${escapeHtml(t('solvedLabel'))}</span>` : `<span class="small" style="color:var(--gold)">${escapeHtml(t('puzzleSolveCta'))}</span>`}
         </div>
       </button>`);
       tile.onclick = () => openPuzzleInSolver(p);
@@ -2313,11 +2414,11 @@ function renderPuzzleCatalog() {
   box.appendChild(grid);
 
   const pager = el(`<div class="pager-bar">
-    <span class="small tabular-nums">Showing ${paged.totalItems === 0 ? 0 : paged.startIndex + 1}–${paged.endIndex} of ${paged.totalItems} puzzles</span>
+    <span class="small tabular-nums">${escapeHtml(t('showingPuzzles', { start: paged.totalItems === 0 ? 0 : paged.startIndex + 1, end: paged.endIndex, total: paged.totalItems }))}</span>
     <div style="display:flex;gap:.35rem;align-items:center">
-      <button type="button" class="btn ghost sm" id="pgPrev" ${paged.page <= 1 ? 'disabled' : ''}>${iconSvg('prev', 13)} Prev</button>
-      <span class="mono tabular-nums" style="font-size:.8rem">Page ${paged.page}/${paged.totalPages}</span>
-      <button type="button" class="btn ghost sm" id="pgNext" ${paged.page >= paged.totalPages ? 'disabled' : ''}>Next ${iconSvg('next', 13)}</button>
+      <button type="button" class="btn ghost sm" id="pgPrev" ${paged.page <= 1 ? 'disabled' : ''}>${iconSvg('prev', 13)} ${escapeHtml(t('prev'))}</button>
+      <span class="mono tabular-nums" style="font-size:.8rem">${escapeHtml(t('pageOf', { page: paged.page, total: paged.totalPages }))}</span>
+      <button type="button" class="btn ghost sm" id="pgNext" ${paged.page >= paged.totalPages ? 'disabled' : ''}>${escapeHtml(t('next'))} ${iconSvg('next', 13)}</button>
     </div>
   </div>`);
   pager.querySelector('#pgPrev').onclick = () => {
@@ -2333,8 +2434,40 @@ function renderPuzzleCatalog() {
   return box;
 }
 
+function resolvePuzzleFeedbackText(fb, ctx, locPuzzle, lang) {
+  if (!fb) return '';
+  if (!fb.meta) return fb.text || '';
+  const m = fb.meta;
+  if (m.type === 'wrong') {
+    return lang === 'ar'
+      ? isolateChessTokens(`${m.playedSan} ليست النقلة الأدق هنا. تفحّص الكشّات والأهداف والخطّة الرئيسية في الوضعية.`, 'ar')
+      : `${m.playedSan} is not the sharpest move here. Look closely at checks, targets, and the position’s key plan.`;
+  }
+  if (m.type === 'solved') {
+    const solvedHead = lang === 'ar'
+      ? isolateChessTokens(`تم الحلّ بـ ${m.playedSan}!`, 'ar')
+      : `Solved with ${m.playedSan}!`;
+    return `${solvedHead} ${locPuzzle.explanation}`;
+  }
+  if (m.type === 'wait') {
+    return t('puzzleFeedbackWait', { san: m.playedSan, opp: m.oppSan }, lang);
+  }
+  if (m.type === 'next') {
+    return t('puzzleFeedbackNext', { opp: m.oppSan }, lang);
+  }
+  if (m.type === 'hint') {
+    return t('puzzleHintMsg', { piece: tPieceName(m.piece, lang), sq: m.sq }, lang);
+  }
+  if (m.type === 'solution') {
+    return t('puzzleSolutionMsg', { moves: ctx.moves.join(' '), explanation: locPuzzle.explanation }, lang);
+  }
+  return fb.text || '';
+}
+
 function renderPuzzleSolver() {
+  const lang = getLang();
   const ctx = State.activePuzzle || PUZZLES[0];
+  const locCtx = localizePuzzle(ctx, lang);
   if (!State.game || State.activePuzzle?.id !== ctx.id) {
     State.game = new Chess(ctx.fen);
     State.puzzlePly = 0;
@@ -2372,10 +2505,15 @@ function renderPuzzleSolver() {
       },
       acceptAlso: ctx.acceptAlso || [],
       ChessCtor: Chess,
+      lang: getLang(),
     });
 
     if (!res.correct) {
-      State.puzzleFeedback = { kind: 'wrong', text: res.statusMessage };
+      State.puzzleFeedback = {
+        kind: 'wrong',
+        text: res.statusMessage,
+        meta: res.playedSan ? { type: 'wrong', playedSan: res.playedSan } : null,
+      };
       State.lastMove = null;
       recordPuzzleResult(ctx, false, false);
       render();
@@ -2389,7 +2527,10 @@ function renderPuzzleSolver() {
 
     if (res.finished) {
       State.puzzlePly = ctx.moves.length;
-      State.puzzleFeedback = { kind: 'correct', text: `${res.statusMessage} ${ctx.explanation}` };
+      State.puzzleFeedback = {
+        kind: 'correct',
+        meta: { type: 'solved', playedSan: res.playedSan },
+      };
       recordPuzzleResult(ctx, true, false);
       render();
       return;
@@ -2398,14 +2539,20 @@ function renderPuzzleSolver() {
     // Multi-ply sequence: auto-play opponent forced reply after 240ms
     State.puzzlePly = res.nextPly;
     State.puzzleAutoReplying = true;
-    State.puzzleFeedback = { kind: 'hint', text: `Strong find (${res.playedSan})! Opponent replies ${res.oppAutoMove}...` };
+    State.puzzleFeedback = {
+      kind: 'hint',
+      meta: { type: 'wait', playedSan: res.playedSan, oppSan: res.oppAutoMove },
+    };
     render();
     setTimeout(() => {
       if (State.page !== 'puzzles' || State.activePuzzle?.id !== ctx.id) return;
       const oppObj = g.move(res.oppAutoMove);
       if (oppObj) State.lastMove = { from: oppObj.from, to: oppObj.to };
       State.puzzleAutoReplying = false;
-      State.puzzleFeedback = { kind: 'hint', text: `Opponent played ${res.oppAutoMove}. Find the next winning move!` };
+      State.puzzleFeedback = {
+        kind: 'hint',
+        meta: { type: 'next', oppSan: res.oppAutoMove },
+      };
       render();
     }, 240);
   };
@@ -2434,13 +2581,13 @@ function renderPuzzleSolver() {
       },
     }),
   );
-  const backCat = el(`<button type="button" class="btn ghost sm">${iconSvg('prev', 14)} Catalog</button>`);
+  const backCat = el(`<button type="button" class="btn ghost sm">${iconSvg('prev', 14)} ${escapeHtml(t('catalog'))}</button>`);
   backCat.onclick = () => {
     stockfishClient.stop();
     State.puzzleView = 'catalog';
     render();
   };
-  const hintBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('hint', 14)} Hint</button>`);
+  const hintBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('hint', 14)} ${escapeHtml(t('hint'))}</button>`);
   hintBtn.disabled = isReviewing || solvedNow || State.puzzleAutoReplying;
   hintBtn.onclick = () => {
     const nextSan = ctx.moves[State.puzzlePly];
@@ -2449,11 +2596,14 @@ function renderPuzzleSolver() {
     if (m) {
       State.selectedSquare = m.from;
       State.legalDests = [m.to];
-      State.puzzleFeedback = { kind: 'hint', text: `Look at the ${m.piece.toUpperCase()} on ${m.from} — calculate forcing checks and targets.` };
+      State.puzzleFeedback = {
+        kind: 'hint',
+        meta: { type: 'hint', piece: m.piece, sq: m.from },
+      };
     }
     render();
   };
-  const solBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('check', 14)} Solution</button>`);
+  const solBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('check', 14)} ${escapeHtml(t('solution'))}</button>`);
   solBtn.disabled = State.puzzleAutoReplying;
   solBtn.onclick = () => {
     const remaining = ctx.moves.slice(State.puzzlePly);
@@ -2461,12 +2611,15 @@ function renderPuzzleSolver() {
     State.puzzlePly = ctx.moves.length;
     State.puzzleViewPly = null;
     State.lastMove = lastMoveSquares(g);
-    State.puzzleFeedback = { kind: 'correct', text: `Solution (${ctx.moves.join(' ')}) — ${ctx.explanation}` };
+    State.puzzleFeedback = {
+      kind: 'correct',
+      meta: { type: 'solution' },
+    };
     render();
   };
-  const resetBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('refresh', 14)} Retry</button>`);
+  const resetBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('refresh', 14)} ${escapeHtml(t('retry'))}</button>`);
   resetBtn.onclick = () => openPuzzleInSolver(ctx);
-  const nextBtn = el(`<button type="button" class="btn gold sm">Next ${iconSvg('next', 14)}</button>`);
+  const nextBtn = el(`<button type="button" class="btn gold sm">${escapeHtml(t('next'))} ${iconSvg('next', 14)}</button>`);
   nextBtn.onclick = () => {
     const pool = getFilteredPuzzles();
     const list = pool.length ? pool : PUZZLES;
@@ -2486,8 +2639,8 @@ function renderPuzzleSolver() {
   side.className = 'play-sidebar';
 
   const sfToggle = el(`<div style="display:flex;justify-content:space-between;align-items:center;gap:.4rem">
-    <span class="tag gold">${escapeHtml(ctx.category)} · ${escapeHtml(ctx.difficulty)} · <span class="tabular-nums">${ctx.rating}</span></span>
-    <button type="button" class="toggle-btn ${State.showPuzzleStockfish ? 'active' : ''}" id="pzSfBtn">${iconSvg('coach', 14)} Stockfish 19: ${State.showPuzzleStockfish ? 'On' : 'Off'}</button>
+    <span class="tag gold">${escapeHtml(tCategory(ctx.category, lang))} · ${escapeHtml(tDifficulty(ctx.difficulty, lang))} · <span class="tabular-nums">${ctx.rating}</span></span>
+    <button type="button" class="toggle-btn ${State.showPuzzleStockfish ? 'active' : ''}" id="pzSfBtn">${iconSvg('coach', 14)} ${escapeHtml(t('sfStatusChip', { state: State.showPuzzleStockfish ? t('on') : t('off') }))}</button>
   </div>`);
   sfToggle.querySelector('#pzSfBtn').onclick = () => {
     State.showPuzzleStockfish = !State.showPuzzleStockfish;
@@ -2496,18 +2649,20 @@ function renderPuzzleSolver() {
   };
   side.appendChild(sfToggle);
 
+  const turnColorName = viewPos.game.turn() === 'w' ? 'White' : 'Black';
   const promptCard = el(`<div class="puzzle-prompt">
     <div class="puzzle-prompt-head">
-      <span class="turn-flag ${viewPos.game.turn() === 'w' ? 'white' : ''}">${viewPos.game.turn() === 'w' ? 'White to move' : 'Black to move'}</span>
-      <span class="mono tabular-nums" style="font-size:.76rem;color:var(--ink-soft)">${isReviewing ? `Reviewing Ply ${effectivePly}/${maxPlayed}` : `Step ${Math.min(Math.floor(maxPlayed / 2) + 1, Math.ceil(totalPlies / 2))}/${Math.ceil(totalPlies / 2)}`}</span>
+      <span class="turn-flag ${viewPos.game.turn() === 'w' ? 'white' : ''}">${escapeHtml(t('sideToMove', { side: tSide(turnColorName, lang) }))}</span>
+      <span class="mono tabular-nums" style="font-size:.76rem;color:var(--ink-soft)">${escapeHtml(isReviewing ? t('reviewingPly', { cur: effectivePly, max: maxPlayed }) : t('stepCount', { cur: Math.min(Math.floor(maxPlayed / 2) + 1, Math.ceil(totalPlies / 2)), total: Math.ceil(totalPlies / 2) }))}</span>
     </div>
-    <h4>${escapeHtml(ctx.theme)}</h4>
-    <p style="margin:0;color:var(--ink-soft)">${escapeHtml(ctx.prompt)}</p>
+    <h4>${escapeHtml(locCtx.theme)}</h4>
+    <p style="margin:0;color:var(--ink-soft)">${escapeHtml(locCtx.prompt)}</p>
   </div>`);
   side.appendChild(promptCard);
 
   if (State.puzzleFeedback) {
-    side.appendChild(el(`<div class="puzzle-feedback ${State.puzzleFeedback.kind}">${escapeHtml(State.puzzleFeedback.text)}</div>`));
+    const fbText = resolvePuzzleFeedbackText(State.puzzleFeedback, ctx, locCtx, lang);
+    side.appendChild(el(`<div class="puzzle-feedback ${State.puzzleFeedback.kind}">${escapeHtml(fbText)}</div>`));
   }
 
   if (maxPlayed > 0) {
@@ -2518,14 +2673,14 @@ function renderPuzzleSolver() {
           State.puzzleViewPly = plyNo >= maxPlayed ? null : plyNo;
           render();
         },
-        title: 'Played Moves',
+        title: t('playedMovesTitle'),
       }),
     );
   }
 
   if (State.showPuzzleStockfish) {
     const sfPanel = createStockfishPanel({
-      title: 'Stockfish 19 Verification',
+      title: t('sfVerification'),
       showArrows: State.showCoachArrows,
       onToggleArrows: () => {
         State.showCoachArrows = !State.showCoachArrows;
@@ -2542,16 +2697,17 @@ function renderPuzzleSolver() {
 }
 
 function renderQuizSprint() {
+  const lang = getLang();
   const box = document.createElement('div');
   box.style.cssText = 'flex:1;min-height:0;display:flex;flex-direction:column;gap:.5rem;overflow:hidden';
 
   const topControls = el(`<div class="filter-bar">
     <div class="toggle-row" id="qzCatTabs">
-      ${PUZZLE_CATEGORIES.map((cat) => `<button type="button" class="toggle-btn ${State.quizCategory === cat ? 'active' : ''}" data-cat="${cat}">${cat}</button>`).join('')}
+      ${PUZZLE_CATEGORIES.map((cat) => `<button type="button" class="toggle-btn ${State.quizCategory === cat ? 'active' : ''}" data-cat="${cat}">${escapeHtml(tCategory(cat, lang))}</button>`).join('')}
     </div>
-    <div style="display:flex;gap:.4rem;margin-left:auto;align-items:center">
-      <button type="button" class="toggle-btn ${State.showQuizStockfish ? 'active' : ''}" id="qzSfBtn">${iconSvg('coach', 14)} Verify w/ Stockfish</button>
-      <button type="button" class="btn gold sm" id="qzNew">${iconSvg('refresh', 13)} New 10-Quiz Sprint</button>
+    <div style="display:flex;gap:.4rem;margin-inline-start:auto;align-items:center">
+      <button type="button" class="toggle-btn ${State.showQuizStockfish ? 'active' : ''}" id="qzSfBtn">${iconSvg('coach', 14)} ${escapeHtml(t('verifyWithStockfish'))}</button>
+      <button type="button" class="btn gold sm" id="qzNew">${iconSvg('refresh', 13)} ${escapeHtml(t('new10QuizSprint'))}</button>
     </div>
   </div>`);
 
@@ -2584,17 +2740,17 @@ function renderQuizSprint() {
   if (session.completed) {
     const summary = summarizeQuizSession(session);
     const card = el(`<div class="card" style="max-width:720px;margin:auto;text-align:center">
-      <h2>${iconSvg('trophy', 22)} Quiz Sprint Complete!</h2>
+      <h2>${iconSvg('trophy', 22)} ${escapeHtml(t('quizSprintComplete'))}</h2>
       <div style="display:flex;justify-content:center;gap:2rem;margin:.8rem 0">
-        <div><strong class="mono tabular-nums" style="font-size:2rem;color:var(--forest)">${summary.correct}/${summary.total}</strong><div class="small">Score</div></div>
-        <div><strong class="mono tabular-nums" style="font-size:2rem;color:var(--gold)">${summary.accuracy}%</strong><div class="small">Accuracy</div></div>
+        <div><strong class="mono tabular-nums" style="font-size:2rem;color:var(--forest)">${summary.correct}/${summary.total}</strong><div class="small">${escapeHtml(t('scoreLabel'))}</div></div>
+        <div><strong class="mono tabular-nums" style="font-size:2rem;color:var(--gold)">${summary.accuracy}%</strong><div class="small">${escapeHtml(t('accuracyLabel'))}</div></div>
       </div>
       <div style="display:flex;gap:.45rem;justify-content:center;flex-wrap:wrap;margin:.6rem 0">
         ${Object.entries(summary.byCategory)
-          .map(([k, v]) => `<span class="tag">${escapeHtml(k)}: <span class="tabular-nums">${v.correct}/${v.total}</span></span>`)
+          .map(([k, v]) => `<span class="tag">${escapeHtml(tCategory(k, lang))}: <span class="tabular-nums">${v.correct}/${v.total}</span></span>`)
           .join('')}
       </div>
-      <button type="button" class="btn gold" id="restartQz" style="margin-top:.6rem">Start Fresh 10-Quiz Sprint</button>
+      <button type="button" class="btn gold" id="restartQz" style="margin-top:.6rem">${escapeHtml(t('startFreshSprint'))}</button>
     </div>`);
     card.querySelector('#restartQz').onclick = () => {
       State.quizSession = createQuizSession(QUIZZES, {
@@ -2608,15 +2764,16 @@ function renderQuizSprint() {
     return box;
   }
 
-  const q = session.items[session.currentIndex];
-  const g = new Chess(q.fen);
+  const rawQ = session.items[session.currentIndex];
+  const q = localizeQuiz(rawQ, lang);
+  const g = new Chess(rawQ.fen);
   const layout = document.createElement('div');
   layout.className = `play-layout${State.boardMaximized ? ' board-maximized' : ''}`;
 
   const boardCol = document.createElement('div');
   boardCol.className = 'board-column no-controls';
   const stage = buildBoardStage(g, {
-    flip: q.sideToMove === 'Black',
+    flip: rawQ.sideToMove === 'Black',
     interactive: false,
     showEvalBar: State.showQuizStockfish,
     showArrows: State.showQuizStockfish,
@@ -2631,9 +2788,9 @@ function renderQuizSprint() {
 
   const qHeader = el(`<div class="puzzle-prompt">
     <div class="puzzle-prompt-head">
-      <span class="turn-flag ${q.sideToMove === 'White' ? 'white' : ''}">${q.sideToMove} to move</span>
-      <span class="tag">${escapeHtml(q.category)} · ${escapeHtml(q.difficulty)}</span>
-      <span class="mono tabular-nums" style="font-size:.78rem">Q ${session.currentIndex + 1}/${session.items.length}</span>
+      <span class="turn-flag ${rawQ.sideToMove === 'White' ? 'white' : ''}">${escapeHtml(t('sideToMove', { side: tSide(rawQ.sideToMove, lang) }))}</span>
+      <span class="tag">${escapeHtml(tCategory(rawQ.category, lang))} · ${escapeHtml(tDifficulty(rawQ.difficulty, lang))}</span>
+      <span class="mono tabular-nums" style="font-size:.78rem">${escapeHtml(t('questionProgress', { cur: session.currentIndex + 1, total: session.items.length }))}</span>
     </div>
     <h4>${escapeHtml(q.theme)}</h4>
     <p style="margin:0;color:var(--ink)">${escapeHtml(q.question)}</p>
@@ -2643,11 +2800,11 @@ function renderQuizSprint() {
   const optsWrap = document.createElement('div');
   optsWrap.className = 'quiz-options';
   const answered = session.lastResult !== null;
-  const letters = ['A', 'B', 'C', 'D'];
+  const letters = lang === 'ar' ? ['أ', 'ب', 'ج', 'د'] : ['A', 'B', 'C', 'D'];
   q.options.forEach((optText, idx) => {
     let cls = 'quiz-opt';
     if (answered) {
-      if (idx === q.correctIndex) cls += ' correct';
+      if (idx === rawQ.correctIndex) cls += ' correct';
       else if (idx === session.lastResult.chosenIndex) cls += ' wrong';
     }
     const btn = el(`<button type="button" class="${cls}" ${answered ? 'disabled' : ''}>
@@ -2664,10 +2821,11 @@ function renderQuizSprint() {
 
   if (answered) {
     const res = session.lastResult;
+    const leadFeedback = res.isCorrect ? t('quizCorrect') : t('quizWrong', { san: res.recommendedSan });
     const fb = el(`<div class="puzzle-feedback ${res.isCorrect ? 'correct' : 'wrong'}">
-      <div><strong>${res.isCorrect ? 'Correct!' : `Not quite — best is ${res.recommendedSan}.`}</strong> ${escapeHtml(q.explanation)}</div>
+      <div><strong>${escapeHtml(leadFeedback)}</strong> ${escapeHtml(q.explanation)}</div>
       <div style="margin-top:.4rem;display:flex;justify-content:flex-end">
-        <button type="button" class="btn gold sm" id="qzNext">${session.currentIndex + 1 >= session.items.length ? 'Finish Sprint' : 'Next Question'} ${iconSvg('next', 13)}</button>
+        <button type="button" class="btn gold sm" id="qzNext">${escapeHtml(session.currentIndex + 1 >= session.items.length ? t('finishSprint') : t('nextQuestion'))} ${iconSvg('next', 13)}</button>
       </div>
     </div>`);
     fb.querySelector('#qzNext').onclick = () => {
@@ -2691,7 +2849,7 @@ function renderQuizSprint() {
 
   if (State.showQuizStockfish) {
     const sfPanel = createStockfishPanel({
-      title: 'Stockfish 19 Verification',
+      title: t('sfVerification'),
       showArrows: State.showCoachArrows,
       onToggleArrows: () => {
         State.showCoachArrows = !State.showCoachArrows;
@@ -2700,7 +2858,7 @@ function renderQuizSprint() {
     });
     State.dom.sfPanel = sfPanel;
     side.appendChild(sfPanel);
-    triggerLiveAnalysis(q.fen, { depth: 11, multiPv: 3 });
+    triggerLiveAnalysis(rawQ.fen, { depth: 11, multiPv: 3 });
   }
 
   layout.appendChild(side);
@@ -2712,14 +2870,21 @@ function renderQuizSprint() {
 // MASTER-DETAIL STUDY RENDERER (Openings, Traps, Strategy)
 // =========================================================
 function renderOpenings() {
+  const lang = getLang();
   const wrap = document.createElement('div');
   wrap.className = 'view-shell';
 
   const isTraps = State.openingsTab === 'traps';
   const listAll = isTraps ? TRAPS : OPENINGS;
-  const query = State.openingsSearch.trim().toLowerCase();
+  const query = normalizeSearchText(State.openingsSearch);
   const filtered = query
-    ? listAll.filter((x) => `${x.name} ${x.eco || ''} ${x.level} ${x.summary}`.toLowerCase().includes(query))
+    ? listAll.filter((x) => {
+        const ar = isTraps ? localizeTrap(x, 'ar') : localizeOpening(x, 'ar');
+        const hay = normalizeSearchText(
+          `${x.name} ${x.eco || ''} ${x.level || ''} ${x.summary} ${ar?.name || ''} ${ar?.summary || ''}`,
+        );
+        return hay.includes(query);
+      })
     : listAll;
 
   const activeId = isTraps ? State.selectedTrapId : State.selectedOpeningId;
@@ -2729,19 +2894,19 @@ function renderOpenings() {
 
   const bar = el(`<div class="view-bar">
     <div style="display:flex;align-items:center;gap:.55rem;flex-wrap:wrap">
-      <h1>${iconSvg('openings', 18)} Openings &amp; Traps</h1>
+      <h1>${iconSvg('openings', 18)} ${escapeHtml(t('openingsHeading'))}</h1>
       <div class="pill-switch" id="opTabSwitch">
-        <button type="button" data-t="openings" class="${!isTraps ? 'active' : ''}">Repertoires (${OPENINGS.length})</button>
-        <button type="button" data-t="traps" class="${isTraps ? 'active' : ''}">Opening Traps (${TRAPS.length})</button>
+        <button type="button" data-t="openings" class="${!isTraps ? 'active' : ''}">${escapeHtml(t('repertoiresTab', { n: OPENINGS.length }))}</button>
+        <button type="button" data-t="traps" class="${isTraps ? 'active' : ''}">${escapeHtml(t('openingTrapsTab', { n: TRAPS.length }))}</button>
       </div>
     </div>
     <div class="view-bar-meta">
       <div class="pill-switch" id="opModeSwitch">
-        <button type="button" data-m="learn" class="${State.studyMode === 'learn' ? 'active' : ''}">Learn</button>
-        <button type="button" data-m="practice" class="${State.studyMode === 'practice' ? 'active' : ''}">Practice Drill</button>
+        <button type="button" data-m="learn" class="${State.studyMode === 'learn' ? 'active' : ''}">${escapeHtml(t('learnTab'))}</button>
+        <button type="button" data-m="practice" class="${State.studyMode === 'practice' ? 'active' : ''}">${escapeHtml(t('practiceDrillTab'))}</button>
       </div>
-      <button type="button" class="toggle-btn ${State.showStudyStockfish ? 'active' : ''}" id="opSfToggle">${iconSvg('coach', 14)} Stockfish 19: ${State.showStudyStockfish ? 'On' : 'Off'}</button>
-      <button type="button" class="btn ghost sm" id="opSidebarToggle" title="Toggle lesson sidebar">${iconSvg('sidebar', 14)} <span>Lessons</span></button>
+      <button type="button" class="toggle-btn ${State.showStudyStockfish ? 'active' : ''}" id="opSfToggle">${iconSvg('coach', 14)} ${escapeHtml(t('sfStatusChip', { state: State.showStudyStockfish ? t('on', {}, lang) : t('off', {}, lang) }, lang))}</button>
+      <button type="button" class="btn ghost sm" id="opSidebarToggle" title="${escapeHtml(t('toggleSidebarTip'))}">${iconSvg('sidebar', 14)} <span>${escapeHtml(t('lessonsBtn'))}</span></button>
     </div>
   </div>`);
 
@@ -2802,6 +2967,7 @@ function renderOpenings() {
 }
 
 function renderStrategy() {
+  const lang = getLang();
   const wrap = document.createElement('div');
   wrap.className = 'view-shell';
 
@@ -2811,16 +2977,16 @@ function renderStrategy() {
 
   const bar = el(`<div class="view-bar">
     <div style="display:flex;align-items:center;gap:.55rem;flex-wrap:wrap">
-      <h1>${iconSvg('strategy', 18)} Middlegame &amp; Strategy (${MIDDLEGAME_LESSONS.length})</h1>
+      <h1>${iconSvg('strategy', 18)} ${escapeHtml(t('middlegameStrategyTitle', { n: MIDDLEGAME_LESSONS.length }))}</h1>
       <div class="pill-switch" id="stModeSwitch">
-        <button type="button" data-m="learn" class="${State.studyMode === 'learn' ? 'active' : ''}">Learn</button>
-        <button type="button" data-m="practice" class="${State.studyMode === 'practice' ? 'active' : ''}">Practice Drill</button>
+        <button type="button" data-m="learn" class="${State.studyMode === 'learn' ? 'active' : ''}">${escapeHtml(t('learnTab'))}</button>
+        <button type="button" data-m="practice" class="${State.studyMode === 'practice' ? 'active' : ''}">${escapeHtml(t('practiceDrillTab'))}</button>
       </div>
     </div>
     <div class="view-bar-meta">
-      <button type="button" class="toggle-btn ${State.showStudyStockfish ? 'active' : ''}" id="stSfToggle">${iconSvg('coach', 14)} Stockfish 19: ${State.showStudyStockfish ? 'On' : 'Off'}</button>
-      <button type="button" class="btn gold sm" id="stPuzzles">${iconSvg('puzzles', 13)} Strategy Puzzles (55)</button>
-      <button type="button" class="btn ghost sm" id="stSidebarToggle" title="Toggle lesson sidebar">${iconSvg('sidebar', 14)} <span>Lessons</span></button>
+      <button type="button" class="toggle-btn ${State.showStudyStockfish ? 'active' : ''}" id="stSfToggle">${iconSvg('coach', 14)} ${escapeHtml(t('sfStatusChip', { state: State.showStudyStockfish ? t('on', {}, lang) : t('off', {}, lang) }, lang))}</button>
+      <button type="button" class="btn gold sm" id="stPuzzles">${iconSvg('puzzles', 13)} ${escapeHtml(t('strategyPuzzlesBtn', { n: getPuzzlesByCategory('Strategy').length }))}</button>
+      <button type="button" class="btn ghost sm" id="stSidebarToggle" title="${escapeHtml(t('toggleSidebarTip'))}">${iconSvg('sidebar', 14)} <span>${escapeHtml(t('lessonsBtn'))}</span></button>
     </div>
   </div>`);
 
@@ -2867,7 +3033,36 @@ function renderStrategy() {
   return wrap;
 }
 
+function resolvePracticeFeedbackText(fb, locActive, lang) {
+  if (!fb) return '';
+  if (!fb.meta) return fb.text || '';
+  const m = fb.meta;
+  if (m.type === 'complete') return t('lineMastered', {}, lang);
+  if (m.type === 'correct') {
+    const stepText = locActive.line?.[m.stepIdx]?.text || '';
+    return isolateChessTokens(`${m.playedSan} — ${stepText}`, lang);
+  }
+  if (m.type === 'wrong') {
+    const hintWord = m.isCastling ? t('castlingWord', {}, lang) : t('mainLineWord', {}, lang);
+    return t('practiceTryAgain', { hint: hintWord, played: m.playedSan }, lang);
+  }
+  if (m.type === 'revealed') {
+    const stepText = locActive.line?.[m.stepIdx]?.text || '';
+    return t('revealedStep', { move: m.move, text: stepText }, lang);
+  }
+  return fb.text || '';
+}
+
 function buildLineStudyWorkspace({ kind, items, active, searchValue = null, onSearch = null, onSelect }) {
+  const lang = getLang();
+  const localizeStudyItem = (it) =>
+    kind === 'traps'
+      ? localizeTrap(it, lang)
+      : kind === 'middlegame'
+        ? localizeMiddlegame(it, lang)
+        : localizeOpening(it, lang);
+  const locActive = localizeStudyItem(active);
+
   const split = document.createElement('div');
   split.className = `master-detail${State.studySidebarCollapsed ? ' sidebar-collapsed' : ''}${State.mobileStudyListOpen ? ' mobile-list-open' : ''}`;
 
@@ -2875,7 +3070,7 @@ function buildLineStudyWorkspace({ kind, items, active, searchValue = null, onSe
   const sidebar = document.createElement('aside');
   sidebar.className = 'master-sidebar';
   if (onSearch) {
-    const fRow = el(`<div class="master-filter"><input id="studySearchInput" placeholder="Filter lines or ECO..." value="${escapeHtml(searchValue || '')}" /></div>`);
+    const fRow = el(`<div class="master-filter"><input id="studySearchInput" placeholder="${escapeHtml(t('filterLinesPlaceholder'))}" value="${escapeHtml(searchValue || '')}" /></div>`);
     fRow.querySelector('input').oninput = (e) => onSearch(e.target.value);
     sidebar.appendChild(fRow);
   }
@@ -2883,15 +3078,17 @@ function buildLineStudyWorkspace({ kind, items, active, searchValue = null, onSe
   const list = document.createElement('div');
   list.className = 'master-list';
   items.forEach((item) => {
+    const locItem = localizeStudyItem(item);
     const pr = progressMap[item.id] || {};
     const total = Math.max(1, (item.line || []).length);
     const pct = Math.min(100, Math.round(((pr.step || 0) / total) * 100));
+    const subMeta = [locItem.eco || locItem.category || '', locItem.level || ''].filter(Boolean).join(' · ');
     const elItem = el(`<div class="list-item ${item.id === active.id ? 'active' : ''}">
       <div style="display:flex;align-items:center;gap:.5rem;min-width:0;flex:1">
         <div class="lesson-progress ${pr.complete ? 'complete' : ''}" style="--progress:${pct}%"><b>${pct}%</b></div>
         <div class="meta">
-          <h4>${escapeHtml(item.name)}</h4>
-          <span class="small">${escapeHtml(item.eco || item.category || '')} ${item.level ? `· ${escapeHtml(item.level)}` : ''}</span>
+          <h4>${escapeHtml(locItem.name)}</h4>
+          <span class="small">${escapeHtml(subMeta)}</span>
         </div>
       </div>
     </div>`);
@@ -2905,10 +3102,10 @@ function buildLineStudyWorkspace({ kind, items, active, searchValue = null, onSe
   const detail = document.createElement('div');
   detail.className = 'detail-workspace';
   const mobBar = el(`<div class="mobile-lesson-bar">
-    <select aria-label="Select lesson">
-      ${items.map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === active.id ? 'selected' : ''}>${escapeHtml(item.name)}</option>`).join('')}
+    <select aria-label="${escapeHtml(t('selectLessonAria'))}">
+      ${items.map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === active.id ? 'selected' : ''}>${escapeHtml(localizeStudyItem(item).name)}</option>`).join('')}
     </select>
-    <button type="button" class="toggle-btn ${State.mobileStudyListOpen ? 'active' : ''}" id="mobListBtn">${iconSvg('sidebar', 13)} List</button>
+    <button type="button" class="toggle-btn ${State.mobileStudyListOpen ? 'active' : ''}" id="mobListBtn">${iconSvg('sidebar', 13)} ${escapeHtml(t('listBtn'))}</button>
   </div>`);
   mobBar.querySelector('select').onchange = (e) => {
     const picked = items.find((it) => it.id === e.target.value);
@@ -2919,7 +3116,7 @@ function buildLineStudyWorkspace({ kind, items, active, searchValue = null, onSe
     render();
   };
   detail.appendChild(mobBar);
-  const line = active.line || [];
+  const line = locActive.line || [];
   const total = line.length;
   State.studyStep = Math.max(0, Math.min(State.studyStep, total));
   const step = State.studyStep;
@@ -2950,18 +3147,25 @@ function buildLineStudyWorkspace({ kind, items, active, searchValue = null, onSe
       const cleanExp = expectedStep.move.replace(/[+#?!]+$/g, '');
       const cleanGot = playedMove.san.replace(/[+#?!]+$/g, '');
       if (cleanExp === cleanGot) {
+        const solvedStepIdx = State.studyStep;
         State.studyStep += 1;
         recordStudyProgress(kind, active, State.studyStep, total);
         if (State.studyStep >= total) {
           recordPracticeMastery(kind, active);
-          State.practiceFeedback = { kind: 'correct', text: 'Line mastered from memory!' };
+          State.practiceFeedback = { kind: 'correct', meta: { type: 'complete' } };
         } else {
-          State.practiceFeedback = { kind: 'correct', text: `${playedMove.san} — ${expectedStep.text}` };
+          State.practiceFeedback = {
+            kind: 'correct',
+            meta: { type: 'correct', playedSan: playedMove.san, stepIdx: solvedStepIdx },
+          };
         }
       } else {
         g.undo();
         State.lastMove = lastMoveSquares(g);
-        State.practiceFeedback = { kind: 'wrong', text: `Try again — look for ${expectedStep.move[0] === 'O' ? 'castling' : 'the main line move'} instead of ${playedMove.san}.` };
+        State.practiceFeedback = {
+          kind: 'wrong',
+          meta: { type: 'wrong', isCastling: expectedStep.move[0] === 'O', playedSan: playedMove.san },
+        };
       }
       render();
     },
@@ -2975,22 +3179,26 @@ function buildLineStudyWorkspace({ kind, items, active, searchValue = null, onSe
   const ctrl = document.createElement('div');
   ctrl.className = 'board-controls';
   if (isPractice) {
-    const rst = el(`<button type="button" class="btn ghost sm">${iconSvg('refresh', 13)} Restart Drill</button>`);
+    const rst = el(`<button type="button" class="btn ghost sm">${iconSvg('refresh', 13)} ${escapeHtml(t('restartDrill'))}</button>`);
     rst.onclick = () => {
       State.studyStep = 0;
       State.practiceFeedback = null;
       render();
     };
-    const peek = el(`<button type="button" class="btn gold sm">${iconSvg('hint', 13)} Reveal Move</button>`);
+    const peek = el(`<button type="button" class="btn gold sm">${iconSvg('hint', 13)} ${escapeHtml(t('revealMove'))}</button>`);
     peek.disabled = practiceComplete;
     peek.onclick = () => {
       if (!expectedStep) return;
+      const stepIdx = State.studyStep;
       State.studyStep += 1;
       recordStudyProgress(kind, active, State.studyStep, total);
-      State.practiceFeedback = { kind: 'hint', text: `Played ${expectedStep.move}: ${expectedStep.text}` };
+      State.practiceFeedback = {
+        kind: 'hint',
+        meta: { type: 'revealed', move: expectedStep.move, stepIdx },
+      };
       render();
     };
-    const flp = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 13)} Flip</button>`);
+    const flp = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 13)} ${escapeHtml(t('flip'))}</button>`);
     flp.onclick = () => {
       State.flipBoard = !State.flipBoard;
       render();
@@ -3011,7 +3219,7 @@ function buildLineStudyWorkspace({ kind, items, active, searchValue = null, onSe
         },
       }),
     );
-    const bFlip = el(`<button type="button" class="btn ghost sm" title="Flip">${iconSvg('flip', 13)} Flip</button>`);
+    const bFlip = el(`<button type="button" class="btn ghost sm" title="${escapeHtml(t('flipTip'))}">${iconSvg('flip', 13)} ${escapeHtml(t('flip'))}</button>`);
     bFlip.onclick = () => {
       State.flipBoard = !State.flipBoard;
       render();
@@ -3027,28 +3235,31 @@ function buildLineStudyWorkspace({ kind, items, active, searchValue = null, onSe
 
   if (isPractice) {
     const pct = total ? Math.round((step / total) * 100) : 0;
+    const turnSideLabel = tSide(g.turn() === 'w' ? 'White' : 'Black', lang);
     side.appendChild(el(`<div class="practice-prompt ${practiceComplete ? 'complete' : ''}">
       <div class="practice-progress"><span style="width:${pct}%"></span></div>
-      <h4>${practiceComplete ? 'Line Mastered!' : `Play Move ${Math.floor(step / 2) + 1} (${g.turn() === 'w' ? 'White' : 'Black'})`}</h4>
-      <p class="small" style="margin:0">${escapeHtml(active.summary)}</p>
+      <h4>${escapeHtml(practiceComplete ? t('lineMastered', {}, lang) : t('playMoveNum', { num: Math.floor(step / 2) + 1, side: turnSideLabel }, lang))}</h4>
+      <p class="small" style="margin:0">${escapeHtml(locActive.summary)}</p>
     </div>`));
     if (State.practiceFeedback) {
-      side.appendChild(el(`<div class="puzzle-feedback ${State.practiceFeedback.kind}">${escapeHtml(State.practiceFeedback.text)}</div>`));
+      const pfText = resolvePracticeFeedbackText(State.practiceFeedback, locActive, lang);
+      side.appendChild(el(`<div class="puzzle-feedback ${State.practiceFeedback.kind}">${escapeHtml(pfText)}</div>`));
     }
   } else {
-    const curMoveTxt = step === 0 ? 'Starting Position' : `${Math.ceil(step / 2)}${step % 2 === 1 ? '.' : '...'} ${line[step - 1].move}`;
-    const bodyTxt = step === 0 ? active.summary : line[step - 1].text;
+    const curMoveTxt = step === 0 ? t('startingPosition', {}, lang) : `${Math.ceil(step / 2)}${step % 2 === 1 ? '.' : '...'} ${line[step - 1].move}`;
+    const bodyTxt = step === 0 ? locActive.summary : line[step - 1].text;
     side.appendChild(el(`<div class="tutorial-text">
-      <div class="step-counter tabular-nums">${escapeHtml(active.name)} · Move ${step}/${total}</div>
-      <div class="move-played">${escapeHtml(curMoveTxt)}</div>
+      <div class="step-counter tabular-nums">${escapeHtml(locActive.name)} · ${escapeHtml(t('moveProgress', { step, total }, lang))}</div>
+      <div class="move-played" dir="ltr" style="text-align:start">${escapeHtml(curMoveTxt)}</div>
       <p>${escapeHtml(bodyTxt)}</p>
-      ${active.keyIdeas ? `<div class="key-ideas">${active.keyIdeas.map((k) => `<span class="idea-chip">${escapeHtml(k)}</span>`).join('')}</div>` : ''}
+      ${locActive.keyIdeas ? `<div class="key-ideas">${locActive.keyIdeas.map((k) => `<span class="idea-chip">${escapeHtml(k)}</span>`).join('')}</div>` : ''}
+      ${locActive.avoid ? `<div class="avoid-tip-box"><strong>${escapeHtml(t('howToAvoid', {}, lang))}</strong> ${escapeHtml(locActive.avoid)}</div>` : ''}
     </div>`));
   }
 
   if (State.showStudyStockfish) {
     const sfPanel = createStockfishPanel({
-      title: 'Stockfish 19 Live Analysis',
+      title: t('sfLiveAnalysis', {}, lang),
       showArrows: State.showCoachArrows,
       onToggleArrows: () => {
         State.showCoachArrows = !State.showCoachArrows;
@@ -3062,7 +3273,7 @@ function buildLineStudyWorkspace({ kind, items, active, searchValue = null, onSe
 
   side.appendChild(
     isPractice
-      ? buildMovesPanel(playedMoves, { title: 'Played Moves' })
+      ? buildMovesPanel(playedMoves, { title: t('playedMovesTitle', {}, lang) })
       : buildMovesPanel(
           line.map((s) => s.move),
           {
@@ -3072,7 +3283,7 @@ function buildLineStudyWorkspace({ kind, items, active, searchValue = null, onSe
               if (nextStep > step) recordStudyProgress(kind, active, State.studyStep, total);
               render();
             },
-            title: 'Mainline Moves',
+            title: t('mainlineMovesTitle', {}, lang),
           },
         ),
   );
@@ -3086,11 +3297,13 @@ function buildLineStudyWorkspace({ kind, items, active, searchValue = null, onSe
 // ENDGAMES MASTER-DETAIL + PLAYABLE SPARRING
 // =========================================================
 function renderEndgames() {
+  const lang = getLang();
   const wrap = document.createElement('div');
   wrap.className = 'view-shell';
 
   const active = ENDGAMES.find((e) => e.id === State.selectedEndgameId) || ENDGAMES[0];
   State.selectedEndgameId = active.id;
+  const locActive = localizeEndgame(active, lang);
 
   if (!State.game || State.studyContext?.id !== active.id) {
     State.studyContext = active;
@@ -3110,13 +3323,13 @@ function renderEndgames() {
 
   const bar = el(`<div class="view-bar">
     <div style="display:flex;align-items:center;gap:.55rem;flex-wrap:wrap">
-      <h1>${iconSvg('endgames', 18)} Endgames (${ENDGAMES.length})</h1>
-      <button type="button" class="toggle-btn ${State.endgameSparring ? 'active' : ''}" id="egSparBtn">${iconSvg('play', 14)} Spar vs Stockfish 19: ${State.endgameSparring ? 'On' : 'Free Play'}</button>
+      <h1>${iconSvg('endgames', 18)} ${escapeHtml(t('endgamesTitle', { n: ENDGAMES.length }))}</h1>
+      <button type="button" class="toggle-btn ${State.endgameSparring ? 'active' : ''}" id="egSparBtn">${iconSvg('play', 14)} ${escapeHtml(t('sparVsSf', { state: State.endgameSparring ? t('on') : t('freePlay') }))}</button>
     </div>
     <div class="view-bar-meta">
-      <button type="button" class="toggle-btn ${State.showStudyStockfish ? 'active' : ''}" id="egSfToggle">${iconSvg('coach', 14)} Analysis: ${State.showStudyStockfish ? 'On' : 'Off'}</button>
-      <button type="button" class="btn gold sm" id="egPuzzles">${iconSvg('puzzles', 13)} Endgame Puzzles (55)</button>
-      <button type="button" class="btn ghost sm" id="egSidebarToggle" title="Toggle endgame list">${iconSvg('sidebar', 14)} <span>Lessons</span></button>
+      <button type="button" class="toggle-btn ${State.showStudyStockfish ? 'active' : ''}" id="egSfToggle">${iconSvg('coach', 14)} ${escapeHtml(t('analysisToggle', { state: State.showStudyStockfish ? t('on') : t('off') }))}</button>
+      <button type="button" class="btn gold sm" id="egPuzzles">${iconSvg('puzzles', 13)} ${escapeHtml(t('endgamePuzzlesBtn', { n: getPuzzlesByCategory('Endgame').length }))}</button>
+      <button type="button" class="btn ghost sm" id="egSidebarToggle" title="${escapeHtml(t('toggleEndgameListTip'))}">${iconSvg('sidebar', 14)} <span>${escapeHtml(t('lessonsBtn'))}</span></button>
     </div>
   </div>`);
 
@@ -3150,13 +3363,14 @@ function renderEndgames() {
   const list = document.createElement('div');
   list.className = 'master-list';
   ENDGAMES.forEach((eg) => {
+    const locEg = localizeEndgame(eg, lang);
     const done = Boolean(State.training.endgames?.[eg.id]?.complete);
     const item = el(`<div class="list-item ${eg.id === active.id ? 'active' : ''}">
       <div class="meta">
-        <h4>${escapeHtml(eg.name)}</h4>
-        <span class="small">${escapeHtml(eg.difficulty)} · Target: ${escapeHtml(eg.targetResult || 'Win')}</span>
+        <h4>${escapeHtml(locEg.name)}</h4>
+        <span class="small">${escapeHtml(locEg.difficulty)} · ${escapeHtml(t('targetMeta', { target: locEg.targetResult }))}</span>
       </div>
-      ${done ? '<span class="solved-badge">Studied</span>' : ''}
+      ${done ? `<span class="solved-badge">${escapeHtml(t('studiedBadge'))}</span>` : ''}
     </div>`);
     item.onclick = () => {
       State.selectedEndgameId = eg.id;
@@ -3178,10 +3392,10 @@ function renderEndgames() {
   const detail = document.createElement('div');
   detail.className = 'detail-workspace';
   const egMobBar = el(`<div class="mobile-lesson-bar">
-    <select aria-label="Select endgame study">
-      ${ENDGAMES.map((eg) => `<option value="${escapeHtml(eg.id)}" ${eg.id === active.id ? 'selected' : ''}>${escapeHtml(eg.name)}</option>`).join('')}
+    <select aria-label="${escapeHtml(t('selectEndgameAria'))}">
+      ${ENDGAMES.map((eg) => `<option value="${escapeHtml(eg.id)}" ${eg.id === active.id ? 'selected' : ''}>${escapeHtml(localizeEndgame(eg, lang).name)}</option>`).join('')}
     </select>
-    <button type="button" class="toggle-btn ${State.mobileStudyListOpen ? 'active' : ''}" id="egMobListBtn">${iconSvg('sidebar', 13)} List</button>
+    <button type="button" class="toggle-btn ${State.mobileStudyListOpen ? 'active' : ''}" id="egMobListBtn">${iconSvg('sidebar', 13)} ${escapeHtml(t('listBtn'))}</button>
   </div>`);
   egMobBar.querySelector('select').onchange = (e) => {
     const picked = ENDGAMES.find((x) => x.id === e.target.value);
@@ -3253,7 +3467,7 @@ function renderEndgames() {
       },
     }),
   );
-  const rst = el(`<button type="button" class="btn ghost sm">${iconSvg('refresh', 13)} Reset</button>`);
+  const rst = el(`<button type="button" class="btn ghost sm">${iconSvg('refresh', 13)} ${escapeHtml(t('reset'))}</button>`);
   rst.onclick = () => {
     State.game = new Chess(active.fen);
     State.endgameMoves = [];
@@ -3262,7 +3476,7 @@ function renderEndgames() {
     State.endgameSparThinking = false;
     render();
   };
-  const flp = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 13)} Flip</button>`);
+  const flp = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 13)} ${escapeHtml(t('flip'))}</button>`);
   flp.onclick = () => {
     State.flipBoard = !State.flipBoard;
     render();
@@ -3276,17 +3490,17 @@ function renderEndgames() {
   const side = document.createElement('div');
   side.className = 'play-sidebar';
   side.appendChild(el(`<div class="tutorial-text">
-    <div class="step-counter">${escapeHtml(active.difficulty)} · Goal: ${escapeHtml(active.goal || active.targetResult || 'Convert cleanly')}</div>
-    <h4 style="margin-bottom:.3rem">${escapeHtml(active.name)}</h4>
-    <p>${escapeHtml(active.summary)}</p>
-    <ul style="margin:.4rem 0 0 1.1rem;font-size:.88rem;color:var(--ink-soft)">
-      ${active.technique.map((t) => `<li style="margin-bottom:.2rem">${escapeHtml(t)}</li>`).join('')}
+    <div class="step-counter">${escapeHtml(locActive.difficulty)} · ${escapeHtml(t('goalMeta', { goal: locActive.goal || locActive.targetResult || t('convertCleanly') }))}</div>
+    <h4 style="margin-bottom:.3rem">${escapeHtml(locActive.name)}</h4>
+    <p>${escapeHtml(locActive.summary)}</p>
+    <ul style="margin:.4rem 0 0;padding-inline-start:1.15rem;font-size:.88rem;color:var(--ink-soft)">
+      ${locActive.technique.map((item) => `<li style="margin-bottom:.2rem">${escapeHtml(item)}</li>`).join('')}
     </ul>
   </div>`));
 
   if (State.showStudyStockfish) {
     const sfPanel = createStockfishPanel({
-      title: 'Stockfish 19 Tablebase & Eval',
+      title: t('sfTablebaseEval'),
       showArrows: State.showCoachArrows,
       onToggleArrows: () => {
         State.showCoachArrows = !State.showCoachArrows;
@@ -3335,13 +3549,14 @@ function chess960Fen() {
 }
 
 function renderPlayMenu() {
+  const lang = getLang();
   const wrap = document.createElement('div');
   wrap.className = 'view-shell';
   wrap.appendChild(el(`<div class="view-bar">
-    <h1>${iconSvg('play', 18)} Match Hall — Play or Launch Engine Clash</h1>
+    <h1>${iconSvg('play', 18)} ${escapeHtml(t('matchHallTitle'))}</h1>
     <div class="toggle-row" id="varTog">
-      <button type="button" class="toggle-btn ${State.variant === 'standard' ? 'active' : ''}" data-v="standard">Standard Chess</button>
-      <button type="button" class="toggle-btn ${State.variant === 'chess960' ? 'active' : ''}" data-v="chess960">Chess960</button>
+      <button type="button" class="toggle-btn ${State.variant === 'standard' ? 'active' : ''}" data-v="standard">${escapeHtml(t('standardChess'))}</button>
+      <button type="button" class="toggle-btn ${State.variant === 'chess960' ? 'active' : ''}" data-v="chess960">${escapeHtml(t('chess960'))}</button>
     </div>
   </div>`));
 
@@ -3356,41 +3571,45 @@ function renderPlayMenu() {
   grid.className = 'setup-grid-3';
 
   // Col 1: Human vs Selected Engine
-  const humEngProf = getEngineProfile(State.playEngineProfileId);
-  const validTier = humEngProf.tiers.some((t) => t.value === State.playEngineLevel)
+  const rawHumProf = getEngineProfile(State.playEngineProfileId);
+  const humEngProf = localizeEngineProfile(rawHumProf, lang);
+  const validTier = humEngProf.tiers.some((tItem) => tItem.value === State.playEngineLevel)
     ? State.playEngineLevel
     : humEngProf.defaultTier;
   State.playEngineLevel = validTier;
 
   const engCard = el(`<section class="card setup-card">
     <div>
-      <h3>${iconSvg('coach', 17)} Play vs Chess Engine</h3>
+      <h3>${iconSvg('coach', 17)} ${escapeHtml(t('playVsEngineTitle'))}</h3>
       <p class="small">${escapeHtml(humEngProf.description)}</p>
       <div style="margin:.4rem 0">
-        <label for="humEngProf">Opponent Engine</label>
+        <label for="humEngProf">${escapeHtml(t('opponentEngineLabel'))}</label>
         <select id="humEngProf">
-          ${ENGINE_PROFILE_LIST.map((p) => `<option value="${p.id}" ${p.id === humEngProf.id ? 'selected' : ''}>${escapeHtml(p.name)} — ${escapeHtml(p.styleTag)}</option>`).join('')}
+          ${ENGINE_PROFILE_LIST.map((p) => {
+            const locP = localizeEngineProfile(p, lang);
+            return `<option value="${p.id}" ${p.id === humEngProf.id ? 'selected' : ''}>${escapeHtml(locP.name)} — ${escapeHtml(locP.styleTag)}</option>`;
+          }).join('')}
         </select>
       </div>
       <div class="level-grid" id="engLvls" style="margin:.4rem 0">
         ${humEngProf.tiers
-          .map((t) => `<div class="level-card ${!(humEngProf.family === 'nnue' && State.playEngineUseCustom) && State.playEngineLevel === t.value ? 'selected' : ''}" data-lvl="${t.value}">
-            <div class="lvl-num tabular-nums">${t.value}</div>
-            <div class="lvl-name">${escapeHtml(t.label.split(' ')[0])}</div>
-            <div class="lvl-elo tabular-nums">${escapeHtml(t.elo)}</div>
+          .map((tierItem) => `<div class="level-card ${!(humEngProf.family === 'nnue' && State.playEngineUseCustom) && State.playEngineLevel === tierItem.value ? 'selected' : ''}" data-lvl="${tierItem.value}">
+            <div class="lvl-num tabular-nums">${tierItem.value}</div>
+            <div class="lvl-name">${escapeHtml(tierItem.label.split(' ')[0])}</div>
+            <div class="lvl-elo tabular-nums">${escapeHtml(tierItem.elo)}</div>
           </div>`)
           .join('')}
       </div>
       ${humEngProf.family === 'nnue' ? `<div style="display:flex;align-items:center;gap:.55rem;margin:.3rem 0">
-        <span class="small mono tabular-nums" style="white-space:nowrap">Custom: <strong id="cEloVal">${State.playEngineCustomElo}</strong></span>
+        <span class="small mono tabular-nums" style="white-space:nowrap">${escapeHtml(t('customEloPrefix'))} <strong id="cEloVal">${State.playEngineCustomElo}</strong></span>
         <input type="range" id="cEloSlider" min="1320" max="2850" step="20" value="${State.playEngineCustomElo}" style="flex:1" />
       </div>` : ''}
       <div class="toggle-row" id="engSideTog" style="margin-top:.35rem">
-        <span class="small" style="margin-right:.3rem">Side:</span>
-        ${['white', 'black', 'random'].map((c) => `<button type="button" class="toggle-btn ${State.playEngineColor === c ? 'active' : ''}" data-c="${c}">${c}</button>`).join('')}
+        <span class="small" style="margin-inline-end:.3rem">${escapeHtml(t('sideLabel'))}</span>
+        ${['white', 'black', 'random'].map((c) => `<button type="button" class="toggle-btn ${State.playEngineColor === c ? 'active' : ''}" data-c="${c}">${escapeHtml(tSide(c, lang))}</button>`).join('')}
       </div>
     </div>
-    <button type="button" class="btn gold full" id="startEngineBtn">${iconSvg('play', 15)} Start Match vs ${escapeHtml(humEngProf.shortName)}</button>
+    <button type="button" class="btn gold full" id="startEngineBtn">${iconSvg('play', 15)} ${escapeHtml(t('startMatchVs', { name: humEngProf.shortName }))}</button>
   </section>`);
 
   engCard.querySelector('#humEngProf').onchange = (e) => {
@@ -3449,64 +3668,64 @@ function renderPlayMenu() {
   grid.appendChild(engCard);
 
   // Col 2: Engine vs Engine Arena Setup Card
-  const wProf = getEngineProfile(State.arenaWhiteProfileId);
-  const bProf = getEngineProfile(State.arenaBlackProfileId);
-  if (!wProf.tiers.some((t) => t.value === State.arenaWhiteTier)) State.arenaWhiteTier = wProf.defaultTier;
-  if (!bProf.tiers.some((t) => t.value === State.arenaBlackTier)) State.arenaBlackTier = bProf.defaultTier;
+  const wProf = localizeEngineProfile(getEngineProfile(State.arenaWhiteProfileId), lang);
+  const bProf = localizeEngineProfile(getEngineProfile(State.arenaBlackProfileId), lang);
+  if (!wProf.tiers.some((tierItem) => tierItem.value === State.arenaWhiteTier)) State.arenaWhiteTier = wProf.defaultTier;
+  if (!bProf.tiers.some((tierItem) => tierItem.value === State.arenaBlackTier)) State.arenaBlackTier = bProf.defaultTier;
 
   const arenaCard = el(`<section class="card ornate setup-card">
     <div>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:.4rem">
-        <h3>${iconSvg('duel', 17)} Engine vs Engine Arena</h3>
-        <span class="tag green">Live Thoughts</span>
+        <h3>${iconSvg('duel', 17)} ${escapeHtml(t('engineArenaTitle'))}</h3>
+        <span class="tag green">${escapeHtml(t('liveThoughtsTag'))}</span>
       </div>
-      <p class="small">Pit two distinct chess engines against each other and inspect both MultiPV thoughts, plans, and eval clashes live.</p>
+      <p class="small">${escapeHtml(t('arenaSetupDesc'))}</p>
 
       <div style="margin:.4rem 0">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <label for="arWProf">White Engine</label>
-          <button type="button" class="btn-ghost-xs" id="arSwapBtn" title="Swap White and Black engines">${iconSvg('swap', 12)} Swap</button>
+          <label for="arWProf">${escapeHtml(t('whiteEngineLabel'))}</label>
+          <button type="button" class="btn-ghost-xs" id="arSwapBtn" title="${escapeHtml(t('swapArenaEnginesTip'))}">${iconSvg('swap', 12)} ${escapeHtml(t('swap'))}</button>
         </div>
         <div class="arena-field-row">
           <select id="arWProf">
-            ${ENGINE_PROFILE_LIST.map((p) => `<option value="${p.id}" ${p.id === wProf.id ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('')}
+            ${ENGINE_PROFILE_LIST.map((p) => `<option value="${p.id}" ${p.id === wProf.id ? 'selected' : ''}>${escapeHtml(localizeEngineProfile(p, lang).name)}</option>`).join('')}
           </select>
           <select id="arWTier" style="max-width:155px">
-            ${wProf.tiers.map((t) => `<option value="${t.value}" ${t.value === State.arenaWhiteTier ? 'selected' : ''}>${escapeHtml(t.label)}</option>`).join('')}
+            ${wProf.tiers.map((tierItem) => `<option value="${tierItem.value}" ${tierItem.value === State.arenaWhiteTier ? 'selected' : ''}>${escapeHtml(tierItem.label)}</option>`).join('')}
           </select>
         </div>
       </div>
 
       <div style="margin:.4rem 0">
-        <label for="arBProf">Black Engine</label>
+        <label for="arBProf">${escapeHtml(t('blackEngineLabel'))}</label>
         <div class="arena-field-row">
           <select id="arBProf">
-            ${ENGINE_PROFILE_LIST.map((p) => `<option value="${p.id}" ${p.id === bProf.id ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('')}
+            ${ENGINE_PROFILE_LIST.map((p) => `<option value="${p.id}" ${p.id === bProf.id ? 'selected' : ''}>${escapeHtml(localizeEngineProfile(p, lang).name)}</option>`).join('')}
           </select>
           <select id="arBTier" style="max-width:155px">
-            ${bProf.tiers.map((t) => `<option value="${t.value}" ${t.value === State.arenaBlackTier ? 'selected' : ''}>${escapeHtml(t.label)}</option>`).join('')}
+            ${bProf.tiers.map((tierItem) => `<option value="${tierItem.value}" ${tierItem.value === State.arenaBlackTier ? 'selected' : ''}>${escapeHtml(tierItem.label)}</option>`).join('')}
           </select>
         </div>
       </div>
 
       <div class="arena-field-row" style="margin:.45rem 0">
         <div style="flex:1">
-          <label for="arPreset">Starting Position</label>
+          <label for="arPreset">${escapeHtml(t('startingPositionLabel'))}</label>
           <select id="arPreset">
-            ${ARENA_PRESETS.map((p, idx) => `<option value="${idx}" ${idx === State.arenaPresetIdx ? 'selected' : ''}>${escapeHtml(p.label)}</option>`).join('')}
+            ${ARENA_PRESETS.map((p, idx) => `<option value="${idx}" ${idx === State.arenaPresetIdx ? 'selected' : ''}>${escapeHtml(localizeArenaPreset(p, lang).label)}</option>`).join('')}
           </select>
         </div>
         <div style="width:120px">
-          <label for="arPace">Pace</label>
+          <label for="arPace">${escapeHtml(t('paceLabel'))}</label>
           <select id="arPace">
-            <option value="400" ${State.arenaPaceMs === 400 ? 'selected' : ''}>Fast (0.4s)</option>
-            <option value="1200" ${State.arenaPaceMs === 1200 ? 'selected' : ''}>Normal (1.2s)</option>
-            <option value="2400" ${State.arenaPaceMs === 2400 ? 'selected' : ''}>Study (2.4s)</option>
+            <option value="400" ${State.arenaPaceMs === 400 ? 'selected' : ''}>${escapeHtml(t('paceFast'))}</option>
+            <option value="1200" ${State.arenaPaceMs === 1200 ? 'selected' : ''}>${escapeHtml(t('paceNormal'))}</option>
+            <option value="2400" ${State.arenaPaceMs === 2400 ? 'selected' : ''}>${escapeHtml(t('paceStudy'))}</option>
           </select>
         </div>
       </div>
     </div>
-    <button type="button" class="btn gold full" id="launchArenaBtn">${iconSvg('duel', 15)} Launch Engine Clash</button>
+    <button type="button" class="btn gold full" id="launchArenaBtn">${iconSvg('duel', 15)} ${escapeHtml(t('launchEngineClash'))}</button>
   </section>`);
 
   arenaCard.querySelector('#arWProf').onchange = (e) => {
@@ -3543,36 +3762,36 @@ function renderPlayMenu() {
   const others = Object.values(State.members).filter((m) => m.id !== State.user.id);
   const humCard = el(`<section class="card setup-card">
     <div>
-      <h3>${iconSvg('club', 17)} Over-the-Board: Member vs Member</h3>
+      <h3>${iconSvg('club', 17)} ${escapeHtml(t('otbTitle'))}</h3>
       ${others.length === 0
-        ? `<p class="small" style="margin-top:.4rem">Add a second local club member on the Login screen to play two-player rated or coached friendly matches on this device.</p>`
+        ? `<p class="small" style="margin-top:.4rem">${escapeHtml(t('otbEmptyHint'))}</p>`
         : `
           <div style="margin:.45rem 0">
-            <label for="oppSel">Opponent</label>
+            <label for="oppSel">${escapeHtml(t('opponentLabel'))}</label>
             <select id="oppSel">
               ${others.map((m) => `<option value="${m.id}">${escapeHtml(m.name)} (${m.rating})</option>`).join('')}
             </select>
           </div>
           <div style="display:flex;gap:1rem;flex-wrap:wrap;margin:.45rem 0">
             <div>
-              <label>Your Color</label>
+              <label>${escapeHtml(t('yourColorLabel'))}</label>
               <div class="toggle-row" id="humColor">
-                <button type="button" class="toggle-btn active" data-c="white">White</button>
-                <button type="button" class="toggle-btn" data-c="black">Black</button>
-                <button type="button" class="toggle-btn" data-c="random">Random</button>
+                <button type="button" class="toggle-btn active" data-c="white">${escapeHtml(t('white'))}</button>
+                <button type="button" class="toggle-btn" data-c="black">${escapeHtml(t('black'))}</button>
+                <button type="button" class="toggle-btn" data-c="random">${escapeHtml(tSide('random', lang))}</button>
               </div>
             </div>
             <div>
-              <label>Match Type</label>
+              <label>${escapeHtml(t('matchTypeLabel'))}</label>
               <div class="toggle-row" id="humType">
-                <button type="button" class="toggle-btn active" data-t="rated">Rated Elo</button>
-                <button type="button" class="toggle-btn" data-t="friendly">Friendly (+Coach)</button>
+                <button type="button" class="toggle-btn active" data-t="rated">${escapeHtml(t('ratedElo'))}</button>
+                <button type="button" class="toggle-btn" data-t="friendly">${escapeHtml(t('friendlyCoach'))}</button>
               </div>
             </div>
           </div>
         `}
     </div>
-    ${others.length > 0 ? `<button type="button" class="btn full" id="startHumanBtn">Begin Over-the-Board Match</button>` : `<button type="button" class="btn ghost full" id="switchAdd">Switch / Add Member</button>`}
+    ${others.length > 0 ? `<button type="button" class="btn full" id="startHumanBtn">${escapeHtml(t('beginOtbMatch'))}</button>` : `<button type="button" class="btn ghost full" id="switchAdd">${escapeHtml(t('switchAddMember'))}</button>`}
   </section>`);
 
   if (others.length > 0) {
@@ -3627,14 +3846,44 @@ function renderPlayMenu() {
   return wrap;
 }
 
+function resolveLastResultText(res, lang = getLang()) {
+  if (!res) return t('gameOver', {}, lang);
+  const m = res.meta;
+  if (!m) return res.text || t('gameOver', {}, lang);
+  if (m.type === 'resign-engine') {
+    const locP = localizeEngineProfile(getEngineProfile(m.profId), lang);
+    return t('resignedMsg', { name: locP.name }, lang);
+  }
+  if (m.type === 'mate-engine-win') {
+    const locP = localizeEngineProfile(getEngineProfile(m.profId), lang);
+    return t('checkmateWonEngine', { name: locP.name }, lang);
+  }
+  if (m.type === 'mate-engine-loss') {
+    const locP = localizeEngineProfile(getEngineProfile(m.profId), lang);
+    return t('checkmateLostEngine', { name: locP.name }, lang);
+  }
+  if (m.type === 'draw-engine') return t('gameDrawn', {}, lang);
+  if (m.type === 'human-draw') {
+    return t('drawnByReason', { reason: tGameReason(m.reason, lang) }, lang);
+  }
+  if (m.type === 'human-win') {
+    return t('winsByReason', { name: m.winnerName, reason: tGameReason(m.reason, lang) }, lang);
+  }
+  return res.text || t('gameOver', {}, lang);
+}
+
 function renderVsEngine() {
+  const lang = getLang();
   if (!State.game) {
     State.game = new Chess();
     State.gameInitialFen = State.game.fen();
   }
   const g = State.game;
   const turn = g.turn();
-  const oppProfile = getEngineProfile(State.playEngineProfileId);
+  const oppProfile = localizeEngineProfile(getEngineProfile(State.playEngineProfileId), lang);
+  const tierDisplay = State._engineConfig != null
+    ? `${oppProfile.shortName} · ${localizeEngineTier(oppProfile.id, getEngineTierMeta(oppProfile.id, State._engineConfig), lang).label}`
+    : oppProfile.name;
   const totalPlies = State.gameMoveHistory.length;
   const viewPly =
     State.gameViewPly != null ? Math.max(0, Math.min(totalPlies, State.gameViewPly)) : totalPlies;
@@ -3647,11 +3896,11 @@ function renderVsEngine() {
   wrap.className = 'view-shell';
 
   wrap.appendChild(el(`<div class="view-bar">
-    <h1>${escapeHtml(State.user.name)} vs ${escapeHtml(oppProfile.name)}</h1>
+    <h1>${escapeHtml(t('matchupTitle', { a: State.user.name, b: oppProfile.name }))}</h1>
     <div class="view-bar-meta">
-      <span class="tag gold">${escapeHtml(State._engineLevelDisplay || oppProfile.name)}</span>
-      ${totalPlies > 0 ? `<button type="button" class="btn ghost sm" id="anEngBtn">${iconSvg('coach', 13)} Analyze</button>` : ''}
-      <button type="button" class="btn ghost sm" id="leaveEng">Leave Game</button>
+      <span class="tag gold">${escapeHtml(tierDisplay)}</span>
+      ${totalPlies > 0 ? `<button type="button" class="btn ghost sm" id="anEngBtn">${iconSvg('coach', 13)} ${escapeHtml(t('analyzeBtn'))}</button>` : ''}
+      <button type="button" class="btn ghost sm" id="leaveEng">${escapeHtml(t('leaveGame'))}</button>
     </div>
   </div>`));
   const anEngBtn = wrap.querySelector('#anEngBtn');
@@ -3660,7 +3909,7 @@ function renderVsEngine() {
       const whiteName = State.playerColor === 'w' ? State.user.name : oppProfile.name;
       const blackName = State.playerColor === 'b' ? State.user.name : oppProfile.name;
       openGameInCoachAnalyzer({
-        title: `${whiteName} vs ${blackName}`,
+        title: t('matchupTitle', { a: whiteName, b: blackName }),
         headers: { Event: 'Edugates Match vs Engine', White: whiteName, Black: blackName },
         startFen: State.gameInitialFen,
         moves: State.gameMoveHistory,
@@ -3713,7 +3962,7 @@ function renderVsEngine() {
       },
     }),
   );
-  const undoBtn = el(`<button type="button" class="btn ghost sm" title="Take Back">${iconSvg('refresh', 13)} Take Back</button>`);
+  const undoBtn = el(`<button type="button" class="btn ghost sm" title="${escapeHtml(t('takeBackTip'))}">${iconSvg('refresh', 13)} ${escapeHtml(t('takeBack'))}</button>`);
   undoBtn.disabled = isReviewing || State.gameMoveHistory.length < 2 || State.gameOver || State.engineThinking;
   undoBtn.onclick = () => {
     g.undo();
@@ -3724,19 +3973,22 @@ function renderVsEngine() {
     State.lastMove = lastMoveSquares(g);
     render();
   };
-  const flipBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 13)} Flip</button>`);
+  const flipBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 13)} ${escapeHtml(t('flip'))}</button>`);
   flipBtn.onclick = () => {
     State.flipBoard = !State.flipBoard;
     render();
   };
-  const resignBtn = el(`<button type="button" class="btn danger sm">Resign</button>`);
+  const resignBtn = el(`<button type="button" class="btn danger sm">${escapeHtml(t('resign'))}</button>`);
   resignBtn.disabled = State.gameOver;
   resignBtn.onclick = () => {
     State.gameOver = true;
-    State.lastResult = { kind: 'loss', text: `You resigned. ${oppProfile.name} wins.` };
+    State.lastResult = {
+      kind: 'loss',
+      meta: { type: 'resign-engine', profId: oppProfile.id },
+    };
     render();
   };
-  const newBtn = el(`<button type="button" class="btn gold sm">New Match</button>`);
+  const newBtn = el(`<button type="button" class="btn gold sm">${escapeHtml(t('newMatch'))}</button>`);
   newBtn.onclick = () => navigate('play-menu');
   ctrl.appendChild(undoBtn);
   ctrl.appendChild(flipBtn);
@@ -3749,16 +4001,16 @@ function renderVsEngine() {
   const side = document.createElement('div');
   side.className = 'play-sidebar';
   if (isReviewing) {
-    side.appendChild(el(`<div class="status-banner tabular-nums">Reviewing Ply ${viewPly}/${totalPlies} — click Last to resume live board</div>`));
+    side.appendChild(el(`<div class="status-banner tabular-nums">${escapeHtml(t('reviewingPlyResume', { cur: viewPly, total: totalPlies }))}</div>`));
   } else if (State.gameOver) {
-    side.appendChild(el(`<div class="status-banner ${State.lastResult?.kind || 'draw'}">${escapeHtml(State.lastResult?.text || 'Game Over')}</div>`));
+    side.appendChild(el(`<div class="status-banner ${State.lastResult?.kind || 'draw'}">${escapeHtml(resolveLastResultText(State.lastResult, lang))}</div>`));
   } else if (State.engineThinking) {
-    side.appendChild(el(`<div class="status-banner">${escapeHtml(oppProfile.name)} is thinking... <span class="spinner"></span></div>`));
+    side.appendChild(el(`<div class="status-banner">${escapeHtml(t('engineThinkingStatus', { name: oppProfile.name }))} <span class="spinner"></span></div>`));
   } else {
-    side.appendChild(el(`<div class="status-banner">${turn === State.playerColor ? escapeHtml(State.user.name) : escapeHtml(oppProfile.name)} to move</div>`));
+    side.appendChild(el(`<div class="status-banner">${escapeHtml(t('playerToMove', { name: turn === State.playerColor ? State.user.name : oppProfile.name }))}</div>`));
   }
   side.appendChild(el(`<div class="game-info">
-    <div class="player-row ${turn !== State.playerColor ? 'active' : ''}"><div><span class="turn-marker"></span><span class="pname">${escapeHtml(oppProfile.name)}</span></div><span class="badge">${escapeHtml(State._engineLevelDisplay || '')}</span></div>
+    <div class="player-row ${turn !== State.playerColor ? 'active' : ''}"><div><span class="turn-marker"></span><span class="pname">${escapeHtml(oppProfile.name)}</span></div><span class="badge">${escapeHtml(tierDisplay)}</span></div>
     <div class="player-row ${turn === State.playerColor ? 'active' : ''}"><div><span class="turn-marker"></span><span class="pname">${escapeHtml(State.user.name)}</span></div><span class="badge elo tabular-nums">${State.user.rating}</span></div>
   </div>`));
   side.appendChild(
@@ -3784,11 +4036,11 @@ function checkEngineGameEnd() {
     State.gameOver = true;
     State.lastResult = {
       kind: youWon ? 'win' : 'loss',
-      text: youWon ? `Checkmate! You defeated ${oppProfile.name}!` : `Checkmate. ${oppProfile.name} wins.`,
+      meta: { type: youWon ? 'mate-engine-win' : 'mate-engine-loss', profId: oppProfile.id },
     };
   } else if (g.in_draw() || g.in_stalemate() || g.in_threefold_repetition() || g.insufficient_material()) {
     State.gameOver = true;
-    State.lastResult = { kind: 'draw', text: 'Game drawn.' };
+    State.lastResult = { kind: 'draw', meta: { type: 'draw-engine' } };
   }
 }
 
@@ -3860,6 +4112,7 @@ function getArenaViewedEntry() {
 function syncArenaLiveDom() {
   const g = State.arenaGame;
   if (!g) return;
+  const lang = getLang();
   const viewed = getArenaViewedEntry();
 
   const activeSide = viewed ? (viewed.entry?.side || 'w') : State.arenaThinkingSide || g.turn();
@@ -3868,10 +4121,10 @@ function syncArenaLiveDom() {
   const primarySnap = activeSide === 'w' ? (wSnap || bSnap) : (bSnap || wSnap);
   const secondarySnap = activeSide === 'w' ? bSnap : wSnap;
 
-  const wProfile = getEngineProfile(State.arenaWhiteProfileId);
-  const bProfile = getEngineProfile(State.arenaBlackProfileId);
-  const wTier = getEngineTierMeta(wProfile.id, State.arenaWhiteTier);
-  const bTier = getEngineTierMeta(bProfile.id, State.arenaBlackTier);
+  const wProfile = localizeEngineProfile(getEngineProfile(State.arenaWhiteProfileId), lang);
+  const bProfile = localizeEngineProfile(getEngineProfile(State.arenaBlackProfileId), lang);
+  const wTier = localizeEngineTier(wProfile.id, getEngineTierMeta(wProfile.id, State.arenaWhiteTier), lang);
+  const bTier = localizeEngineTier(bProfile.id, getEngineTierMeta(bProfile.id, State.arenaBlackTier), lang);
 
   if (State.dom.evalBar) {
     updateEvalBar(State.dom.evalBar, {
@@ -4068,6 +4321,8 @@ async function executeArenaPly(token, stepOnly = false) {
   State.arenaMoveLog.push({
     ply: State.arenaMoveLog.length + 1,
     side,
+    profileId,
+    tierValue: tier,
     san: m.san,
     uci: res.chosenUci,
     from: m.from,
@@ -4081,6 +4336,7 @@ async function executeArenaPly(token, stepOnly = false) {
       tierLabel: tierMeta.label,
       chosenSan: m.san,
       isThinking: false,
+      lang: getLang(),
     }),
     elapsedMs: res.elapsedMs,
   });
@@ -4111,11 +4367,12 @@ function renderEngineArena() {
     startEngineArenaMatch();
     return document.createElement('div');
   }
+  const lang = getLang();
   const g = State.arenaGame;
-  const wProfile = getEngineProfile(State.arenaWhiteProfileId);
-  const bProfile = getEngineProfile(State.arenaBlackProfileId);
-  const wTier = getEngineTierMeta(wProfile.id, State.arenaWhiteTier);
-  const bTier = getEngineTierMeta(bProfile.id, State.arenaBlackTier);
+  const wProfile = localizeEngineProfile(getEngineProfile(State.arenaWhiteProfileId), lang);
+  const bProfile = localizeEngineProfile(getEngineProfile(State.arenaBlackProfileId), lang);
+  const wTier = localizeEngineTier(wProfile.id, getEngineTierMeta(wProfile.id, State.arenaWhiteTier), lang);
+  const bTier = localizeEngineTier(bProfile.id, getEngineTierMeta(bProfile.id, State.arenaBlackTier), lang);
 
   const totalPlies = State.arenaMoveLog.length;
   const viewPly =
@@ -4136,24 +4393,24 @@ function renderEngineArena() {
 
   const bar = el(`<div class="view-bar">
     <div style="display:flex;align-items:center;gap:.45rem;min-width:0">
-      <h1>${iconSvg('duel', 18)} Engine Clash Arena</h1>
-      <span class="badge elo">${escapeHtml(wProfile.shortName)} vs ${escapeHtml(bProfile.shortName)}</span>
+      <h1>${iconSvg('duel', 18)} ${escapeHtml(t('arenaViewTitle'))}</h1>
+      <span class="badge elo">${escapeHtml(t('matchupTitle', { a: wProfile.shortName, b: bProfile.shortName }))}</span>
     </div>
     <div class="view-bar-meta">
       <button type="button" class="btn gold sm" id="arPlayPause" ${finished ? 'disabled' : ''}>
-        ${iconSvg(State.arenaPaused ? 'play' : 'pause', 13)} <span>${State.arenaPaused ? 'Resume' : 'Pause'}</span>
+        ${iconSvg(State.arenaPaused ? 'play' : 'pause', 13)} <span>${escapeHtml(State.arenaPaused ? t('resume') : t('pause'))}</span>
       </button>
       <button type="button" class="btn ghost sm" id="arStep" ${finished || (!State.arenaPaused && State.arenaThinkingSide) ? 'disabled' : ''}>
-        ${iconSvg('step', 13)} <span>Step</span>
+        ${iconSvg('step', 13)} <span>${escapeHtml(t('step'))}</span>
       </button>
-      <select id="arLivePace" aria-label="Arena pace" style="width:auto;padding:.22rem .42rem;font-size:.8rem">
-        <option value="400" ${State.arenaPaceMs === 400 ? 'selected' : ''}>0.4s</option>
-        <option value="1200" ${State.arenaPaceMs === 1200 ? 'selected' : ''}>1.2s</option>
-        <option value="2400" ${State.arenaPaceMs === 2400 ? 'selected' : ''}>2.4s</option>
+      <select id="arLivePace" aria-label="${escapeHtml(t('arenaPaceAria'))}" style="width:auto;padding:.22rem .42rem;font-size:.8rem">
+        <option value="400" ${State.arenaPaceMs === 400 ? 'selected' : ''}>${lang === 'ar' ? '0.4ث' : '0.4s'}</option>
+        <option value="1200" ${State.arenaPaceMs === 1200 ? 'selected' : ''}>${lang === 'ar' ? '1.2ث' : '1.2s'}</option>
+        <option value="2400" ${State.arenaPaceMs === 2400 ? 'selected' : ''}>${lang === 'ar' ? '2.4ث' : '2.4s'}</option>
       </select>
-      ${totalPlies > 0 ? `<button type="button" class="btn ghost sm" id="arAnalyzeBtn">${iconSvg('coach', 13)} <span>Analyze PGN</span></button>` : ''}
-      <button type="button" class="btn ghost sm" id="arResetBtn">${iconSvg('refresh', 13)} <span>Rematch</span></button>
-      <button type="button" class="btn ghost sm" id="arSetupBtn">Setup</button>
+      ${totalPlies > 0 ? `<button type="button" class="btn ghost sm" id="arAnalyzeBtn">${iconSvg('coach', 13)} <span>${escapeHtml(t('analyzePgn'))}</span></button>` : ''}
+      <button type="button" class="btn ghost sm" id="arResetBtn">${iconSvg('refresh', 13)} <span>${escapeHtml(t('rematch'))}</span></button>
+      <button type="button" class="btn ghost sm" id="arSetupBtn">${escapeHtml(t('setup'))}</button>
     </div>
   </div>`);
 
@@ -4185,7 +4442,7 @@ function renderEngineArena() {
   if (arAnBtn) {
     arAnBtn.onclick = () => {
       openGameInCoachAnalyzer({
-        title: `${wProfile.shortName} vs ${bProfile.shortName}`,
+        title: t('matchupTitle', { a: wProfile.shortName, b: bProfile.shortName }),
         headers: { Event: 'Engine Clash Arena', White: wProfile.name, Black: bProfile.name },
         startFen: State.arenaInitialFen,
         moves: State.arenaMoveLog.map((x) => x.san),
@@ -4222,17 +4479,17 @@ function renderEngineArena() {
       onNavigate: (nextPly) => navigateArenaPly(nextPly),
     }),
   );
-  const flipBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 13)} Flip</button>`);
+  const flipBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 13)} ${escapeHtml(t('flip'))}</button>`);
   flipBtn.onclick = () => {
     State.flipBoard = !State.flipBoard;
     render();
   };
-  const arrBtn = el(`<button type="button" class="btn ghost sm ${State.showCoachArrows ? 'active' : ''}">Arrows: ${State.showCoachArrows ? 'On' : 'Off'}</button>`);
+  const arrBtn = el(`<button type="button" class="btn ghost sm ${State.showCoachArrows ? 'active' : ''}">${escapeHtml(t('arrowsToggle', { state: State.showCoachArrows ? t('on') : t('off') }))}</button>`);
   arrBtn.onclick = () => {
     State.showCoachArrows = !State.showCoachArrows;
     render();
   };
-  const swapSidesBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('swap', 13)} Swap</button>`);
+  const swapSidesBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('swap', 13)} ${escapeHtml(t('swap'))}</button>`);
   swapSidesBtn.onclick = () => {
     [State.arenaWhiteProfileId, State.arenaBlackProfileId] = [State.arenaBlackProfileId, State.arenaWhiteProfileId];
     [State.arenaWhiteTier, State.arenaBlackTier] = [State.arenaBlackTier, State.arenaWhiteTier];
@@ -4250,12 +4507,15 @@ function renderEngineArena() {
 
   // Status banner
   if (viewed) {
+    const viewedProfile = viewed.entry
+      ? localizeEngineProfile(getEngineProfile(viewed.entry.profileId || (viewed.entry.side === 'w' ? State.arenaWhiteProfileId : State.arenaBlackProfileId)), lang)
+      : null;
     const label = viewed.entry
-      ? `Inspecting Ply ${viewed.ply}/${totalPlies}: ${viewed.entry.san} (${viewed.entry.engineName})`
-      : `Inspecting Starting Position (0/${totalPlies})`;
+      ? t('inspectingPly', { ply: viewed.ply, total: totalPlies, san: viewed.entry.san, engine: viewedProfile?.shortName || viewed.entry.engineName })
+      : t('inspectingStart', { total: totalPlies });
     const revBanner = el(`<div class="status-banner" style="display:flex;justify-content:space-between;align-items:center;gap:.4rem">
       <span>${escapeHtml(label)}</span>
-      <button type="button" class="btn gold sm" id="arLiveReturn" style="padding:.15rem .5rem;font-size:.78rem">Live Board</button>
+      <button type="button" class="btn gold sm" id="arLiveReturn" style="padding:.15rem .5rem;font-size:.78rem">${escapeHtml(t('liveBoard'))}</button>
     </div>`);
     revBanner.querySelector('#arLiveReturn').onclick = () => {
       State.arenaViewPly = null;
@@ -4264,20 +4524,24 @@ function renderEngineArena() {
     };
     side.appendChild(revBanner);
   } else if (finished) {
-    let outcome = 'Match Drawn.';
+    let outcome = t('matchDrawn');
     let cls = 'draw';
     if (g.in_checkmate()) {
       const winnerIsWhite = g.turn() === 'b';
       const winnerName = winnerIsWhite ? wProfile.name : bProfile.name;
-      outcome = `Checkmate! ${winnerName} (${winnerIsWhite ? 'White' : 'Black'}) wins in ${Math.ceil(State.arenaMoveLog.length / 2)} moves.`;
+      outcome = t('arenaCheckmate', {
+        winner: winnerName,
+        side: tSide(winnerIsWhite ? 'White' : 'Black', lang),
+        moves: Math.ceil(State.arenaMoveLog.length / 2),
+      });
       cls = winnerIsWhite ? 'win' : 'loss';
     }
     side.appendChild(el(`<div class="status-banner ${cls}">${escapeHtml(outcome)}</div>`));
   } else if (State.arenaThinkingSide) {
     const tProf = State.arenaThinkingSide === 'w' ? wProfile : bProfile;
-    side.appendChild(el(`<div class="status-banner">${escapeHtml(tProf.name)} (${State.arenaThinkingSide === 'w' ? 'White' : 'Black'}) thinking... <span class="spinner"></span></div>`));
+    side.appendChild(el(`<div class="status-banner">${escapeHtml(t('arenaThinkingBanner', { name: tProf.name, side: tSide(State.arenaThinkingSide === 'w' ? 'White' : 'Black', lang) }))} <span class="spinner"></span></div>`));
   } else {
-    side.appendChild(el(`<div class="status-banner">${State.arenaPaused ? 'Paused — both engines analyzing position' : `${g.turn() === 'w' ? wProfile.name : bProfile.name} to move`}</div>`));
+    side.appendChild(el(`<div class="status-banner">${escapeHtml(State.arenaPaused ? t('arenaPausedBanner') : t('playerToMove', { name: g.turn() === 'w' ? wProfile.name : bProfile.name }))}</div>`));
   }
 
   // Dual Evaluation Comparison Strip
@@ -4288,12 +4552,12 @@ function renderEngineArena() {
   // Telemetry View Switch
   const tabBar = el(`<div class="arena-tabs">
     <div class="pill-switch" id="arTabSwitch">
-      <button type="button" data-t="both" class="${State.arenaTab === 'both' ? 'active' : ''}">Both Thoughts</button>
-      <button type="button" data-t="white" class="${State.arenaTab === 'white' ? 'active' : ''}">White</button>
-      <button type="button" data-t="black" class="${State.arenaTab === 'black' ? 'active' : ''}">Black</button>
-      <button type="button" data-t="log" class="${State.arenaTab === 'log' ? 'active' : ''}">Log (${State.arenaMoveLog.length})</button>
+      <button type="button" data-t="both" class="${State.arenaTab === 'both' ? 'active' : ''}">${escapeHtml(t('bothThoughtsTab'))}</button>
+      <button type="button" data-t="white" class="${State.arenaTab === 'white' ? 'active' : ''}">${escapeHtml(t('white'))}</button>
+      <button type="button" data-t="black" class="${State.arenaTab === 'black' ? 'active' : ''}">${escapeHtml(t('black'))}</button>
+      <button type="button" data-t="log" class="${State.arenaTab === 'log' ? 'active' : ''}">${escapeHtml(t('logTab', { n: State.arenaMoveLog.length }))}</button>
     </div>
-    <span class="mono small tabular-nums">Ply ${viewPly}/${totalPlies}</span>
+    <span class="mono small tabular-nums">${escapeHtml(t('plyCounter', { cur: viewPly, total: totalPlies }))}</span>
   </div>`);
   tabBar.querySelectorAll('#arTabSwitch button').forEach((b) => {
     b.onclick = () => {
@@ -4307,17 +4571,30 @@ function renderEngineArena() {
     const logList = document.createElement('div');
     logList.className = 'move-eval-list';
     if (State.arenaMoveLog.length === 0) {
-      logList.innerHTML = '<div class="sf-empty">No moves played yet. Waiting for opening move...</div>';
+      logList.innerHTML = `<div class="sf-empty">${escapeHtml(t('noArenaMovesYet'))}</div>`;
     } else {
       [...State.arenaMoveLog].reverse().forEach((entry, revIdx) => {
         const realIdx = State.arenaMoveLog.length - 1 - revIdx;
         const moveNo = `${Math.ceil(entry.ply / 2)}${entry.side === 'w' ? '.' : '...'}`;
         const lead = entry.snapshot?.lines?.[0];
         const scoreTxt = lead ? formatEvalScore(lead.whiteCp, lead.whiteMate) : '0.00';
+        const entryProf = localizeEngineProfile(
+          getEngineProfile(entry.profileId || (entry.side === 'w' ? State.arenaWhiteProfileId : State.arenaBlackProfileId)),
+          lang,
+        );
+        const entryThought = entry.snapshot
+          ? formatEngineThought(entry.snapshot, {
+              profile: entryProf,
+              tierLabel: '',
+              chosenSan: entry.san,
+              isThinking: false,
+              lang,
+            })
+          : entry.thoughtText;
         const row = el(`<button type="button" class="move-eval-row ${viewPly === realIdx + 1 ? 'selected' : ''}">
-          <span class="mono tabular-nums" style="font-weight:700;color:var(--walnut-dark)">${moveNo} ${escapeHtml(entry.san)}</span>
-          <span class="small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(entry.engineName)}: ${escapeHtml(entry.thoughtText)}</span>
-          <span class="mono tabular-nums" style="font-weight:600">${scoreTxt}</span>
+          <span class="mono tabular-nums" dir="ltr" style="font-weight:700;color:var(--walnut-dark)">${moveNo} ${escapeHtml(entry.san)}</span>
+          <span class="small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(entryProf.shortName)}: ${escapeHtml(entryThought)}</span>
+          <span class="mono tabular-nums" dir="ltr" style="font-weight:600">${scoreTxt}</span>
         </button>`);
         row.onclick = () => navigateArenaPly(realIdx + 1);
         logList.appendChild(row);
@@ -4357,14 +4634,15 @@ function renderEngineArena() {
 }
 
 function renderVsHuman() {
+  const lang = getLang();
   if (!State.game) {
     State.game = new Chess();
     State.gameInitialFen = State.game.fen();
   }
   const g = State.game;
   const turn = g.turn();
-  const w = State.members[State.gameWhite] || { name: 'White', rating: 1200 };
-  const b = State.members[State.gameBlack] || { name: 'Black', rating: 1200 };
+  const w = State.members[State.gameWhite] || { name: t('white'), rating: 1200 };
+  const b = State.members[State.gameBlack] || { name: t('black'), rating: 1200 };
   const coachAllowed = !State.gameRated && State.showPlayCoach;
   const totalPlies = State.gameMoveHistory.length;
   const viewPly =
@@ -4377,19 +4655,19 @@ function renderVsHuman() {
   const wrap = document.createElement('div');
   wrap.className = 'view-shell';
   wrap.appendChild(el(`<div class="view-bar">
-    <h1>${escapeHtml(w.name)} vs ${escapeHtml(b.name)}</h1>
+    <h1>${escapeHtml(t('matchupTitle', { a: w.name, b: b.name }))}</h1>
     <div class="view-bar-meta">
-      <span class="tag ${State.gameRated ? 'gold' : 'green'}">${State.gameRated ? 'Rated' : 'Friendly'}</span>
-      ${!State.gameRated ? `<button type="button" class="toggle-btn ${State.showPlayCoach ? 'active' : ''}" id="humCoachBtn">${iconSvg('coach', 14)} Coach: ${State.showPlayCoach ? 'On' : 'Off'}</button>` : ''}
-      ${totalPlies > 0 && (State.gameOver || !State.gameRated) ? `<button type="button" class="btn ghost sm" id="anHumBtn">${iconSvg('coach', 13)} Analyze</button>` : ''}
-      <button type="button" class="btn ghost sm" id="leaveHum">Leave Game</button>
+      <span class="tag ${State.gameRated ? 'gold' : 'green'}">${escapeHtml(State.gameRated ? t('ratedTag') : t('friendlyTag'))}</span>
+      ${!State.gameRated ? `<button type="button" class="toggle-btn ${State.showPlayCoach ? 'active' : ''}" id="humCoachBtn">${iconSvg('coach', 14)} ${escapeHtml(t('coachToggle', { state: State.showPlayCoach ? t('on') : t('off') }))}</button>` : ''}
+      ${totalPlies > 0 && (State.gameOver || !State.gameRated) ? `<button type="button" class="btn ghost sm" id="anHumBtn">${iconSvg('coach', 13)} ${escapeHtml(t('analyzeBtn'))}</button>` : ''}
+      <button type="button" class="btn ghost sm" id="leaveHum">${escapeHtml(t('leaveGame'))}</button>
     </div>
   </div>`));
   const anHumBtn = wrap.querySelector('#anHumBtn');
   if (anHumBtn) {
     anHumBtn.onclick = () => {
       openGameInCoachAnalyzer({
-        title: `${w.name} vs ${b.name}`,
+        title: t('matchupTitle', { a: w.name, b: b.name }),
         headers: { Event: State.gameRated ? 'Edugates Rated Match' : 'Edugates Friendly', White: w.name, Black: b.name },
         startFen: State.gameInitialFen,
         moves: State.gameMoveHistory,
@@ -4461,7 +4739,7 @@ function renderVsHuman() {
       },
     }),
   );
-  const undoBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('refresh', 13)} Undo</button>`);
+  const undoBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('refresh', 13)} ${escapeHtml(t('undo'))}</button>`);
   undoBtn.disabled = isReviewing || State.gameMoveHistory.length === 0 || State.gameOver;
   undoBtn.onclick = () => {
     g.undo();
@@ -4470,15 +4748,15 @@ function renderVsHuman() {
     State.lastMove = lastMoveSquares(g);
     render();
   };
-  const flipBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 13)} Flip</button>`);
+  const flipBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 13)} ${escapeHtml(t('flip'))}</button>`);
   flipBtn.onclick = () => {
     State.flipBoard = !State.flipBoard;
     render();
   };
-  const drawBtn = el(`<button type="button" class="btn ghost sm">Draw</button>`);
+  const drawBtn = el(`<button type="button" class="btn ghost sm">${escapeHtml(t('drawOffer'))}</button>`);
   drawBtn.disabled = State.gameOver;
   drawBtn.onclick = () => finishHumanGame('1/2-1/2', 'agreement');
-  const resignBtn = el(`<button type="button" class="btn danger sm">${escapeHtml(turn === 'w' ? w.name : b.name)} Resigns</button>`);
+  const resignBtn = el(`<button type="button" class="btn danger sm">${escapeHtml(t('playerResigns', { name: turn === 'w' ? w.name : b.name }))}</button>`);
   resignBtn.disabled = State.gameOver;
   resignBtn.onclick = () => finishHumanGame(turn === 'w' ? '0-1' : '1-0', 'resignation');
   ctrl.appendChild(undoBtn);
@@ -4492,11 +4770,11 @@ function renderVsHuman() {
   const side = document.createElement('div');
   side.className = 'play-sidebar';
   if (isReviewing) {
-    side.appendChild(el(`<div class="status-banner tabular-nums">Reviewing Ply ${viewPly}/${totalPlies} — click Last to resume live play</div>`));
+    side.appendChild(el(`<div class="status-banner tabular-nums">${escapeHtml(t('reviewingPlyPlayResume', { cur: viewPly, total: totalPlies }))}</div>`));
   } else if (State.gameOver) {
-    side.appendChild(el(`<div class="status-banner ${State.lastResult?.kind || 'draw'}">${escapeHtml(State.lastResult?.text || 'Game over')}</div>`));
+    side.appendChild(el(`<div class="status-banner ${State.lastResult?.kind || 'draw'}">${escapeHtml(resolveLastResultText(State.lastResult, lang))}</div>`));
   } else {
-    side.appendChild(el(`<div class="status-banner">${escapeHtml(turn === 'w' ? w.name : b.name)} to move${g.in_check() ? ' (Check)' : ''}</div>`));
+    side.appendChild(el(`<div class="status-banner">${escapeHtml(t('playerToMove', { name: turn === 'w' ? w.name : b.name }))}${g.in_check() ? escapeHtml(t('inCheckTag')) : ''}</div>`));
   }
   side.appendChild(el(`<div class="game-info">
     <div class="player-row ${turn === 'b' ? 'active' : ''}"><div><span class="turn-marker"></span><span class="pname">${escapeHtml(b.name)}</span></div><span class="badge elo tabular-nums">${b.rating}</span></div>
@@ -4504,7 +4782,7 @@ function renderVsHuman() {
   </div>`));
   if (coachAllowed) {
     const sfPanel = createStockfishPanel({
-      title: 'Friendly Coach Analysis',
+      title: t('sfFriendlyCoach'),
       showArrows: State.showCoachArrows,
       onToggleArrows: () => {
         State.showCoachArrows = !State.showCoachArrows;
@@ -4544,15 +4822,15 @@ async function finishHumanGame(result, reason) {
   const b = State.members[State.gameBlack];
   let scoreW = 0.5;
   let kind = 'draw';
-  let text = `Drawn by ${reason}.`;
+  let resultObj = { kind: 'draw', meta: { type: 'human-draw', reason } };
   if (result === '1-0') {
     scoreW = 1;
     kind = 'win';
-    text = `${w.name} wins by ${reason}!`;
+    resultObj = { kind: 'win', meta: { type: 'human-win', winnerName: w.name, reason } };
   } else if (result === '0-1') {
     scoreW = 0;
     kind = 'loss';
-    text = `${b.name} wins by ${reason}!`;
+    resultObj = { kind: 'loss', meta: { type: 'human-win', winnerName: b.name, reason } };
   }
   let newW = w.rating;
   let newB = b.rating;
@@ -4575,7 +4853,7 @@ async function finishHumanGame(result, reason) {
     if (State.user.id === w.id) State.user.rating = newW;
     if (State.user.id === b.id) State.user.rating = newB;
   }
-  State.lastResult = { kind, text };
+  State.lastResult = { kind, meta: resultObj.meta };
   if (w && b) {
     await saveGameRecord({
       ts: Date.now(),
@@ -4595,11 +4873,12 @@ async function finishHumanGame(result, reason) {
 // CLUB HUB (Leaderboard + Annals + Shared Clubs)
 // =========================================================
 function renderClub() {
+  const lang = getLang();
   const wrap = document.createElement('div');
   wrap.className = 'view-shell';
   wrap.appendChild(el(`<div class="view-bar">
-    <h1>${iconSvg('club', 18)} Club Standings &amp; Match Annals</h1>
-    ${sharedClub ? `<span class="tag green">Shared Firebase Mode</span>` : `<span class="tag">${Object.keys(State.members).length} Members</span>`}
+    <h1>${iconSvg('club', 18)} ${escapeHtml(t('clubStandingsTitle'))}</h1>
+    ${sharedClub ? `<span class="tag green">${escapeHtml(t('sharedFirebaseTag'))}</span>` : `<span class="tag">${escapeHtml(t('membersCountTag', { n: Object.keys(State.members).length }))}</span>`}
   </div>`));
 
   const grid = document.createElement('div');
@@ -4609,22 +4888,22 @@ function renderClub() {
   const left = document.createElement('section');
   left.className = 'card club-card';
   left.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.45rem">
-    <h3>Club Standings</h3>
-    ${sharedClub ? `<button type="button" class="btn gold sm" id="createClubBtn">${iconSvg('plus', 13)} New Club</button>` : ''}
+    <h3>${escapeHtml(t('clubStandingsHeading'))}</h3>
+    ${sharedClub ? `<button type="button" class="btn gold sm" id="createClubBtn">${iconSvg('plus', 13)} ${escapeHtml(t('newClubBtn'))}</button>` : ''}
   </div>
   <div class="scroll-pane" style="flex:1">
     <table class="leaderboard">
-      <thead><tr><th>#</th><th>Member</th><th>Elo</th><th>W-L-D</th></tr></thead>
+      <thead><tr><th>${escapeHtml(t('colRank'))}</th><th>${escapeHtml(t('colMember'))}</th><th>${escapeHtml(t('colElo'))}</th><th>${escapeHtml(t('colWld'))}</th></tr></thead>
       <tbody>
         ${Object.values(State.members).length === 0
-          ? `<tr><td colspan="4" class="small italic">${sharedClub ? 'Signed in via school email. Create or open a shared club.' : 'No local members yet.'}</td></tr>`
+          ? `<tr><td colspan="4" class="small italic">${escapeHtml(sharedClub ? t('sharedEmptyClubs') : t('noLocalMembers'))}</td></tr>`
           : Object.values(State.members)
               .sort((a, b) => b.rating - a.rating)
               .map((m, i) => `<tr class="${m.id === State.user.id ? 'you' : ''}">
                 <td class="rank tabular-nums">${i + 1}</td>
-                <td>${escapeHtml(m.name)}${m.id === State.user.id ? ' <span class="badge">you</span>' : ''}</td>
+                <td>${escapeHtml(m.name)}${m.id === State.user.id ? ` <span class="badge">${escapeHtml(t('youBadge'))}</span>` : ''}</td>
                 <td class="rating tabular-nums">${m.rating}</td>
-                <td class="mono tabular-nums">${m.wins || 0}-${m.losses || 0}-${m.draws || 0}</td>
+                <td class="mono tabular-nums" dir="ltr">${m.wins || 0}-${m.losses || 0}-${m.draws || 0}</td>
               </tr>`)
               .join('')}
       </tbody>
@@ -4633,7 +4912,10 @@ function renderClub() {
   const clubBtn = left.querySelector('#createClubBtn');
   if (clubBtn) {
     clubBtn.onclick = async () => {
-      const nm = prompt('Enter club name:', 'Edugates Varsity');
+      const nm = prompt(
+        t('enterClubNamePrompt'),
+        lang === 'ar' ? 'نادي بوابة المعرفة' : 'Edugates Varsity',
+      );
       if (!nm) return;
       const slug = nm.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       await createClub({ name: nm, slug });
@@ -4646,23 +4928,23 @@ function renderClub() {
   // Right: Recorded Games Annals
   const right = document.createElement('section');
   right.className = 'card club-card';
-  right.innerHTML = `<h3 style="margin-bottom:.45rem">Recorded Games</h3><div class="scroll-pane item-list" id="annalsList"><span class="small italic">Loading games...</span></div>`;
+  right.innerHTML = `<h3 style="margin-bottom:.45rem">${escapeHtml(t('recordedGamesHeading'))}</h3><div class="scroll-pane item-list" id="annalsList"><span class="small italic">${escapeHtml(t('loadingGames'))}</span></div>`;
   const listEl = right.querySelector('#annalsList');
   loadGameRecords().then((records) => {
     listEl.innerHTML = '';
     if (records.length === 0) {
-      listEl.innerHTML = `<p class="small italic" style="color:var(--ink-soft)">No games recorded yet. Play an Over-the-Board game to record your PGN.</p>`;
+      listEl.innerHTML = `<p class="small italic" style="color:var(--ink-soft)">${escapeHtml(t('noRecordedGames'))}</p>`;
       return;
     }
     records.forEach((r) => {
       const item = el(`<div class="list-item">
         <div class="meta">
-          <h4>${escapeHtml(r.white.name)} vs ${escapeHtml(r.black.name)}</h4>
-          <span class="small tabular-nums">${r.moves.length} plies · ${escapeHtml(r.reason)} · ${formatDate(r.ts)}</span>
+          <h4>${escapeHtml(t('matchupTitle', { a: r.white.name, b: r.black.name }))}</h4>
+          <span class="small tabular-nums">${escapeHtml(t('pliesMeta', { plies: r.moves.length, reason: tGameReason(r.reason, lang), date: formatDate(r.ts) }))}</span>
         </div>
         <div style="display:flex;gap:.35rem;align-items:center">
-          <span class="tag ${r.type === 'rated' ? 'gold' : ''}">${r.type}</span>
-          <span class="mono tabular-nums" style="font-weight:700">${escapeHtml(r.result)}</span>
+          <span class="tag ${r.type === 'rated' ? 'gold' : ''}">${escapeHtml(tMatchType(r.type, lang))}</span>
+          <span class="mono tabular-nums" dir="ltr" style="font-weight:700">${escapeHtml(r.result)}</span>
         </div>
       </div>`);
       item.onclick = () => showGameModal(r);
@@ -4676,6 +4958,7 @@ function renderClub() {
 }
 
 function showGameModal(r) {
+  const lang = getLang();
   const pgnText = r.pgn || exportGameToPgn({
     headers: { Event: 'Edugates Club Match', White: r.white.name, Black: r.black.name, Result: r.result },
     moves: r.moves || [],
@@ -4683,14 +4966,14 @@ function showGameModal(r) {
   });
   const back = el(`<div class="modal-backdrop"></div>`);
   const m = el(`<div class="modal">
-    <button type="button" class="modal-close">×</button>
-    <h2>${escapeHtml(r.white.name)} vs ${escapeHtml(r.black.name)}</h2>
-    <p class="small tabular-nums">${formatDate(r.ts)} · ${escapeHtml(r.reason)} · <strong>${escapeHtml(r.result)}</strong></p>
+    <button type="button" class="modal-close" aria-label="${escapeHtml(t('close'))}">×</button>
+    <h2>${escapeHtml(t('matchupTitle', { a: r.white.name, b: r.black.name }))}</h2>
+    <p class="small tabular-nums">${escapeHtml(formatDate(r.ts))} · ${escapeHtml(tGameReason(r.reason, lang))} · <strong dir="ltr">${escapeHtml(r.result)}</strong></p>
     <hr class="fancy"/>
-    <div class="mono tabular-nums" style="background:var(--paper-dim);padding:.75rem;font-size:.86rem;line-height:1.6;max-height:240px;overflow-y:auto">${formatPGN(r.moves)}</div>
+    <div class="mono tabular-nums pgn-viewer-box">${formatPGN(r.moves)}</div>
     <div style="display:flex;gap:.45rem;justify-content:flex-end;margin-top:.75rem;flex-wrap:wrap">
-      <button type="button" class="btn ghost sm" id="modDownloadPgn">${iconSvg('download', 13)} Download .pgn</button>
-      <button type="button" class="btn gold sm" id="modAnalyzeGame">${iconSvg('coach', 13)} Analyze in Coach</button>
+      <button type="button" class="btn ghost sm" id="modDownloadPgn">${iconSvg('download', 13)} ${escapeHtml(t('downloadPgn'))}</button>
+      <button type="button" class="btn gold sm" id="modAnalyzeGame">${iconSvg('coach', 13)} ${escapeHtml(t('analyzeInCoach'))}</button>
     </div>
   </div>`);
   m.querySelector('#modDownloadPgn').onclick = () => {
@@ -4698,13 +4981,13 @@ function showGameModal(r) {
   };
   m.querySelector('#modAnalyzeGame').onclick = () => {
     back.remove();
-    const parsed = parseImportedGames(pgnText, Chess);
+    const parsed = parseImportedGames(pgnText, Chess, { lang });
     if (parsed.ok) {
       loadParsedGamesIntoCoach(parsed.games, 'Club Match Annals');
       navigate('coach');
     } else {
       openGameInCoachAnalyzer({
-        title: `${r.white.name} vs ${r.black.name} (${r.result})`,
+        title: t('matchupTitle', { a: r.white.name, b: r.black.name }) + ` (${r.result})`,
         headers: { Event: 'Edugates Club Match', White: r.white.name, Black: r.black.name },
         moves: r.moves || [],
         result: r.result || '*',
@@ -4724,7 +5007,7 @@ function formatPGN(moves) {
   for (let i = 0; i < moves.length; i += 2) {
     s += `${i / 2 + 1}. ${moves[i] || ''} ${moves[i + 1] || ''} `;
   }
-  return s.trim() || '<em>(no moves)</em>';
+  return s.trim() || `<em>${escapeHtml(t('noMovesItalic'))}</em>`;
 }
 
 // =========================================================
@@ -4746,8 +5029,7 @@ function escapeHtml(s) {
   })[c]);
 }
 function formatDate(ts) {
-  if (!ts) return '';
-  return new Date(ts).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  return formatDateLocalized(ts, getLang());
 }
 
 document.addEventListener('keydown', (event) => {
@@ -4828,6 +5110,7 @@ document.addEventListener('keydown', (event) => {
 });
 
 (async () => {
+  applyLanguageDom(getLang());
   await loadMembers();
   await loadCurrentUser();
   render();

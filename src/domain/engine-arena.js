@@ -1,3 +1,9 @@
+import {
+  isolateChessTokens,
+  localizeEngineProfile,
+  translateDriverName,
+  translateMoveReason,
+} from '../i18n/ui-strings.js';
 import { searchClassicalPosition } from './classical-engine.js';
 import {
   StockfishClient,
@@ -74,6 +80,74 @@ export const ENGINE_PROFILES = {
       { value: 4, label: 'Senior (~2080 · d5)', depth: 5, noiseCp: 0, maxTimeMs: 1150, elo: '~2080' },
     ],
   },
+  'petrosian-hce': {
+    id: 'petrosian-hce',
+    name: 'Petrosian Fortress',
+    shortName: 'Petrosian HCE',
+    family: 'classical',
+    personality: 'prophylactic',
+    architecture: 'Prophylactic Fortress HCE',
+    styleTag: 'Iron Defense & Prophylaxis',
+    description: 'Neutralizes opponent threats early, fortifies king shelter, and steers into unbreakable endgames.',
+    defaultTier: 3,
+    tiers: [
+      { value: 1, label: 'Club (~1350 · d2)', depth: 2, noiseCp: 22, maxTimeMs: 300, elo: '~1350' },
+      { value: 2, label: 'Candidate (~1650 · d3)', depth: 3, noiseCp: 10, maxTimeMs: 500, elo: '~1650' },
+      { value: 3, label: 'Master (~1900 · d4)', depth: 4, noiseCp: 0, maxTimeMs: 850, elo: '~1900' },
+      { value: 4, label: 'Senior (~2080 · d5)', depth: 5, noiseCp: 0, maxTimeMs: 1150, elo: '~2080' },
+    ],
+  },
+  'fischer-hce': {
+    id: 'fischer-hce',
+    name: 'Fischer Precision',
+    shortName: 'Fischer HCE',
+    family: 'classical',
+    personality: 'dynamic',
+    architecture: 'Bishop-Pair & Open-Line HCE',
+    styleTag: 'Crystal-Clear Initiative',
+    description: 'Weaponizes the bishop pair, rooks on open files, and relentless classical precision into the endgame.',
+    defaultTier: 3,
+    tiers: [
+      { value: 1, label: 'Club (~1350 · d2)', depth: 2, noiseCp: 22, maxTimeMs: 300, elo: '~1350' },
+      { value: 2, label: 'Candidate (~1650 · d3)', depth: 3, noiseCp: 10, maxTimeMs: 500, elo: '~1650' },
+      { value: 3, label: 'Master (~1900 · d4)', depth: 4, noiseCp: 0, maxTimeMs: 850, elo: '~1900' },
+      { value: 4, label: 'Senior (~2080 · d5)', depth: 5, noiseCp: 0, maxTimeMs: 1150, elo: '~2080' },
+    ],
+  },
+  'nimzo-hce': {
+    id: 'nimzo-hce',
+    name: 'Nimzowitsch Hypermodern',
+    shortName: 'Nimzo HCE',
+    family: 'classical',
+    personality: 'hypermodern',
+    architecture: 'Outpost & Fianchetto HCE',
+    styleTag: 'Hypermodern & Blockade',
+    description: 'Controls the center from afar with fianchetto bishops, entrenched knight outposts, and pawn blockades.',
+    defaultTier: 3,
+    tiers: [
+      { value: 1, label: 'Club (~1350 · d2)', depth: 2, noiseCp: 22, maxTimeMs: 300, elo: '~1350' },
+      { value: 2, label: 'Candidate (~1650 · d3)', depth: 3, noiseCp: 10, maxTimeMs: 500, elo: '~1650' },
+      { value: 3, label: 'Master (~1900 · d4)', depth: 4, noiseCp: 0, maxTimeMs: 850, elo: '~1900' },
+      { value: 4, label: 'Senior (~2080 · d5)', depth: 5, noiseCp: 0, maxTimeMs: 1150, elo: '~2080' },
+    ],
+  },
+  'morphy-hce': {
+    id: 'morphy-hce',
+    name: 'Morphy Romantic',
+    shortName: 'Morphy HCE',
+    family: 'classical',
+    personality: 'romantic',
+    architecture: 'Rapid-Tempo Gambiteer HCE',
+    styleTag: 'Rapid Development & King Hunt',
+    description: 'Races every piece into play, sacrifices pawns to blast open files, and hunts uncastled kings.',
+    defaultTier: 3,
+    tiers: [
+      { value: 1, label: 'Club (~1350 · d2)', depth: 2, noiseCp: 22, maxTimeMs: 300, elo: '~1350' },
+      { value: 2, label: 'Candidate (~1650 · d3)', depth: 3, noiseCp: 10, maxTimeMs: 500, elo: '~1650' },
+      { value: 3, label: 'Master (~1900 · d4)', depth: 4, noiseCp: 0, maxTimeMs: 850, elo: '~1900' },
+      { value: 4, label: 'Senior (~2080 · d5)', depth: 5, noiseCp: 0, maxTimeMs: 1150, elo: '~2080' },
+    ],
+  },
 };
 
 export const ENGINE_PROFILE_LIST = Object.values(ENGINE_PROFILES);
@@ -87,6 +161,10 @@ export const ARENA_PRESETS = [
   { id: 'kings-indian', label: "King's Indian Attack", fen: 'rnbq1rk1/pp2ppbp/3p1np1/2p5/4P3/2NP2N1/PPP2PPP/R1BQKB1R w KQkq - 0 6' },
   { id: 'greek-gift', label: 'Greek Gift Setup', fen: 'r1bq1rk1/pppn1ppp/4p3/3pP3/1b1P4/2NB1N2/PPP2PPP/R1BQ1RK1 w - - 0 1' },
   { id: 'lucena', label: 'Lucena Rook Endgame', fen: '3K4/3P1k2/8/8/8/8/4R3/3r4 w - - 0 1' },
+  { id: 'catalan', label: 'Catalan Fianchetto', fen: 'rnbqkb1r/ppp2ppp/4pn2/3p4/2PP4/6P1/PP2PP1P/RNBQKBNR w KQkq - 0 4' },
+  { id: 'dragon', label: 'Sicilian Dragon', fen: 'rnbqkb1r/pp2pp1p/3p1np1/8/3NP3/2N5/PPP2PPP/R1BQKB1R w KQkq - 0 6' },
+  { id: 'kings-gambit', label: "King's Gambit", fen: 'rnbqkbnr/pppp1ppp/8/8/4Pp2/5N2/PPPP2PP/RNBQKB1R b KQkq - 1 2' },
+  { id: 'french-winawer', label: 'French Winawer', fen: 'rnbqk1nr/ppp2ppp/4p3/3p4/1b1PP3/2N5/PPP2PPP/R1BQKBNR w KQkq - 2 4' },
 ];
 
 export function getEngineProfile(profileId) {
@@ -264,9 +342,60 @@ export function createArenaEngine(profileId = 'sf19-nnue') {
  */
 export function formatEngineThought(
   snapshot,
-  { profile, tierLabel = '', chosenSan = null, isThinking = false } = {},
+  { profile, tierLabel = '', chosenSan = null, isThinking = false, lang = 'en' } = {},
 ) {
-  const name = profile?.name || snapshot?.engineFlavor || 'Engine';
+  const locProf = localizeEngineProfile(profile, lang);
+  const name = locProf?.name || snapshot?.engineFlavor || (lang === 'ar' ? 'المحرك' : 'Engine');
+
+  if (lang === 'ar') {
+    if (!snapshot) {
+      return `${name}${tierLabel ? ` (${tierLabel})` : ''} في وضع الاستعداد لتحليل هذه الوضعية.`;
+    }
+    if (snapshot.gameOver) {
+      return snapshot.whiteMate != null
+        ? `${name} يرى أن الدور قد حُسم بكش مات.`
+        : `${name} يرى وضعية منتهية أو متعادلة.`;
+    }
+    if (!snapshot.lines || snapshot.lines.length === 0) {
+      return isThinking
+        ? `${name} يفحص الأخذات الإجبارية والكشّات والخطط المرشحة...`
+        : `بانتظار التفريعات المرشحة من ${name}...`;
+    }
+
+    const lead = snapshot.lines[0];
+    const scoreTxt = formatEvalScore(lead.whiteCp, lead.whiteMate);
+    const pvTxt = (lead.pvSan || []).slice(0, 4).join(' ');
+    const motif = translateMoveReason(lead.reason || 'Positional improvement', 'ar');
+
+    let driverClause = '';
+    if (snapshot.breakdown) {
+      const drivers = [
+        ['king safety', snapshot.breakdown.kingSafety],
+        ['pawn structure', snapshot.breakdown.structure],
+        ['mobility', snapshot.breakdown.mobility],
+        ['center control', snapshot.breakdown.center],
+      ].sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+      const strongest = drivers[0];
+      if (strongest && Math.abs(strongest[1]) >= 18) {
+        const sign = strongest[1] > 0 ? '+' : '';
+        driverClause = ` أبرز عامل تقييم: ${translateDriverName(strongest[0], 'ar')} (${sign}${(strongest[1] / 100).toFixed(2)}).`;
+      }
+    }
+
+    if (chosenSan && chosenSan !== lead.bestMoveSan) {
+      return isolateChessTokens(
+        `اختار ${chosenSan} (وفق المستوى المحدّد)، بينما فضّل الحساب الدقيق ${lead.bestMoveSan} (${scoreTxt} عند عمق ${snapshot.depth}، ${motif}). التفريع المتوقّع: ${pvTxt}.${driverClause}`,
+        'ar',
+      );
+    }
+
+    const verb = chosenSan ? `اعتمد ${chosenSan}` : `يرجّح ${lead.bestMoveSan}`;
+    return isolateChessTokens(
+      `${verb} بتقييم ${scoreTxt} (عمق ${snapshot.depth}) — ${motif}. التفريع المتوقّع: ${pvTxt}.${driverClause}`,
+      'ar',
+    );
+  }
+
   if (!snapshot) {
     return `${name}${tierLabel ? ` (${tierLabel})` : ''} is standing by on this position.`;
   }
@@ -323,7 +452,7 @@ function snapToComparableCp(snap) {
 /**
  * Compares both engines' current evaluations to highlight alignment or tactical disagreement.
  */
-export function computeEvalDisagreement(whiteSnap, blackSnap) {
+export function computeEvalDisagreement(whiteSnap, blackSnap, lang = 'en') {
   const wText = whiteSnap && (whiteSnap.lines?.length || whiteSnap.gameOver)
     ? formatEvalScore(whiteSnap.whiteCp, whiteSnap.whiteMate)
     : '--';
@@ -338,7 +467,7 @@ export function computeEvalDisagreement(whiteSnap, blackSnap) {
       whiteText: wText,
       blackText: bText,
       deltaPawns: null,
-      agreementLabel: 'Awaiting both evals',
+      agreementLabel: lang === 'ar' ? 'بانتظار التقييمين' : 'Awaiting both evals',
       tone: 'aligned',
     };
   }
@@ -349,7 +478,7 @@ export function computeEvalDisagreement(whiteSnap, blackSnap) {
       whiteText: wText,
       blackText: bText,
       deltaPawns: delta,
-      agreementLabel: `Aligned (Δ ${delta.toFixed(2)})`,
+      agreementLabel: lang === 'ar' ? `متوافقان (Δ ${delta.toFixed(2)})` : `Aligned (Δ ${delta.toFixed(2)})`,
       tone: 'aligned',
     };
   }
@@ -358,7 +487,7 @@ export function computeEvalDisagreement(whiteSnap, blackSnap) {
       whiteText: wText,
       blackText: bText,
       deltaPawns: delta,
-      agreementLabel: `Mild Split (Δ ${delta.toFixed(2)})`,
+      agreementLabel: lang === 'ar' ? `تباين طفيف (Δ ${delta.toFixed(2)})` : `Mild Split (Δ ${delta.toFixed(2)})`,
       tone: 'divergent',
     };
   }
@@ -366,7 +495,7 @@ export function computeEvalDisagreement(whiteSnap, blackSnap) {
     whiteText: wText,
     blackText: bText,
     deltaPawns: delta,
-    agreementLabel: `Eval Clash (Δ ${delta.toFixed(2)})`,
+    agreementLabel: lang === 'ar' ? `تعارض تقييم (Δ ${delta.toFixed(2)})` : `Eval Clash (Δ ${delta.toFixed(2)})`,
     tone: 'clash',
   };
 }
