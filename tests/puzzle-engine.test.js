@@ -4,9 +4,11 @@ import {
   advanceQuizSession,
   createQuizSession,
   evaluatePuzzleMove,
+  extractQuizOptionSan,
   filterPuzzles,
   paginateItems,
   submitQuizAnswer,
+  submitQuizMove,
   summarizeQuizSession,
 } from '../src/domain/puzzle-engine.js';
 
@@ -106,5 +108,102 @@ describe('puzzle-engine domain helpers', () => {
 
     const summary = summarizeQuizSession(session);
     expect(summary).toMatchObject({ total: 3, answered: 3, correct: 2, accuracy: 67 });
+  });
+
+  it('supports answering quiz questions directly via board moves alongside multiple choice', () => {
+    expect(extractQuizOptionSan('c3 — Prepare the d4 pawn center')).toBe('c3');
+    expect(extractQuizOptionSan('O-O-O – Castle queenside')).toBe('O-O-O');
+
+    const quizzes = [
+      {
+        id: 'qz-board-1',
+        category: 'Openings',
+        fen: 'r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4',
+        options: ['c3 — Prepare d4', 'Bb5 — Flank move', 'g4 — Expose king', 'h3 — Slow prophylactic'],
+        correctIndex: 0,
+        recommendedSan: 'c3',
+        explanation: 'Prepares d4.',
+      },
+      {
+        id: 'qz-board-2',
+        category: 'Openings',
+        fen: 'r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4',
+        options: ['c3 — Prepare d4', 'Bb5 — Flank move', 'g4 — Expose king', 'h3 — Slow prophylactic'],
+        correctIndex: 0,
+        recommendedSan: 'c3',
+        explanation: 'Prepares d4.',
+      },
+      {
+        id: 'qz-board-3',
+        category: 'Openings',
+        fen: 'r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4',
+        options: ['c3 — Prepare d4', 'Bb5 — Flank move', 'g4 — Expose king', 'h3 — Slow prophylactic'],
+        correctIndex: 0,
+        recommendedSan: 'c3',
+        explanation: 'Prepares d4.',
+      },
+      {
+        id: 'qz-opt-4',
+        category: 'Openings',
+        fen: 'r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4',
+        options: ['c3 — Prepare d4', 'Bb5 — Flank move', 'g4 — Expose king', 'h3 — Slow prophylactic'],
+        correctIndex: 0,
+        recommendedSan: 'c3',
+        explanation: 'Prepares d4.',
+      },
+    ];
+
+    let sess = createQuizSession(quizzes, { category: 'Openings', count: 4 });
+
+    // Illegal move does not answer or mutate session
+    const afterIllegal = submitQuizMove(sess, { from: 'e1', to: 'e8' }, { ChessCtor: Chess });
+    expect(afterIllegal).toBe(sess);
+
+    // 1. Correct answer played directly on board (c2->c3)
+    sess = submitQuizMove(sess, { from: 'c2', to: 'c3' }, { ChessCtor: Chess });
+    expect(sess.lastResult).toMatchObject({
+      isCorrect: true,
+      chosenIndex: 0,
+      answeredVia: 'board',
+      playedSan: 'c3',
+      playedMove: { from: 'c2', to: 'c3' },
+    });
+    expect(sess.lastResult.fenAfter).toContain('2P2N2');
+
+    // Double-move on same answered question is ignored
+    expect(submitQuizMove(sess, { from: 'd2', to: 'd3' }, { ChessCtor: Chess })).toBe(sess);
+
+    // 2. Wrong board move matching distractor option Bb5 (c4->b5 -> index 1)
+    sess = advanceQuizSession(sess);
+    sess = submitQuizMove(sess, { from: 'c4', to: 'b5' }, { ChessCtor: Chess });
+    expect(sess.lastResult).toMatchObject({
+      isCorrect: false,
+      chosenIndex: 1,
+      answeredVia: 'board',
+      playedSan: 'Bb5',
+      playedMove: { from: 'c4', to: 'b5' },
+    });
+
+    // 3. Wrong legal board move not in options (a2->a3 -> chosenIndex -1)
+    sess = advanceQuizSession(sess);
+    sess = submitQuizMove(sess, { from: 'a2', to: 'a3' }, { ChessCtor: Chess });
+    expect(sess.lastResult).toMatchObject({
+      isCorrect: false,
+      chosenIndex: -1,
+      answeredVia: 'board',
+      playedSan: 'a3',
+      playedMove: { from: 'a2', to: 'a3' },
+    });
+
+    // 4. Multiple-choice option answer still works and populates board preview metadata
+    sess = advanceQuizSession(sess);
+    sess = submitQuizAnswer(sess, 0, { ChessCtor: Chess });
+    expect(sess.lastResult).toMatchObject({
+      isCorrect: true,
+      chosenIndex: 0,
+      answeredVia: 'option',
+      playedSan: 'c3',
+      playedMove: { from: 'c2', to: 'c3' },
+    });
   });
 });

@@ -253,9 +253,36 @@ export function createQuizSession(quizzes, { category = 'All', count = 10, offse
 }
 
 /**
- * Record the user's answer for the active quiz question without immediately skipping explanation.
+ * Extracts the leading SAN move token from a multiple-choice quiz option string.
  */
-export function submitQuizAnswer(session, optionIndex) {
+export function extractQuizOptionSan(optionText) {
+  if (typeof optionText !== 'string') return '';
+  return optionText.split(/\s+[—–-]\s+/)[0].trim();
+}
+
+function tryApplyQuizMove(fen, moveInput, ChessCtor = Chess) {
+  if (!fen || !moveInput) return null;
+  try {
+    const probe = new ChessCtor(fen);
+    const applied =
+      typeof moveInput === 'string'
+        ? probe.move(moveInput, { sloppy: true })
+        : probe.move({
+            from: moveInput.from,
+            to: moveInput.to,
+            promotion: moveInput.promotion || 'q',
+          });
+    if (!applied) return null;
+    return { applied, probe };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Record the user's answer for the active quiz question via multiple choice without immediately skipping explanation.
+ */
+export function submitQuizAnswer(session, optionIndex, { ChessCtor = Chess } = {}) {
   if (!session || session.completed) return session;
   const item = session.items[session.currentIndex];
   if (!item) return { ...session, completed: true };
@@ -267,6 +294,11 @@ export function submitQuizAnswer(session, optionIndex) {
 
   const chosenIndex = Number(optionIndex);
   const isCorrect = chosenIndex === item.correctIndex;
+  const optionSan = extractQuizOptionSan(item.options?.[chosenIndex]);
+  const res =
+    tryApplyQuizMove(item.fen, optionSan, ChessCtor) ||
+    (isCorrect ? tryApplyQuizMove(item.fen, item.recommendedSan, ChessCtor) : null);
+
   const record = {
     quizId: item.id,
     category: item.category,
@@ -275,6 +307,72 @@ export function submitQuizAnswer(session, optionIndex) {
     isCorrect,
     recommendedSan: item.recommendedSan,
     explanation: item.explanation,
+    answeredVia: 'option',
+    playedSan: res ? res.applied.san : null,
+    playedMove: res ? { from: res.applied.from, to: res.applied.to } : null,
+    fenAfter: res ? res.probe.fen() : null,
+  };
+
+  return {
+    ...session,
+    answers: [...session.answers, record],
+    lastResult: record,
+  };
+}
+
+/**
+ * Record the user's answer for the active quiz question by moving a piece directly on the board.
+ */
+export function submitQuizMove(session, playedMoveObj, { ChessCtor = Chess } = {}) {
+  if (!session || session.completed || !playedMoveObj) return session;
+  const item = session.items[session.currentIndex];
+  if (!item) return { ...session, completed: true };
+
+  // Prevent double-answering the same question index.
+  if (session.answers.length > session.currentIndex) {
+    return session;
+  }
+
+  const res = tryApplyQuizMove(item.fen, playedMoveObj, ChessCtor);
+  if (!res) return session;
+
+  const { applied, probe } = res;
+  const recSan = String(item.recommendedSan || '');
+  const isCorrect =
+    applied.san === recSan ||
+    stripCheckSuffix(applied.san) === stripCheckSuffix(recSan) ||
+    (recSan.endsWith('#') && probe.in_checkmate());
+
+  let chosenIndex = isCorrect ? item.correctIndex : -1;
+  if (!isCorrect && Array.isArray(item.options)) {
+    for (let i = 0; i < item.options.length; i += 1) {
+      const optAttempt = tryApplyQuizMove(item.fen, extractQuizOptionSan(item.options[i]), ChessCtor);
+      if (!optAttempt) continue;
+      const optMove = optAttempt.applied;
+      if (
+        (optMove.from === applied.from &&
+          optMove.to === applied.to &&
+          (optMove.promotion || '') === (applied.promotion || '')) ||
+        stripCheckSuffix(optMove.san) === stripCheckSuffix(applied.san)
+      ) {
+        chosenIndex = i;
+        break;
+      }
+    }
+  }
+
+  const record = {
+    quizId: item.id,
+    category: item.category,
+    chosenIndex,
+    correctIndex: item.correctIndex,
+    isCorrect,
+    recommendedSan: item.recommendedSan,
+    explanation: item.explanation,
+    answeredVia: 'board',
+    playedSan: applied.san,
+    playedMove: { from: applied.from, to: applied.to },
+    fenAfter: probe.fen(),
   };
 
   return {

@@ -92,6 +92,7 @@ import {
   filterPuzzles,
   paginateItems,
   submitQuizAnswer,
+  submitQuizMove,
   summarizeQuizSession,
 } from './domain/puzzle-engine.js';
 import { iconSvg } from './ui/icons.js';
@@ -3844,6 +3845,9 @@ function renderQuizSprint() {
 
   topControls.querySelectorAll('#qzCatTabs button').forEach((b) => {
     b.onclick = () => {
+      State.selectedSquare = null;
+      State.legalDests = [];
+      State.promotionPending = null;
       State.quizCategory = b.dataset.cat;
       State.quizSession = createQuizSession(QUIZZES, {
         category: State.quizCategory,
@@ -3858,6 +3862,9 @@ function renderQuizSprint() {
     render();
   };
   topControls.querySelector('#qzNew').onclick = () => {
+    State.selectedSquare = null;
+    State.legalDests = [];
+    State.promotionPending = null;
     State.quizSession = createQuizSession(QUIZZES, {
       category: State.quizCategory,
       count: 10,
@@ -3884,6 +3891,9 @@ function renderQuizSprint() {
       <button type="button" class="btn gold" id="restartQz" style="margin-top:.6rem">${escapeHtml(t('startFreshSprint'))}</button>
     </div>`);
     card.querySelector('#restartQz').onclick = () => {
+      State.selectedSquare = null;
+      State.legalDests = [];
+      State.promotionPending = null;
       State.quizSession = createQuizSession(QUIZZES, {
         category: State.quizCategory,
         count: 10,
@@ -3897,7 +3907,8 @@ function renderQuizSprint() {
 
   const rawQ = session.items[session.currentIndex];
   const q = localizeQuiz(rawQ, lang);
-  const g = new Chess(rawQ.fen);
+  const answered = session.lastResult !== null;
+  const g = new Chess(answered && session.lastResult?.fenAfter ? session.lastResult.fenAfter : rawQ.fen);
   const layout = document.createElement('div');
   layout.className = `play-layout${State.boardMaximized ? ' board-maximized' : ''}`;
 
@@ -3905,7 +3916,25 @@ function renderQuizSprint() {
   boardCol.className = 'board-column no-controls';
   const stage = buildBoardStage(g, {
     flip: rawQ.sideToMove === 'Black',
-    interactive: false,
+    lastMove: answered ? session.lastResult?.playedMove || null : null,
+    interactive: !answered && !State.promotionPending,
+    silentMoves: true,
+    onMove: (playedMove) => {
+      const nextSess = submitQuizMove(
+        State.quizSession,
+        {
+          from: playedMove.from,
+          to: playedMove.to,
+          promotion: playedMove.promotion,
+        },
+        { ChessCtor: Chess },
+      );
+      State.quizSession = nextSess;
+      if (nextSess.lastResult) {
+        playChessSound(nextSess.lastResult.isCorrect ? 'puzzleCorrect' : 'puzzleWrong', State.preferences.sound);
+      }
+      render();
+    },
     showEvalBar: State.showQuizStockfish,
     showArrows: State.showQuizStockfish,
   });
@@ -3925,12 +3954,12 @@ function renderQuizSprint() {
     </div>
     <h4>${escapeHtml(q.theme)}</h4>
     <p style="margin:0;color:var(--ink)">${escapeHtml(q.question)}</p>
+    ${!answered ? `<p class="small" style="margin:.25rem 0 0;color:var(--ink-soft)">${escapeHtml(t('quizBoardInputHint', {}, lang))}</p>` : ''}
   </div>`);
   side.appendChild(qHeader);
 
   const optsWrap = document.createElement('div');
   optsWrap.className = 'quiz-options';
-  const answered = session.lastResult !== null;
   const letters = lang === 'ar' ? ['أ', 'ب', 'ج', 'د'] : ['A', 'B', 'C', 'D'];
   q.options.forEach((optText, idx) => {
     let cls = 'quiz-opt';
@@ -3943,7 +3972,14 @@ function renderQuizSprint() {
       <span>${escapeHtml(optText)}</span>
     </button>`);
     btn.onclick = () => {
-      State.quizSession = submitQuizAnswer(State.quizSession, idx);
+      State.selectedSquare = null;
+      State.legalDests = [];
+      State.promotionPending = null;
+      const nextSess = submitQuizAnswer(State.quizSession, idx);
+      State.quizSession = nextSess;
+      if (nextSess.lastResult) {
+        playChessSound(nextSess.lastResult.isCorrect ? 'puzzleCorrect' : 'puzzleWrong', State.preferences.sound);
+      }
       render();
     };
     optsWrap.appendChild(btn);
@@ -3952,7 +3988,11 @@ function renderQuizSprint() {
 
   if (answered) {
     const res = session.lastResult;
-    const leadFeedback = res.isCorrect ? t('quizCorrect') : t('quizWrong', { san: res.recommendedSan });
+    const leadFeedback = res.isCorrect
+      ? t('quizCorrect')
+      : res.answeredVia === 'board' && res.playedSan
+        ? isolateChessTokens(t('quizWrongPlayed', { played: res.playedSan, san: res.recommendedSan }, lang), lang)
+        : isolateChessTokens(t('quizWrong', { san: res.recommendedSan }, lang), lang);
     const fb = el(`<div class="puzzle-feedback ${res.isCorrect ? 'correct' : 'wrong'}">
       <div><strong>${escapeHtml(leadFeedback)}</strong> ${escapeHtml(q.explanation)}</div>
       <div style="margin-top:.4rem;display:flex;justify-content:flex-end">
@@ -3960,6 +4000,9 @@ function renderQuizSprint() {
       </div>
     </div>`);
     fb.querySelector('#qzNext').onclick = () => {
+      State.selectedSquare = null;
+      State.legalDests = [];
+      State.promotionPending = null;
       const nextSess = advanceQuizSession(State.quizSession);
       State.quizSession = nextSess;
       if (nextSess.completed) {
@@ -3989,7 +4032,7 @@ function renderQuizSprint() {
     });
     State.dom.sfPanel = sfPanel;
     side.appendChild(sfPanel);
-    triggerLiveAnalysis(rawQ.fen, { depth: 11, multiPv: 3 });
+    triggerLiveAnalysis(g.fen(), { depth: 11, multiPv: 3 });
   }
 
   layout.appendChild(side);
