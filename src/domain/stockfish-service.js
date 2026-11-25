@@ -224,6 +224,39 @@ export function describeSuggestedMove(fen, uciMove, sanMove, pvSan = [], ChessCt
 }
 
 /**
+ * Detects whether a move sacrifices material (>= 1.5 pawns net after immediate opponent capture/recapture).
+ */
+export function detectMaterialSacrifice(fenBefore, moveUci, fenAfter, ChessCtor = Chess) {
+  if (!fenBefore || !moveUci || !fenAfter) return false;
+  try {
+    const beforeGame = createChess(fenBefore, ChessCtor);
+    const moveObj = uciToMoveObj(moveUci);
+    const played = moveObj ? beforeGame.move(moveObj) : null;
+    if (!played || played.piece === 'p' || played.piece === 'k') return false;
+
+    const sacrificeVal = PIECE_VALUE[played.piece] || 0;
+    const gainedInitial = played.captured ? (PIECE_VALUE[played.captured] || 0) : 0;
+    if (sacrificeVal < 3 || sacrificeVal - gainedInitial < 1.5) return false;
+
+    const afterGame = createChess(fenAfter, ChessCtor);
+    const oppCaptures = afterGame.moves({ verbose: true }).filter((m) => m.to === played.to);
+    if (oppCaptures.length === 0) return false;
+
+    for (const oppCap of oppCaptures) {
+      const probe = createChess(afterGame.fen(), ChessCtor);
+      probe.move({ from: oppCap.from, to: oppCap.to, promotion: oppCap.promotion });
+      const recaptures = probe.moves({ verbose: true }).filter((m) => m.to === played.to);
+      const bestRecaptureVal = recaptures.length > 0 ? (PIECE_VALUE[oppCap.piece] || 0) : 0;
+      const netSacrificed = sacrificeVal - gainedInitial - bestRecaptureVal;
+      if (netSacrificed >= 1.5) return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Grades a played move against Stockfish's evaluation before and after the move.
  */
 export function gradePlayedMove({
@@ -235,6 +268,8 @@ export function gradePlayedMove({
   playedUci = '',
   bestUci = '',
   bestSan = '',
+  isBookMove = false,
+  isBrilliantSacrifice = false,
   lang = 'en',
 }) {
   const dir = moverColor === 'b' ? -1 : 1;
@@ -245,7 +280,25 @@ export function gradePlayedMove({
   const cpLoss = isEngineChoice ? 0 : rawLoss;
 
   let res;
-  if (isEngineChoice || cpLoss <= 8) {
+  if (isBookMove && cpLoss <= 35) {
+    res = {
+      grade: 'book',
+      label: 'Book Move',
+      symbol: '📖',
+      cpLoss: 0,
+      bestSan,
+      summary: 'Standard theoretical opening move.',
+    };
+  } else if (isBrilliantSacrifice && (isEngineChoice || cpLoss <= 15) && nextScore >= -20) {
+    res = {
+      grade: 'brilliant',
+      label: 'Brilliant',
+      symbol: '!!',
+      cpLoss: 0,
+      bestSan,
+      summary: 'Brilliant tactical sacrifice that seizes the initiative!',
+    };
+  } else if (isEngineChoice || cpLoss <= 8) {
     res = {
       grade: 'best',
       label: 'Best Move',

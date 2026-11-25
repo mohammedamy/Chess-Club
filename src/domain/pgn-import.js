@@ -562,6 +562,8 @@ export function buildPositionAtPly(startFen = STANDARD_START_FEN, moves = [], ta
  */
 export function computeGameAccuracySummary(moves = []) {
   const emptyBucket = () => ({
+    book: 0,
+    brilliant: 0,
     best: 0,
     excellent: 0,
     good: 0,
@@ -575,11 +577,25 @@ export function computeGameAccuracySummary(moves = []) {
 
   const counts = { w: emptyBucket(), b: emptyBucket() };
   const keyPlies = [];
+  const brilliantPlies = [];
+  const evalSeries = [];
 
   for (let i = 0; i < moves.length; i += 1) {
     const m = moves[i];
     const g = m?.grade;
     const color = m?.color || (i % 2 === 0 ? 'w' : 'b');
+
+    if (m && (m.evalWhiteCp != null || m.evalWhiteMate != null)) {
+      evalSeries.push({
+        ply: i + 1,
+        san: m.san || '',
+        color,
+        whiteCp: m.evalWhiteCp ?? 0,
+        whiteMate: m.evalWhiteMate ?? null,
+        grade: g?.grade || null,
+      });
+    }
+
     if (!g || !counts[color]) continue;
 
     const bucket = counts[color];
@@ -589,6 +605,8 @@ export function computeGameAccuracySummary(moves = []) {
 
     if (['inaccuracy', 'mistake', 'blunder'].includes(g.grade)) {
       keyPlies.push(i + 1);
+    } else if (g.grade === 'brilliant') {
+      brilliantPlies.push(i + 1);
     }
   }
 
@@ -603,5 +621,7 @@ export function computeGameAccuracySummary(moves = []) {
     blackAccuracy: calcAcc(counts.b),
     counts,
     keyPlies,
+    brilliantPlies,
+    evalSeries,
   };
 }
