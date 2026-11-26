@@ -422,6 +422,7 @@
     scrollbar-width:thin;scrollbar-color:var(--rule) transparent;
   }
   .moves-panel{
+    position:relative;
     background:var(--paper);border:1px solid var(--rule);border-radius:4px;
     padding:.55rem .72rem;max-height:175px;min-height:84px;overflow-y:auto;
     font-family:'JetBrains Mono',monospace;font-size:.82rem;
@@ -993,10 +994,60 @@
   }
   .zen-exit-btn:hover{background:var(--gold);color:var(--walnut-dark)}
 
+  /* World Classic Games Database */
+  .db-filter-panel{
+    background:var(--paper);border:1px solid var(--rule);border-radius:4px;
+    padding:.45rem .6rem;display:flex;flex-direction:column;gap:.35rem;flex-shrink:0;
+  }
+  .db-filter-row{display:flex;gap:.38rem;flex-wrap:wrap;align-items:center}
+  .db-filter-row input,.db-filter-row select{padding:.24rem .46rem;font-size:.82rem}
+  .db-results-region{flex:1;min-height:0;display:flex;flex-direction:column;gap:.4rem;overflow:hidden}
+  .db-stats-strip{
+    background:var(--paper);border:1px solid var(--rule);border-radius:4px;
+    padding:.35rem .58rem;display:flex;align-items:center;justify-content:space-between;
+    gap:.45rem;flex-wrap:wrap;flex-shrink:0;
+  }
+  .db-wdb-wrap{display:inline-flex;align-items:center;gap:.42rem}
+  .db-wdb-bar{
+    width:128px;height:10px;border-radius:999px;overflow:hidden;display:flex;
+    background:var(--paper-dim);border:1px solid var(--rule);
+  }
+  .wdb-w{background:#efe7d2;height:100%}
+  .wdb-d{background:var(--gold);height:100%}
+  .wdb-b{background:var(--walnut-dark);height:100%}
+  .db-quick-chips{display:flex;flex-wrap:wrap;gap:.24rem;align-items:center}
+  .db-workspace{
+    flex:1;min-height:0;display:grid;
+    grid-template-columns:minmax(380px,1.15fr) minmax(340px,1fr);
+    gap:.6rem;overflow:hidden;
+  }
+  .db-table-pane,.db-replay-pane{
+    display:flex;flex-direction:column;gap:.34rem;min-height:0;overflow:hidden;padding:.52rem .65rem;
+  }
+  .db-replay-pane{overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--rule) transparent}
+  .db-replay-pane > *{flex-shrink:0}
+  .db-replay-pane .moves-panel{max-height:132px;min-height:76px}
+  .db-replay-pane .board-controls{gap:.28rem;overflow:visible}
+  .db-replay-pane .board-controls .btn{padding:.26rem .52rem;font-size:.78rem;min-height:29px}
+  .db-replay-pane .move-transport{min-height:29px}
+  .db-replay-pane .move-transport button{padding:.22rem .42rem;font-size:.75rem;min-height:27px}
+  table.db-table th,table.db-table td{padding:.34rem .48rem;font-size:.8rem;vertical-align:middle}
+  table.db-table tr.db-row{cursor:pointer}
+  .db-cell-players{font-weight:600;color:var(--walnut-dark);line-height:1.2}
+  .db-res-pill{
+    display:inline-block;padding:.1rem .4rem;border-radius:3px;font:700 .72rem 'JetBrains Mono',monospace;
+    white-space:nowrap;border:1px solid var(--rule);
+  }
+  .db-res-pill.res-w{background:var(--paper-dim);color:var(--walnut-dark)}
+  .db-res-pill.res-d{background:rgba(184,137,63,.2);color:var(--walnut-dark);border-color:var(--gold)}
+  .db-res-pill.res-b{background:var(--walnut-dark);color:var(--cream);border-color:var(--walnut-dark)}
+  .db-replay-board-wrap{display:flex;justify-content:center}
+  .db-replay-board-wrap .board-wrap{--board-side:clamp(195px,min(calc(100dvh - 465px),275px),320px)}
+
   /* Directional Icons, Strict LTR Chess Islands & Native Arabic RTL Typography */
   [dir="rtl"] .ui-icon-dir{transform:scaleX(-1)}
   .board-frame,.board-wrap,.board,.promo-card{direction:ltr}
-  .moves-list,.moves-list .move,.pv-move-btn,.pv-move-pill,.pv-score,.pv-tail,.eval-bar-score,.fen-bar input,.acc-counts,.chess-clock,.explorer-move-chip,.material-bar,.online-rating-badges{
+  .moves-list,.moves-list .move,.pv-move-btn,.pv-move-pill,.pv-score,.pv-tail,.eval-bar-score,.fen-bar input,.acc-counts,.chess-clock,.explorer-move-chip,.material-bar,.online-rating-badges,.db-cell-players{
     direction:ltr;unicode-bidi:isolate;
   }
   [dir="rtl"] .fen-bar input{text-align:left}
@@ -1062,12 +1113,13 @@
 
   @media(max-width:1380px){
     .brand-text .title{display:none}
-    nav.primary button{padding:.28rem .42rem;font-size:.82rem}
+    nav.primary button{padding:.24rem .34rem;font-size:.78rem;gap:.2rem}
     #zenToggleBtn span{display:none}
     .user-pill .name{display:none}
   }
   @media(max-width:980px){
     .setup-grid-3{grid-template-columns:1fr;overflow-y:auto}
+    .db-workspace{grid-template-columns:1fr;overflow-y:auto}
   }
   @media(max-width:900px){
     :root{--header-height:42px}
@@ -1076,7 +1128,7 @@
     nav.primary{
       position:fixed;left:0;right:0;bottom:0;height:48px;z-index:60;
       background:var(--walnut-dark);border-top:1px solid var(--gold);
-      display:grid;grid-template-columns:repeat(8,1fr);gap:0;padding:.15rem;
+      display:grid;grid-template-columns:repeat(9,1fr);gap:0;padding:.15rem;
       box-shadow:0 -3px 12px rgba(0,0,0,.25);
     }
     nav.primary button{

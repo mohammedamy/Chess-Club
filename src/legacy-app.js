@@ -96,6 +96,17 @@ import {
   submitQuizMove,
   summarizeQuizSession,
 } from './domain/puzzle-engine.js';
+import {
+  CLASSIC_PLAYER_HINTS,
+  COLLECTION_TYPES,
+  decodeGamesDbPayload,
+  ECO_FAMILIES,
+  ENDGAME_TYPES,
+  exportFilteredGamesPgn,
+  filterClassicGames,
+  gameRecordToPgn,
+  summarizeGamesResults,
+} from './domain/games-db.js';
 import { iconSvg } from './ui/icons.js';
 import {
   applyLanguageDom,
@@ -122,7 +133,9 @@ import {
   t,
   tBinaryKind,
   tCategory,
+  tCollectionType,
   tDifficulty,
+  tEndgameType,
   tGameReason,
   tMatchType,
   tPieceName,
@@ -472,6 +485,26 @@ const State = {
   sharedClubs: [],
   clubSyncStatus: null,
   clubSyncing: false,
+  gamesDbLoaded: false,
+  gamesDbLoading: false,
+  gamesDbError: null,
+  gamesDbAll: [],
+  gamesDbMeta: null,
+  gamesDbFilters: {
+    playerQuery: '',
+    playerSide: 'any',
+    openingQuery: '',
+    ecoFamily: '',
+    endgame: '',
+    result: '',
+    collection: '',
+    yearFrom: '',
+    yearTo: '',
+    sortBy: 'year-desc',
+  },
+  gamesDbPage: 1,
+  gamesDbSelectedId: null,
+  gamesDbPly: 0,
   preferences: loadPreferences(),
   training: loadTrainingProgress(),
 };
@@ -942,6 +975,7 @@ function render() {
     'vs-human': renderVsHuman,
     'vs-engine': renderVsEngine,
     'engine-arena': renderEngineArena,
+    'games-db': renderGamesDb,
     club: renderClub,
   };
   const viewFn = pages[State.page] || renderHome;
@@ -982,6 +1016,7 @@ function renderHeader() {
     ['strategy', t('navStrategy'), 'strategy'],
     ['endgames', t('navEndgames'), 'endgames'],
     ['play-menu', t('navPlay'), 'play'],
+    ['games-db', t('navGamesDb'), 'database'],
     ['club', t('navClub'), 'club'],
   ];
 
@@ -1389,9 +1424,12 @@ function renderHome() {
 
   // Card 4: Complete Library Tracks
   const tracks = el(`<section class="bento-card library-tracks">
-    <div style="display:flex;justify-content:space-between;align-items:center">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:.45rem;flex-wrap:wrap">
       <h3>${escapeHtml(t('studyLibraryTitle'))}</h3>
-      <span class="small tabular-nums">${escapeHtml(t('libraryCounts', { studies: OPENINGS.length + TRAPS.length + MIDDLEGAME_LESSONS.length + ENDGAMES.length, puzzles: PUZZLES.length, quizzes: QUIZZES.length }))}</span>
+      <div style="display:flex;align-items:center;gap:.45rem;flex-wrap:wrap">
+        <span class="small tabular-nums">${escapeHtml(t('libraryCounts', { studies: OPENINGS.length + TRAPS.length + MIDDLEGAME_LESSONS.length + ENDGAMES.length, puzzles: PUZZLES.length, quizzes: QUIZZES.length }))}</span>
+        <button type="button" class="btn gold sm" id="trkGamesDb">${iconSvg('database', 13)} ${escapeHtml(t('openGamesDb'))}</button>
+      </div>
     </div>
     <div class="track-strip">
       <button type="button" class="track-tile" id="trkOpenings">
@@ -1421,6 +1459,7 @@ function renderHome() {
     navigate('puzzles');
   };
   tracks.querySelector('#trkMastery').onclick = () => navigate('strategy');
+  tracks.querySelector('#trkGamesDb').onclick = () => navigate('games-db');
   grid.appendChild(tracks);
 
   return grid;
@@ -1922,8 +1961,9 @@ function buildMovesPanel(
   panel.appendChild(ml);
   setTimeout(() => {
     const curEl = ml.querySelector('.move.current');
-    if (curEl && typeof curEl.scrollIntoView === 'function') {
-      curEl.scrollIntoView({ block: 'nearest' });
+    if (curEl) {
+      const targetTop = curEl.offsetTop - Math.max(0, (panel.clientHeight - curEl.offsetHeight) / 2);
+      panel.scrollTop = Math.max(0, targetTop);
     } else if (activePly >= total) {
       panel.scrollTop = panel.scrollHeight;
     }
@@ -6353,6 +6393,508 @@ async function finishHumanGame(result, reason) {
 }
 
 // =========================================================
+// WORLD CLASSIC GAMES DATABASE (Openings, Endgames, Players, Year, Results)
+// =========================================================
+async function ensureGamesDbLoaded() {
+  if (State.gamesDbLoaded || State.gamesDbLoading) return;
+  State.gamesDbLoading = true;
+  State.gamesDbError = null;
+  try {
+    const res = await fetch('./data/classic-games-db.json');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const payload = await res.json();
+    const normalized = decodeGamesDbPayload(payload);
+    State.gamesDbAll = normalized;
+    State.gamesDbMeta = payload?.stats || null;
+    State.gamesDbLoaded = true;
+    State.gamesDbLoading = false;
+    if (!State.gamesDbSelectedId && normalized.length > 0) {
+      State.gamesDbSelectedId = normalized[0].id;
+      State.gamesDbPly = normalized[0].moves.length;
+    }
+  } catch (err) {
+    State.gamesDbLoading = false;
+    State.gamesDbError = err instanceof Error ? err.message : 'Load failed';
+  }
+  if (State.page === 'games-db') render();
+}
+
+function getActiveGamesDbSelection() {
+  const filtered = filterClassicGames(State.gamesDbAll, State.gamesDbFilters);
+  if (filtered.length === 0) return { filtered, selected: null };
+  const selected = filtered.find((g) => g.id === State.gamesDbSelectedId) || filtered[0];
+  return { filtered, selected };
+}
+
+function renderGamesDb() {
+  const lang = getLang();
+  const wrap = document.createElement('div');
+  wrap.className = 'view-shell';
+
+  if (!State.gamesDbLoaded && !State.gamesDbError) {
+    ensureGamesDbLoaded();
+    wrap.appendChild(el(`<div class="view-bar"><h1>${iconSvg('database', 18)} ${escapeHtml(t('gamesDbTitle'))}</h1></div>`));
+    wrap.appendChild(el(`<div class="card" style="margin:auto;text-align:center;max-width:460px;display:flex;flex-direction:column;align-items:center;gap:.6rem">
+      <span class="spinner"></span>
+      <p style="margin:0">${escapeHtml(t('dbLoading'))}</p>
+    </div>`));
+    return wrap;
+  }
+
+  if (State.gamesDbError) {
+    wrap.appendChild(el(`<div class="view-bar"><h1>${iconSvg('database', 18)} ${escapeHtml(t('gamesDbTitle'))}</h1></div>`));
+    const errCard = el(`<div class="card" style="margin:auto;text-align:center;max-width:480px">
+      <p style="color:var(--burgundy)">${escapeHtml(t('dbLoadError'))} (${escapeHtml(State.gamesDbError)})</p>
+      <button type="button" class="btn gold sm" id="dbRetryLoad">${iconSvg('refresh', 13)} ${escapeHtml(t('retry'))}</button>
+    </div>`);
+    errCard.querySelector('#dbRetryLoad').onclick = () => {
+      State.gamesDbError = null;
+      State.gamesDbLoading = false;
+      ensureGamesDbLoaded();
+      render();
+    };
+    wrap.appendChild(errCard);
+    return wrap;
+  }
+
+  const f = State.gamesDbFilters;
+  const totalCount = State.gamesDbAll.length;
+  const minYear = State.gamesDbMeta?.minYear || 1851;
+  const maxYear = State.gamesDbMeta?.maxYear || 2024;
+
+  const bar = el(`<div class="view-bar">
+    <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+      <h1>${iconSvg('database', 18)} ${escapeHtml(t('gamesDbTitle'))}</h1>
+      <span class="tag gold tabular-nums">${escapeHtml(t('gamesDbSubtitle', { n: totalCount.toLocaleString(lang === 'ar' ? 'ar-SA' : 'en-US') }))}</span>
+    </div>
+    <div class="view-bar-meta">
+      <button type="button" class="btn ghost sm" id="dbResetBtn">${iconSvg('refresh', 13)} ${escapeHtml(t('dbResetFilters'))}</button>
+      <button type="button" class="btn gold sm" id="dbExportBtn">${iconSvg('download', 13)} ${escapeHtml(t('dbExportFiltered'))}</button>
+    </div>
+  </div>`);
+  wrap.appendChild(bar);
+
+  const playerHintsHtml = CLASSIC_PLAYER_HINTS.map((p) => `<option value="${escapeHtml(p)}"></option>`).join('');
+  const filterPanel = el(`<section class="db-filter-panel">
+    <datalist id="dbPlayerDatalist">${playerHintsHtml}</datalist>
+    <div class="db-filter-row">
+      <input type="search" id="dbPlayerIn" list="dbPlayerDatalist" value="${escapeHtml(f.playerQuery)}" placeholder="${escapeHtml(t('dbPlayerPlaceholder'))}" style="flex:1.4;min-width:170px" />
+      <select id="dbSideSel" style="width:auto;min-width:105px" aria-label="${escapeHtml(t('dbSideAny'))}">
+        <option value="any" ${f.playerSide === 'any' ? 'selected' : ''}>${escapeHtml(t('dbSideAny'))}</option>
+        <option value="white" ${f.playerSide === 'white' ? 'selected' : ''}>${escapeHtml(t('dbSideWhite'))}</option>
+        <option value="black" ${f.playerSide === 'black' ? 'selected' : ''}>${escapeHtml(t('dbSideBlack'))}</option>
+      </select>
+      <input type="search" id="dbOpeningIn" value="${escapeHtml(f.openingQuery)}" placeholder="${escapeHtml(t('dbOpeningPlaceholder'))}" style="flex:1.3;min-width:165px" />
+      <select id="dbEcoSel" style="width:auto;min-width:130px" aria-label="${escapeHtml(t('dbAllOpenings'))}">
+        <option value="" ${f.ecoFamily === '' ? 'selected' : ''}>${escapeHtml(t('dbAllOpenings'))}</option>
+        ${ECO_FAMILIES.map((code) => `<option value="${code}" ${f.ecoFamily === code ? 'selected' : ''}>${escapeHtml(t(`dbEco${code}`))}</option>`).join('')}
+      </select>
+      <select id="dbEndgameSel" style="width:auto;min-width:150px" aria-label="${escapeHtml(t('dbAllEndgames'))}">
+        <option value="" ${f.endgame === '' ? 'selected' : ''}>${escapeHtml(t('dbAllEndgames'))}</option>
+        <option value="any-endgame" ${f.endgame === 'any-endgame' ? 'selected' : ''}>${escapeHtml(t('dbAnyEndgame'))}</option>
+        <option value="tablebase" ${f.endgame === 'tablebase' ? 'selected' : ''}>${escapeHtml(t('dbTablebaseEndgame'))}</option>
+        ${ENDGAME_TYPES.map((egId) => `<option value="${egId}" ${f.endgame === egId ? 'selected' : ''}>${escapeHtml(tEndgameType(egId, lang))}</option>`).join('')}
+      </select>
+    </div>
+    <div class="db-filter-row">
+      <select id="dbColSel" style="width:auto;min-width:170px;flex:1" aria-label="${escapeHtml(t('dbAllCollections'))}">
+        <option value="" ${f.collection === '' ? 'selected' : ''}>${escapeHtml(t('dbAllCollections'))}</option>
+        ${COLLECTION_TYPES.map((colId) => `<option value="${colId}" ${f.collection === colId ? 'selected' : ''}>${escapeHtml(tCollectionType(colId, lang))}</option>`).join('')}
+      </select>
+      <input type="number" id="dbYearFrom" min="1840" max="2030" value="${escapeHtml(f.yearFrom)}" placeholder="${escapeHtml(t('dbYearFrom'))} (${minYear})" style="width:118px" />
+      <input type="number" id="dbYearTo" min="1840" max="2030" value="${escapeHtml(f.yearTo)}" placeholder="${escapeHtml(t('dbYearTo'))} (${maxYear})" style="width:118px" />
+      <div class="pill-switch" id="dbResultPill">
+        <button type="button" data-res="" class="${f.result === '' ? 'active' : ''}">${escapeHtml(t('dbAllResults'))}</button>
+        <button type="button" data-res="1-0" class="${f.result === '1-0' ? 'active' : ''}">${escapeHtml(t('dbWhiteWin'))}</button>
+        <button type="button" data-res="1/2-1/2" class="${f.result === '1/2-1/2' ? 'active' : ''}">${escapeHtml(t('dbDraw'))}</button>
+        <button type="button" data-res="0-1" class="${f.result === '0-1' ? 'active' : ''}">${escapeHtml(t('dbBlackWin'))}</button>
+      </div>
+      <select id="dbSortSel" style="width:auto;min-width:128px" aria-label="${escapeHtml(t('dbSortNewest'))}">
+        <option value="year-desc" ${f.sortBy === 'year-desc' ? 'selected' : ''}>${escapeHtml(t('dbSortNewest'))}</option>
+        <option value="year-asc" ${f.sortBy === 'year-asc' ? 'selected' : ''}>${escapeHtml(t('dbSortOldest'))}</option>
+        <option value="plies-desc" ${f.sortBy === 'plies-desc' ? 'selected' : ''}>${escapeHtml(t('dbSortLongest'))}</option>
+        <option value="plies-asc" ${f.sortBy === 'plies-asc' ? 'selected' : ''}>${escapeHtml(t('dbSortShortest'))}</option>
+        <option value="eco-asc" ${f.sortBy === 'eco-asc' ? 'selected' : ''}>${escapeHtml(t('dbSortEco'))}</option>
+      </select>
+    </div>
+  </section>`);
+  wrap.appendChild(filterPanel);
+
+  const resultsRegion = document.createElement('div');
+  resultsRegion.className = 'db-results-region';
+  wrap.appendChild(resultsRegion);
+
+  let filterDebounceTimer = null;
+  const refreshResults = () => {
+    clearTimeout(filterDebounceTimer);
+    renderGamesDbResultsInto(resultsRegion, lang);
+  };
+  const scheduleRefreshResults = () => {
+    clearTimeout(filterDebounceTimer);
+    filterDebounceTimer = setTimeout(() => {
+      renderGamesDbResultsInto(resultsRegion, lang);
+    }, 90);
+  };
+
+  bar.querySelector('#dbResetBtn').onclick = () => {
+    clearTimeout(filterDebounceTimer);
+    State.gamesDbFilters = {
+      playerQuery: '',
+      playerSide: 'any',
+      openingQuery: '',
+      ecoFamily: '',
+      endgame: '',
+      result: '',
+      collection: '',
+      yearFrom: '',
+      yearTo: '',
+      sortBy: 'year-desc',
+    };
+    State.gamesDbPage = 1;
+    render();
+  };
+
+  bar.querySelector('#dbExportBtn').onclick = () => {
+    const filtered = filterClassicGames(State.gamesDbAll, State.gamesDbFilters);
+    if (filtered.length === 0) return;
+    downloadPgnFile('edugates-classic-games.pgn', exportFilteredGamesPgn(filtered, 500));
+  };
+
+  filterPanel.querySelector('#dbPlayerIn').oninput = (e) => {
+    State.gamesDbFilters.playerQuery = e.target.value;
+    State.gamesDbPage = 1;
+    scheduleRefreshResults();
+  };
+  filterPanel.querySelector('#dbSideSel').onchange = (e) => {
+    State.gamesDbFilters.playerSide = e.target.value;
+    State.gamesDbPage = 1;
+    refreshResults();
+  };
+  filterPanel.querySelector('#dbOpeningIn').oninput = (e) => {
+    State.gamesDbFilters.openingQuery = e.target.value;
+    State.gamesDbPage = 1;
+    scheduleRefreshResults();
+  };
+  filterPanel.querySelector('#dbEcoSel').onchange = (e) => {
+    State.gamesDbFilters.ecoFamily = e.target.value;
+    State.gamesDbPage = 1;
+    refreshResults();
+  };
+  filterPanel.querySelector('#dbEndgameSel').onchange = (e) => {
+    State.gamesDbFilters.endgame = e.target.value;
+    State.gamesDbPage = 1;
+    refreshResults();
+  };
+  filterPanel.querySelector('#dbColSel').onchange = (e) => {
+    State.gamesDbFilters.collection = e.target.value;
+    State.gamesDbPage = 1;
+    refreshResults();
+  };
+  filterPanel.querySelector('#dbYearFrom').oninput = (e) => {
+    State.gamesDbFilters.yearFrom = e.target.value;
+    State.gamesDbPage = 1;
+    refreshResults();
+  };
+  filterPanel.querySelector('#dbYearTo').oninput = (e) => {
+    State.gamesDbFilters.yearTo = e.target.value;
+    State.gamesDbPage = 1;
+    refreshResults();
+  };
+  filterPanel.querySelectorAll('#dbResultPill button').forEach((btn) => {
+    btn.onclick = () => {
+      filterPanel.querySelectorAll('#dbResultPill button').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      State.gamesDbFilters.result = btn.dataset.res;
+      State.gamesDbPage = 1;
+      refreshResults();
+    };
+  });
+  filterPanel.querySelector('#dbSortSel').onchange = (e) => {
+    State.gamesDbFilters.sortBy = e.target.value;
+    State.gamesDbPage = 1;
+    refreshResults();
+  };
+
+  refreshResults();
+  return wrap;
+}
+
+function renderGamesDbResultsInto(region, lang) {
+  region.innerHTML = '';
+  const filtered = filterClassicGames(State.gamesDbAll, State.gamesDbFilters);
+  const summary = summarizeGamesResults(filtered);
+
+  const statsStrip = el(`<div class="db-stats-strip">
+    <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+      <strong class="mono tabular-nums" style="font-size:.82rem;color:var(--walnut-dark)">${escapeHtml(t('dbMatchingCount', { count: filtered.length, total: State.gamesDbAll.length }))}</strong>
+      <div class="db-wdb-wrap" dir="ltr" title="1-0 ${summary.whiteWins} · ½-½ ${summary.draws} · 0-1 ${summary.blackWins}">
+        <div class="db-wdb-bar">
+          ${summary.whitePct > 0 ? `<span class="wdb-w" style="width:${summary.whitePct}%"></span>` : ''}
+          ${summary.drawPct > 0 ? `<span class="wdb-d" style="width:${summary.drawPct}%"></span>` : ''}
+          ${summary.blackPct > 0 ? `<span class="wdb-b" style="width:${summary.blackPct}%"></span>` : ''}
+        </div>
+        <span class="mono small tabular-nums">1-0 ${summary.whitePct}% · ½-½ ${summary.drawPct}% · 0-1 ${summary.blackPct}%</span>
+      </div>
+    </div>
+    <div class="db-quick-chips">
+      ${summary.topOpenings.slice(0, 4).map((op) => `<button type="button" class="explorer-move-chip" data-quick-eco="${escapeHtml(op.eco || op.opening)}"><strong class="mono">${escapeHtml(op.eco || 'ECO')}</strong> <span>${escapeHtml(op.opening.split(':')[0])}</span> <small class="mono tabular-nums">(${op.count})</small></button>`).join('')}
+      ${summary.topEndgames.slice(0, 3).map((eg) => `<button type="button" class="explorer-move-chip tb-draw" data-quick-eg="${escapeHtml(eg.endgame)}"><span>${escapeHtml(tEndgameType(eg.endgame, lang))}</span> <small class="mono tabular-nums">(${eg.count})</small></button>`).join('')}
+    </div>
+  </div>`);
+
+  statsStrip.querySelectorAll('[data-quick-eco]').forEach((chip) => {
+    chip.onclick = () => {
+      const val = chip.getAttribute('data-quick-eco');
+      State.gamesDbFilters.openingQuery = State.gamesDbFilters.openingQuery === val ? '' : val;
+      State.gamesDbPage = 1;
+      render();
+    };
+  });
+  statsStrip.querySelectorAll('[data-quick-eg]').forEach((chip) => {
+    chip.onclick = () => {
+      const val = chip.getAttribute('data-quick-eg');
+      State.gamesDbFilters.endgame = State.gamesDbFilters.endgame === val ? '' : val;
+      State.gamesDbPage = 1;
+      render();
+    };
+  });
+  region.appendChild(statsStrip);
+
+  if (filtered.length === 0) {
+    region.appendChild(el(`<div class="card" style="margin:auto;text-align:center;max-width:460px"><p class="italic" style="margin:0;color:var(--ink-soft)">${escapeHtml(t('dbNoMatches'))}</p></div>`));
+    return;
+  }
+
+  let selected = filtered.find((g) => g.id === State.gamesDbSelectedId);
+  if (!selected) {
+    selected = filtered[0];
+    State.gamesDbSelectedId = selected.id;
+    State.gamesDbPly = selected.moves.length;
+  }
+
+  const workspace = document.createElement('div');
+  workspace.className = 'db-workspace';
+
+  // Left: Paginated Search Results Table
+  const tablePane = document.createElement('section');
+  tablePane.className = 'card db-table-pane';
+  const paged = paginateItems(filtered, State.gamesDbPage, 25);
+  State.gamesDbPage = paged.page;
+
+  tablePane.innerHTML = `<div class="scroll-pane" style="flex:1">
+    <table class="leaderboard db-table">
+      <thead>
+        <tr>
+          <th>${escapeHtml(t('dbColYear'))}</th>
+          <th>${escapeHtml(t('dbColPlayers'))}</th>
+          <th>${escapeHtml(t('dbColOpening'))}</th>
+          <th>${escapeHtml(t('dbColEndgame'))}</th>
+          <th>${escapeHtml(t('dbColResult'))}</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${paged.items
+          .map((g) => {
+            const resCls = g.result === '1-0' ? 'res-w' : g.result === '0-1' ? 'res-b' : 'res-d';
+            const resTxt = g.result === '1/2-1/2' ? '½-½' : g.result;
+            const isSel = g.id === selected.id;
+            return `<tr class="db-row ${isSel ? 'you' : ''}" data-gid="${g.id}">
+              <td class="mono tabular-nums">${g.year || '—'}</td>
+              <td>
+                <div class="db-cell-players">${escapeHtml(g.white)} <span style="opacity:.6">vs</span> ${escapeHtml(g.black)}</div>
+                <div class="small" style="font-size:.72rem;opacity:.85">${escapeHtml(g.event)}</div>
+              </td>
+              <td>
+                <span class="mono" style="font-weight:700;color:var(--walnut-dark)">${escapeHtml(g.eco)}</span>
+                <span class="small">${escapeHtml(g.opening)}</span>
+              </td>
+              <td>
+                <span class="small">${escapeHtml(tEndgameType(g.endgame, lang))}</span>
+                ${g.tablebase ? `<span class="tag green" style="font-size:.58rem;padding:.05rem .28rem;margin-inline-start:.2rem">${escapeHtml(t('dbSyzygyBadge'))}</span>` : ''}
+              </td>
+              <td><span class="db-res-pill ${resCls}" dir="ltr">${escapeHtml(resTxt)}</span></td>
+            </tr>`;
+          })
+          .join('')}
+      </tbody>
+    </table>
+  </div>
+  <div class="pager-bar" style="padding:.28rem .5rem">
+    <span class="small tabular-nums">${paged.startIndex + 1}–${paged.endIndex} / ${paged.totalItems}</span>
+    <div style="display:flex;gap:.3rem;align-items:center">
+      <button type="button" class="btn ghost sm" id="dbPrevPage" ${paged.page <= 1 ? 'disabled' : ''}>${iconSvg('prev', 12)} ${escapeHtml(t('prev'))}</button>
+      <span class="small tabular-nums">${escapeHtml(t('pageOf', { page: paged.page, total: paged.totalPages }))}</span>
+      <button type="button" class="btn ghost sm" id="dbNextPage" ${paged.page >= paged.totalPages ? 'disabled' : ''}>${escapeHtml(t('next'))} ${iconSvg('next', 12)}</button>
+    </div>
+  </div>`;
+
+  tablePane.querySelector('#dbPrevPage').onclick = () => {
+    State.gamesDbPage = Math.max(1, paged.page - 1);
+    renderGamesDbResultsInto(region, lang);
+  };
+  tablePane.querySelector('#dbNextPage').onclick = () => {
+    State.gamesDbPage = Math.min(paged.totalPages, paged.page + 1);
+    renderGamesDbResultsInto(region, lang);
+  };
+  tablePane.querySelectorAll('tr.db-row').forEach((row) => {
+    row.onclick = () => {
+      const nextGame = filtered.find((g) => g.id === row.dataset.gid);
+      if (!nextGame) return;
+      State.gamesDbSelectedId = nextGame.id;
+      State.gamesDbPly = nextGame.moves.length;
+      renderGamesDbResultsInto(region, lang);
+    };
+  });
+  workspace.appendChild(tablePane);
+
+  // Right: Interactive Replay Board + Jump to Endgame + Syzygy Tablebase + Coach Export
+  const replayPane = document.createElement('section');
+  replayPane.className = 'card db-replay-pane';
+  const curPly = Math.max(0, Math.min(selected.moves.length, Number(State.gamesDbPly ?? selected.moves.length)));
+  State.gamesDbPly = curPly;
+  const viewPos = buildPositionAtPly(STANDARD_START_FEN, selected.moves, curPly, Chess);
+  const currentFen = viewPos.fen;
+  const pieceCount = countBoardPieces(currentFen);
+  if (pieceCount <= 7) loadTablebaseForFen(currentFen);
+  const mat = computeMaterialBalance(currentFen, STANDARD_START_FEN);
+
+  const metaHead = el(`<div class="db-replay-head">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.4rem">
+      <div style="min-width:0">
+        <h3 style="margin:0;line-height:1.15">${escapeHtml(selected.white)}${selected.whiteElo ? ` <small class="mono">(${selected.whiteElo})</small>` : ''} <span style="opacity:.6">vs</span> ${escapeHtml(selected.black)}${selected.blackElo ? ` <small class="mono">(${selected.blackElo})</small>` : ''}</h3>
+        <div class="small tabular-nums">${escapeHtml(selected.event)}${selected.site ? ` · ${escapeHtml(selected.site)}` : ''}${selected.year ? ` · ${selected.year}` : ''} · ${escapeHtml(t('dbMovesUnit', { n: Math.ceil(selected.moves.length / 2) }))}</div>
+      </div>
+      <span class="db-res-pill ${selected.result === '1-0' ? 'res-w' : selected.result === '0-1' ? 'res-b' : 'res-d'}" dir="ltr">${escapeHtml(selected.result === '1/2-1/2' ? '½-½' : selected.result)}</span>
+    </div>
+    <div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-top:.25rem">
+      <span class="tag">${escapeHtml(selected.eco)} · ${escapeHtml(selected.opening)}</span>
+      <span class="tag gold">${escapeHtml(tEndgameType(selected.endgame, lang))}</span>
+      ${selected.tablebase ? `<span class="tag green">${escapeHtml(t('dbSyzygyBadge'))}</span>` : ''}
+    </div>
+  </div>`);
+  replayPane.appendChild(metaHead);
+
+  const boardStageWrap = document.createElement('div');
+  boardStageWrap.className = 'db-replay-board-wrap';
+  const stage = buildBoardStage(viewPos.game, {
+    flip: State.flipBoard,
+    lastMove: viewPos.lastMove,
+    interactive: false,
+    showEvalBar: false,
+    showArrows: false,
+  });
+  boardStageWrap.appendChild(stage.frame);
+  replayPane.appendChild(boardStageWrap);
+
+  const matBarRow = document.createElement('div');
+  matBarRow.className = 'coach-mat-pair';
+  matBarRow.appendChild(
+    createMaterialBar({
+      capturedPieces: mat.whiteCaptured,
+      netAdv: mat.netWhite > 0 ? mat.netWhite : 0,
+      pieceSvgMap: PIECE_SVG,
+    }),
+  );
+  matBarRow.appendChild(
+    createMaterialBar({
+      capturedPieces: mat.blackCaptured,
+      netAdv: mat.netWhite < 0 ? -mat.netWhite : 0,
+      pieceSvgMap: PIECE_SVG,
+    }),
+  );
+  replayPane.appendChild(matBarRow);
+
+  const controls = document.createElement('div');
+  controls.className = 'board-controls';
+  controls.style.justifyContent = 'flex-start';
+  controls.style.flexWrap = 'wrap';
+  controls.appendChild(
+    buildMoveTransportBar({
+      ply: curPly,
+      total: selected.moves.length,
+      onNavigate: (nextPly) => {
+        State.gamesDbPly = nextPly;
+        renderGamesDbResultsInto(region, lang);
+      },
+    }),
+  );
+
+  const flipBtn = el(`<button type="button" class="btn ghost sm" title="${escapeHtml(t('flipTip'))}">${iconSvg('flip', 13)} ${escapeHtml(t('flip'))}</button>`);
+  flipBtn.onclick = () => {
+    State.flipBoard = !State.flipBoard;
+    renderGamesDbResultsInto(region, lang);
+  };
+  controls.appendChild(flipBtn);
+
+  if (selected.endgamePly && selected.endgamePly > 0) {
+    const egMoveNum = Math.ceil(selected.endgamePly / 2);
+    const egBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('endgames', 13)} ${escapeHtml(t('dbJumpEndgame', { move: egMoveNum }))}</button>`);
+    egBtn.onclick = () => {
+      State.gamesDbPly = selected.endgamePly;
+      renderGamesDbResultsInto(region, lang);
+    };
+    controls.appendChild(egBtn);
+  }
+
+  const coachBtn = el(`<button type="button" class="btn gold sm">${iconSvg('coach', 13)} ${escapeHtml(t('dbOpenInCoach'))}</button>`);
+  coachBtn.onclick = () => {
+    openGameInCoachAnalyzer({
+      title: `${selected.white} vs ${selected.black} (${selected.result})`,
+      headers: {
+        Event: selected.event,
+        Site: selected.site || '?',
+        Date: selected.date || `${selected.year || '????'}.??.??`,
+        White: selected.white,
+        Black: selected.black,
+        Result: selected.result,
+        ECO: selected.eco,
+        Opening: selected.opening,
+      },
+      moves: selected.moves,
+      result: selected.result,
+      sourceName: selected.event,
+      jumpToEnd: false,
+    });
+  };
+  controls.appendChild(coachBtn);
+
+  const dlBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('download', 13)} ${escapeHtml(t('dbDownloadGamePgn'))}</button>`);
+  dlBtn.onclick = () => {
+    const fname = `${selected.white}-vs-${selected.black}-${selected.year || 'classic'}.pgn`
+      .toLowerCase()
+      .replace(/[^a-z0-9.-]+/g, '-');
+    downloadPgnFile(fname, gameRecordToPgn(selected));
+  };
+  controls.appendChild(dlBtn);
+  replayPane.appendChild(controls);
+
+  replayPane.appendChild(
+    buildMovesPanel(selected.moves, {
+      currentPly: curPly,
+      onSelectPly: (plyNo) => {
+        State.gamesDbPly = plyNo;
+        renderGamesDbResultsInto(region, lang);
+      },
+    }),
+  );
+
+  if (pieceCount <= 7) {
+    const tbPanel = createExplorerAndTablebasePanel({
+      opening: null,
+      continuations: [],
+      tablebase: State.tablebaseCacheFen === currentFen ? State.tablebaseSnap : null,
+      pieceCount,
+      tablebaseLoading: State.tablebaseLoading,
+      lang,
+    });
+    replayPane.appendChild(tbPanel);
+  }
+
+  workspace.appendChild(replayPane);
+  region.appendChild(workspace);
+}
+
+// =========================================================
 // CLUB HUB (Leaderboard + Annals + Shared Clubs)
 // =========================================================
 function loadLocalOnlineProfile(userId) {
@@ -6767,6 +7309,14 @@ document.addEventListener('keydown', (event) => {
     const nextPly = stepPly(cur, keyAction, total);
     State.gameViewPly = nextPly >= total ? null : nextPly;
     render();
+  } else if (State.page === 'games-db' && State.gamesDbLoaded) {
+    const { selected } = getActiveGamesDbSelection();
+    if (!selected) return;
+    event.preventDefault();
+    State.gamesDbPly = stepPly(State.gamesDbPly ?? selected.moves.length, keyAction, selected.moves.length);
+    const region = document.querySelector('.db-results-region');
+    if (region) renderGamesDbResultsInto(region, getLang());
+    else render();
   } else if (State.page === 'endgames') {
     event.preventDefault();
     const total = State.endgameMoves.length;

@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "validate:content": "node scripts/validate-content.js",
+    "build:games-db": "node scripts/build-classic-games-db.mjs",
     "test:watch": "vitest"
   },
   "dependencies": {
