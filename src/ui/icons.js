@@ -46,6 +46,9 @@ const ICON_PATHS = {
   cloud: '<path d="M17.5 19H9a5 5 0 0 1-.8-9.9 6 6 0 0 1 11.5 1.5A4 4 0 0 1 17.5 19Z"/>',
   bolt: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
   database: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.66 3.58 3 8 3s8-1.34 8-3V5"/><path d="M4 11v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/>',
+  library: '<path d="M4 19V5a2 2 0 0 1 2-2h2v16H6a2 2 0 0 1-2-2Z"/><path d="M8 3h4v16H8z"/><path d="m14 4 4.5-1 2.5 15-4.5 1z"/><path d="M3 20h18"/>',
+  arrows: '<path d="M5 19 19 5"/><polyline points="11 5 19 5 19 13"/>',
+  cube: '<path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 7v10l9 5V12"/><path d="m21 7v10l-9 5"/>',
 };
 
 const DIR_ICONS = new Set(['prev', 'next', 'first', 'last', 'step']);

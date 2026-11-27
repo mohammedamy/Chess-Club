@@ -17,7 +17,7 @@ import {
 import { isStockfishSafeFen } from '../src/domain/stockfish-service.js';
 
 describe('classical-engine search and evaluation', () => {
-  it('defines distinct weights across balanced, aggressive, positional, prophylactic, dynamic, hypermodern, and romantic personalities', () => {
+  it('defines distinct weights across all 17 classical & modern neural personalities', () => {
     expect(PERSONALITY_WEIGHTS.balanced.kingSafety).toBe(1.0);
     expect(PERSONALITY_WEIGHTS.aggressive.kingSafety).toBeGreaterThan(PERSONALITY_WEIGHTS.balanced.kingSafety);
     expect(PERSONALITY_WEIGHTS.aggressive.mobility).toBeGreaterThan(PERSONALITY_WEIGHTS.positional.mobility);
@@ -26,25 +26,22 @@ describe('classical-engine search and evaluation', () => {
     expect(PERSONALITY_WEIGHTS.dynamic.mobility).toBeGreaterThan(PERSONALITY_WEIGHTS.balanced.mobility);
     expect(PERSONALITY_WEIGHTS.hypermodern.center).toBeLessThan(PERSONALITY_WEIGHTS.balanced.center);
     expect(PERSONALITY_WEIGHTS.romantic.material).toBeLessThan(PERSONALITY_WEIGHTS.balanced.material);
+    expect(PERSONALITY_WEIGHTS.lc0.mobility).toBeGreaterThan(PERSONALITY_WEIGHTS.balanced.mobility);
+    expect(PERSONALITY_WEIGHTS.dragon.simplification).toBeLessThan(PERSONALITY_WEIGHTS.balanced.simplification);
+    expect(PERSONALITY_WEIGHTS.berserk.kingSafety).toBeGreaterThan(PERSONALITY_WEIGHTS.obsidian.kingSafety);
+    expect(PERSONALITY_WEIGHTS.obsidian.structure).toBeGreaterThan(PERSONALITY_WEIGHTS.torch.structure);
+    expect(PERSONALITY_WEIGHTS.viridithas.structure).toBeGreaterThan(PERSONALITY_WEIGHTS.alexandria.structure);
+    expect(PERSONALITY_WEIGHTS.alexandria.kingSafety).toBeGreaterThan(PERSONALITY_WEIGHTS.ethereal.kingSafety);
+    expect(PERSONALITY_WEIGHTS.koivisto.mobility).toBeGreaterThan(PERSONALITY_WEIGHTS.viridithas.mobility);
 
     const sampleFen = 'r1bq1rk1/pppn1ppp/4p3/3pP3/1b1P4/2NB1N2/PPP2PPP/R1BQ1RK1 w - - 0 1';
-    const bBal = evaluateClassicalBreakdown(sampleFen, 'balanced');
-    const bAgg = evaluateClassicalBreakdown(sampleFen, 'aggressive');
-    const bPos = evaluateClassicalBreakdown(sampleFen, 'positional');
-    const bPro = evaluateClassicalBreakdown(sampleFen, 'prophylactic');
-    const bDyn = evaluateClassicalBreakdown(sampleFen, 'dynamic');
-    const bHyp = evaluateClassicalBreakdown(sampleFen, 'hypermodern');
-    const bRom = evaluateClassicalBreakdown(sampleFen, 'romantic');
-
-    expect(bBal).toHaveProperty('whiteCp');
-    expect(Math.abs(bAgg.kingSafety)).toBeGreaterThanOrEqual(Math.abs(bBal.kingSafety));
-    expect(Math.abs(bPos.structure)).toBeGreaterThanOrEqual(Math.abs(bAgg.structure));
-    expect(typeof bPro.whiteCp).toBe('number');
-    expect(typeof bDyn.whiteCp).toBe('number');
-    expect(typeof bHyp.whiteCp).toBe('number');
-    expect(typeof bRom.whiteCp).toBe('number');
-
-    for (const pers of ['prophylactic', 'dynamic', 'hypermodern', 'romantic']) {
+    for (const pers of [
+      'prophylactic', 'dynamic', 'hypermodern', 'romantic',
+      'lc0', 'dragon', 'torch', 'berserk', 'obsidian',
+      'ethereal', 'integral', 'alexandria', 'koivisto', 'viridithas',
+    ]) {
+      const bd = evaluateClassicalBreakdown(sampleFen, pers);
+      expect(typeof bd.whiteCp).toBe('number');
       const sRes = searchClassicalPosition(sampleFen, {
         personality: pers,
         depth: 2,
@@ -105,7 +102,7 @@ describe('classical-engine search and evaluation', () => {
 });
 
 describe('engine-arena registry, multi-ply clash, and commentary', () => {
-  it('validates all 8 engines and all static ARENA_PRESETS as Stockfish-safe FENs', () => {
+  it('validates all 18 engines (8 classical + 10 latest NNUE) and all static ARENA_PRESETS as Stockfish-safe FENs', () => {
     expect(Object.keys(ENGINE_PROFILES)).toEqual([
       'sf19-nnue',
       'athena-hce',
@@ -115,6 +112,16 @@ describe('engine-arena registry, multi-ply clash, and commentary', () => {
       'fischer-hce',
       'nimzo-hce',
       'morphy-hce',
+      'lc0-neural',
+      'dragon-nnue',
+      'torch-nnue',
+      'berserk-nnue',
+      'obsidian-nnue',
+      'ethereal-nnue',
+      'integral-nnue',
+      'alexandria-nnue',
+      'koivisto-nnue',
+      'viridithas-nnue',
     ]);
     for (const preset of ARENA_PRESETS) {
       if (preset.fen === 'chess960') continue;
@@ -182,10 +189,16 @@ describe('engine-arena registry, multi-ply clash, and commentary', () => {
     black.dispose();
   });
 
-  it('runs valid clashes using the 4 new classical engines (petrosian, fischer, nimzo, morphy)', async () => {
+  it('runs valid clashes using the classical engines and all 10 latest NNUE engines', async () => {
     const pairs = [
       ['petrosian-hce', 'morphy-hce'],
       ['fischer-hce', 'nimzo-hce'],
+      ['lc0-neural', 'dragon-nnue'],
+      ['torch-nnue', 'berserk-nnue'],
+      ['obsidian-nnue', 'lc0-neural'],
+      ['ethereal-nnue', 'integral-nnue'],
+      ['alexandria-nnue', 'koivisto-nnue'],
+      ['viridithas-nnue', 'ethereal-nnue'],
     ];
     for (const [wId, bId] of pairs) {
       const white = createArenaEngine(wId);

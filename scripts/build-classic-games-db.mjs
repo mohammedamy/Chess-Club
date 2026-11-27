@@ -31,19 +31,83 @@ const WORLD_CHAMPIONSHIP_FILES = [
   'WorldChamp2004.pgn', 'WorldChamp2006.pgn', 'WorldChamp2007.pgn', 'WorldChamp2008.pgn',
   'WorldChamp2010.pgn', 'WorldChamp2012.pgn', 'WorldChamp2013.pgn', 'WorldChamp2014.pgn',
   'WorldChamp2016.pgn', 'WorldChamp2018.pgn', 'WorldChamp2021.pgn', 'WorldChamp2023.pgn',
-  'WorldChamp2024.pgn',
+  'WorldChamp2023TB.pgn', 'WorldChamp2024.pgn', 'WorldChamp2026.pgn',
 ];
+
+const WCH_EVENT_OVERRIDES = {
+  'WorldChamp1886.pgn': 'World Championship 1886 (Steinitz–Zukertort)',
+  'WorldChamp1889.pgn': 'World Championship 1889 (Steinitz–Chigorin I)',
+  'WorldChamp1890.pgn': 'World Championship 1890–91 (Steinitz–Gunsberg)',
+  'WorldChamp1892.pgn': 'World Championship 1892 (Steinitz–Chigorin II)',
+  'WorldChamp1894.pgn': 'World Championship 1894 (Lasker–Steinitz I)',
+  'WorldChamp1896.pgn': 'World Championship 1896–97 (Lasker–Steinitz II)',
+  'WorldChamp1907.pgn': 'World Championship 1907 (Lasker–Marshall)',
+  'WorldChamp1908.pgn': 'World Championship 1908 (Lasker–Tarrasch)',
+  'WorldChamp1909.pgn': 'World Championship 1909 (Lasker–Janowski Paris)',
+  'WorldChamp1910a.pgn': 'World Championship 1910 (Lasker–Schlechter)',
+  'WorldChamp1910b.pgn': 'World Championship 1910 (Lasker–Janowski Berlin)',
+  'WorldChamp1921.pgn': 'World Championship 1921 (Capablanca–Lasker)',
+  'WorldChamp1927.pgn': 'World Championship 1927 (Alekhine–Capablanca)',
+  'WorldChamp1929.pgn': 'World Championship 1929 (Alekhine–Bogoljubow I)',
+  'WorldChamp1934.pgn': 'World Championship 1934 (Alekhine–Bogoljubow II)',
+  'WorldChamp1935.pgn': 'World Championship 1935 (Euwe–Alekhine)',
+  'WorldChamp1937.pgn': 'World Championship 1937 (Alekhine–Euwe Rematch)',
+  'WorldChamp1948.pgn': 'World Championship 1948 (Hague–Moscow Tournament)',
+  'WorldChamp1951.pgn': 'World Championship 1951 (Botvinnik–Bronstein)',
+  'WorldChamp1954.pgn': 'World Championship 1954 (Botvinnik–Smyslov I)',
+  'WorldChamp1957.pgn': 'World Championship 1957 (Smyslov–Botvinnik II)',
+  'WorldChamp1958.pgn': 'World Championship 1958 (Botvinnik–Smyslov III)',
+  'WorldChamp1960.pgn': 'World Championship 1960 (Tal–Botvinnik I)',
+  'WorldChamp1961.pgn': 'World Championship 1961 (Botvinnik–Tal II)',
+  'WorldChamp1963.pgn': 'World Championship 1963 (Petrosian–Botvinnik)',
+  'WorldChamp1966.pgn': 'World Championship 1966 (Petrosian–Spassky I)',
+  'WorldChamp1969.pgn': 'World Championship 1969 (Spassky–Petrosian II)',
+  'WorldChamp1972.pgn': 'World Championship 1972 (Fischer–Spassky)',
+  'WorldChamp1978.pgn': 'World Championship 1978 (Karpov–Korchnoi I)',
+  'WorldChamp1981.pgn': 'World Championship 1981 (Karpov–Korchnoi II)',
+  'WorldChamp1984.pgn': 'World Championship 1984–85 (Karpov–Kasparov I)',
+  'WorldChamp1985.pgn': 'World Championship 1985 (Kasparov–Karpov II)',
+  'WorldChamp1986.pgn': 'World Championship 1986 (Kasparov–Karpov III)',
+  'WorldChamp1987.pgn': 'World Championship 1987 (Kasparov–Karpov IV)',
+  'WorldChamp1990.pgn': 'World Championship 1990 (Kasparov–Karpov V)',
+  'WorldChamp2000.pgn': 'World Championship 2000 (Kramnik–Kasparov)',
+  'WorldChamp2004.pgn': 'World Championship 2004 (Kramnik–Leko)',
+  'WorldChamp2006.pgn': 'World Championship 2006 (Kramnik–Topalov)',
+  'WorldChamp2007.pgn': 'World Championship 2007 (Anand / Mexico City)',
+  'WorldChamp2008.pgn': 'World Championship 2008 (Anand–Kramnik)',
+  'WorldChamp2010.pgn': 'World Championship 2010 (Anand–Topalov)',
+  'WorldChamp2012.pgn': 'World Championship 2012 (Anand–Gelfand)',
+  'WorldChamp2013.pgn': 'World Championship 2013 (Carlsen–Anand I)',
+  'WorldChamp2014.pgn': 'World Championship 2014 (Carlsen–Anand II)',
+  'WorldChamp2016.pgn': 'World Championship 2016 (Carlsen–Karjakin)',
+  'WorldChamp2018.pgn': 'World Championship 2018 (Carlsen–Caruana)',
+  'WorldChamp2021.pgn': 'World Championship 2021 (Carlsen–Nepomniachtchi)',
+  'WorldChamp2023.pgn': 'World Championship 2023 (Ding Liren–Nepomniachtchi)',
+  'WorldChamp2023TB.pgn': 'World Championship 2023 — Rapid Tiebreak (Ding Liren–Nepomniachtchi)',
+  'WorldChamp2024.pgn': 'World Championship 2024 (Gukesh–Ding Liren)',
+  'WorldChamp2026.pgn': 'World Championship 2026 (Gukesh–Sindarov)',
+  'PCAChamp1993.pgn': 'PCA World Championship 1993 (Kasparov–Short)',
+  'PCAChamp1995.pgn': 'PCA World Championship 1995 (Kasparov–Anand)',
+  'FideChamp1993.pgn': 'FIDE World Championship 1993 (Karpov–Timman)',
+  'FideChamp1996.pgn': 'FIDE World Championship 1996 (Karpov–Kamsky)',
+  'FideChamp1998.pgn': 'FIDE World Championship 1998 (Karpov–Anand)',
+  'FideChamp1999.pgn': 'FIDE World Championship 1999 (Khalifman / Las Vegas)',
+  'FideChamp2000.pgn': 'FIDE World Championship 2000 (Anand / New Delhi–Tehran)',
+  'FideChamp2002.pgn': 'FIDE World Championship 2002 (Ponomariov / Moscow)',
+  'FideChamp2004.pgn': 'FIDE World Championship 2004 (Kasimdzhanov / Tripoli)',
+  'FideChamp2005.pgn': 'FIDE World Championship 2005 (Topalov / San Luis)',
+};
 
 const FIDE_PCA_FILES = [
   { file: 'PCAChamp1993.pgn', filterKnockoutFinalists: null },
   { file: 'PCAChamp1995.pgn', filterKnockoutFinalists: null },
   { file: 'FideChamp1993.pgn', filterKnockoutFinalists: null },
   { file: 'FideChamp1996.pgn', filterKnockoutFinalists: null },
-  { file: 'FideChamp1998.pgn', filterKnockoutFinalists: ['Karpov', 'Anand'] },
-  { file: 'FideChamp1999.pgn', filterKnockoutFinalists: ['Khalifman', 'Akopian'] },
-  { file: 'FideChamp2000.pgn', filterKnockoutFinalists: ['Anand', 'Shirov'] },
-  { file: 'FideChamp2002.pgn', filterKnockoutFinalists: ['Ponomariov', 'Ivanchuk'] },
-  { file: 'FideChamp2004.pgn', filterKnockoutFinalists: ['Kasimdzhanov', 'Adams'] },
+  { file: 'FideChamp1998.pgn', filterKnockoutFinalists: null },
+  { file: 'FideChamp1999.pgn', filterKnockoutFinalists: null },
+  { file: 'FideChamp2000.pgn', filterKnockoutFinalists: null },
+  { file: 'FideChamp2002.pgn', filterKnockoutFinalists: null },
+  { file: 'FideChamp2004.pgn', filterKnockoutFinalists: null },
   { file: 'FideChamp2005.pgn', filterKnockoutFinalists: null },
 ];
 
@@ -52,9 +116,10 @@ const CANDIDATES_FILES = [
   'Candidates1962.pgn', 'Candidates1965.pgn', 'Candidates1968.pgn', 'Candidates1971.pgn',
   'Candidates1974.pgn', 'Candidates1977.pgn', 'Candidates1980.pgn', 'Candidates1983.pgn',
   'Candidates1985.pgn', 'Candidates1985r.pgn', 'Candidates1988.pgn', 'Candidates1990.pgn',
-  'Candidates1994.pgn', 'Candidates2011.pgn', 'Candidates2013.pgn', 'Candidates2014.pgn',
-  'Candidates2016.pgn', 'Candidates2018.pgn', 'Candidates2020.pgn', 'Candidates2022.pgn',
-  'Candidates2024.pgn',
+  'PCAQual1993.pgn', 'PCACand1994.pgn', 'Candidates1994.pgn',
+  'WorldCup2005.pgn', 'WorldCup2007.pgn', 'WorldCup2009.pgn',
+  'Candidates2011.pgn', 'Candidates2013.pgn', 'Candidates2014.pgn', 'Candidates2016.pgn',
+  'Candidates2018.pgn', 'Candidates2020.pgn', 'Candidates2022.pgn', 'WorldCup2023.pgn', 'Candidates2024.pgn',
 ];
 
 const INTERZONAL_FILES = [
@@ -62,6 +127,10 @@ const INTERZONAL_FILES = [
   'Interzonal1962.pgn', 'Interzonal1964.pgn', 'Interzonal1967.pgn', 'Interzonal1970.pgn',
   'Interzonal1973a.pgn', 'Interzonal1973b.pgn', 'Interzonal1976a.pgn', 'Interzonal1976b.pgn',
   'Interzonal1979a.pgn', 'Interzonal1979b.pgn',
+  'Interzonal1982a.pgn', 'Interzonal1982b.pgn', 'Interzonal1982c.pgn',
+  'Interzonal1985a.pgn', 'Interzonal1985b.pgn', 'Interzonal1985c.pgn',
+  'Interzonal1987a.pgn', 'Interzonal1987b.pgn', 'Interzonal1987c.pgn',
+  'Interzonal1990.pgn', 'Interzonal1993.pgn',
 ];
 
 const CLASSIC_TOURNAMENT_FILES = [
@@ -71,10 +140,36 @@ const CLASSIC_TOURNAMENT_FILES = [
   'StPetersburg1914.pgn', 'NewYork1924.pgn', 'Moscow1925.pgn', 'NewYork1927.pgn',
   'SanRemo1930.pgn', 'Bled1931.pgn', 'Zurich1934.pgn', 'Moscow1935.pgn',
   'Moscow1936.pgn', 'Nottingham1936.pgn', 'AVRO1938.pgn', 'Groningen1946.pgn',
-  'Bled1961.pgn', 'SantaMonica1966.pgn', 'Montreal1979.pgn', 'Tilburg1979.pgn',
-  'Tilburg1980.pgn', 'Tilburg1985.pgn', 'Linares1991.pgn', 'Linares1992.pgn',
-  'Linares1993.pgn', 'Linares1994.pgn', 'Linares1995.pgn', 'Linares1997.pgn',
-  'Linares1998.pgn', 'Linares1999.pgn',
+  'Moscow1956.pgn', 'Moscow1959.pgn', 'BuenosAires1960.pgn', 'Bled1961.pgn',
+  'Havana1962.pgn', 'Havana1963.pgn', 'Havana1965.pgn',
+  'SantaMonica1966.pgn', 'Moscow1966.pgn', 'Palma1966.pgn', 'Moscow1967.pgn', 'Palma1967.pgn',
+  'Palma1968.pgn', 'WijkaanZee1968.pgn', 'Palma1969.pgn', 'WijkaanZee1969.pgn',
+  'BuenosAires1970.pgn', 'Palma1970.pgn', 'WijkaanZee1970.pgn',
+  'Moscow1971.pgn', 'Palma1971.pgn', 'WijkaanZee1971.pgn',
+  'Palma1972.pgn', 'WijkaanZee1972.pgn', 'SovietChamp1973.pgn', 'WijkaanZee1973.pgn',
+  'SovietChamp1974.pgn', 'WijkaanZee1974.pgn', 'Moscow1975.pgn', 'SovietChamp1975.pgn', 'WijkaanZee1975.pgn',
+  'SovietChamp1976.pgn', 'WijkaanZee1976.pgn', 'Tilburg1977.pgn', 'WijkaanZee1977.pgn',
+  'Bugojno1978.pgn', 'SovietChamp1978.pgn', 'Tilburg1978.pgn', 'WijkaanZee1978.pgn',
+  'Bled1979.pgn', 'Montreal1979.pgn', 'Tilburg1979.pgn', 'WijkaanZee1979.pgn',
+  'Baden1980.pgn', 'BuenosAires1980.pgn', 'Bugojno1980.pgn', 'London1980.pgn', 'Tilburg1980.pgn', 'WijkaanZee1980.pgn',
+  'Linares1981.pgn', 'Moscow1981.pgn', 'Tilburg1981.pgn', 'WijkaanZee1981.pgn',
+  'Bugojno1982.pgn', 'Tilburg1982.pgn', 'WijkaanZee1982.pgn',
+  'Linares1983.pgn', 'SovietChamp1983.pgn', 'Tilburg1983.pgn', 'WijkaanZee1983.pgn',
+  'Bugojno1984.pgn', 'Tilburg1984.pgn', 'WijkaanZee1984.pgn',
+  'Linares1985.pgn', 'Moscow1985.pgn', 'ReggioEmilia1985.pgn', 'Tilburg1985.pgn', 'WijkaanZee1985.pgn',
+  'Bugojno1986.pgn', 'ReggioEmilia1986.pgn', 'Tilburg1986.pgn', 'WijkaanZee1986.pgn',
+  'ReggioEmilia1987.pgn', 'Reykjavik1987.pgn', 'Tilburg1987.pgn', 'WijkaanZee1987.pgn',
+  'Linares1988.pgn', 'Reykjavik1988.pgn', 'SovietChamp1988.pgn', 'WijkaanZee1988.pgn',
+  'Linares1989.pgn', 'ReggioEmilia1989.pgn', 'Tilburg1989.pgn', 'WijkaanZee1989.pgn',
+  'Linares1990.pgn', 'SovietChamp1990.pgn', 'Tilburg1990.pgn', 'WijkaanZee1990.pgn',
+  'Linares1991.pgn', 'ReggioEmilia1991.pgn', 'Reykjavik1991.pgn', 'SovietChamp1991.pgn', 'Tilburg1991.pgn', 'WijkaanZee1991.pgn',
+  'Linares1992.pgn', 'Moscow1992.pgn', 'ReggioEmilia1992.pgn', 'Tilburg1992.pgn', 'WijkaanZee1992.pgn',
+  'Linares1993.pgn', 'Tilburg1993.pgn', 'WijkaanZee1993.pgn',
+  'BuenosAires1994.pgn', 'Linares1994.pgn', 'Tilburg1994.pgn', 'WijkaanZee1994.pgn',
+  'Linares1995.pgn', 'WijkaanZee1995.pgn', 'Tilburg1996.pgn', 'WijkaanZee1996.pgn',
+  'Linares1997.pgn', 'Tilburg1997.pgn', 'WijkaanZee1997.pgn',
+  'Linares1998.pgn', 'Tilburg1998.pgn', 'WijkaanZee1998.pgn',
+  'Linares1999.pgn', 'WijkaanZee1999.pgn',
 ];
 
 const MODERN_ELITE_FILES = [
@@ -90,6 +185,22 @@ const MODERN_ELITE_FILES = [
   'Linares2000.pgn', 'Linares2001.pgn', 'Linares2002.pgn', 'Linares2003.pgn',
   'Linares2004.pgn', 'Linares2005.pgn', 'Linares2006.pgn', 'Linares2007.pgn',
   'Linares2008.pgn', 'Linares2009.pgn', 'Linares2010.pgn',
+  // Dortmund Sparkassen (2000–2019)
+  'Dortmund2000.pgn', 'Dortmund2001.pgn', 'Dortmund2002.pgn', 'Dortmund2003.pgn',
+  'Dortmund2004.pgn', 'Dortmund2005.pgn', 'Dortmund2006.pgn', 'Dortmund2007.pgn',
+  'Dortmund2008.pgn', 'Dortmund2009.pgn', 'Dortmund2010.pgn', 'Dortmund2011.pgn',
+  'Dortmund2012.pgn', 'Dortmund2014.pgn', 'Dortmund2015.pgn', 'Dortmund2019.pgn',
+  // Tal Memorial / Moscow (2006–2020)
+  'Moscow2006.pgn', 'Moscow2007.pgn', 'Moscow2008.pgn', 'Moscow2009.pgn',
+  'Moscow2010.pgn', 'Moscow2011.pgn', 'Moscow2012.pgn', 'Moscow2013.pgn',
+  'Moscow2016.pgn', 'Moscow2017.pgn', 'Moscow2019.pgn', 'Moscow2020.pgn',
+  // Biel, Nanjing, Poikovsky, Zurich, Shamkir, Bucharest, Chennai
+  'Biel2006.pgn', 'Biel2007.pgn', 'Biel2008.pgn', 'Biel2009.pgn', 'Biel2011.pgn', 'Biel2012.pgn', 'Biel2014.pgn', 'Biel2018.pgn',
+  'Nanjing2008.pgn', 'Nanjing2009.pgn', 'Nanjing2010.pgn',
+  'Bazna2009.pgn', 'Bazna2010.pgn', 'ReggioEmilia2012.pgn',
+  'Zurich2014.pgn', 'Zurich2015.pgn',
+  'Shamkir2014.pgn', 'Shamkir2015.pgn', 'Shamkir2016.pgn', 'Shamkir2017.pgn', 'Shamkir2018.pgn', 'Shamkir2019.pgn',
+  'Bucharest2021.pgn', 'Bucharest2022.pgn', 'Bucharest2023.pgn', 'Chennai2024.pgn',
   // Norway Chess / Stavanger (2013–2024)
   'Stavanger2013.pgn', 'Stavanger2014.pgn', 'Stavanger2015.pgn', 'Stavanger2016.pgn',
   'Stavanger2017.pgn', 'Stavanger2018.pgn', 'Stavanger2019.pgn', 'Stavanger2020.pgn',
@@ -106,11 +217,15 @@ const MODERN_ELITE_FILES = [
 ];
 
 const ROMANTIC_MASTER_ZIPS = [
-  { zip: 'Morphy.zip', pgn: 'MorphyClassics.pgn', player: 'Morphy', hint: 'Morphy1858', max: 80 },
-  { zip: 'Anderssen.zip', pgn: 'AnderssenClassics.pgn', player: 'Anderssen', hint: 'Anderssen1851', max: 80 },
-  { zip: 'Chigorin.zip', pgn: 'ChigorinClassics.pgn', player: 'Chigorin', hint: 'Chigorin1892', max: 80 },
-  { zip: 'Rubinstein.zip', pgn: 'RubinsteinClassics.pgn', player: 'Rubinstein', hint: 'Rubinstein1912', max: 80 },
-  { zip: 'Nimzowitsch.zip', pgn: 'NimzowitschClassics.pgn', player: 'Nimzowitsch', hint: 'Nimzowitsch1926', max: 80 },
+  { zip: 'Morphy.zip', pgn: 'MorphyClassics.pgn', player: 'Morphy', hint: 'Morphy1858', max: 140 },
+  { zip: 'Anderssen.zip', pgn: 'AnderssenClassics.pgn', player: 'Anderssen', hint: 'Anderssen1851', max: 140 },
+  { zip: 'Chigorin.zip', pgn: 'ChigorinClassics.pgn', player: 'Chigorin', hint: 'Chigorin1892', max: 140 },
+  { zip: 'Rubinstein.zip', pgn: 'RubinsteinClassics.pgn', player: 'Rubinstein', hint: 'Rubinstein1912', max: 140 },
+  { zip: 'Nimzowitsch.zip', pgn: 'NimzowitschClassics.pgn', player: 'Nimzowitsch', hint: 'Nimzowitsch1926', max: 140 },
+  { zip: 'Tarrasch.zip', pgn: 'TarraschClassics.pgn', player: 'Tarrasch', hint: 'Tarrasch1898', max: 140 },
+  { zip: 'Marshall.zip', pgn: 'MarshallClassics.pgn', player: 'Marshall', hint: 'Marshall1904', max: 120 },
+  { zip: 'Capablanca.zip', pgn: 'CapablancaClassics.pgn', player: 'Capablanca', hint: 'Capablanca1921', max: 140 },
+  { zip: 'Alekhine.zip', pgn: 'AlekhineClassics.pgn', player: 'Alekhine', hint: 'Alekhine1930', max: 140 },
 ];
 
 function ensureDir(dir) {
@@ -326,12 +441,14 @@ async function main() {
       collection: 'world-championship',
       dir: 'world-championships',
       file,
+      eventOverride: WCH_EVENT_OVERRIDES[file] || null,
       filterKnockoutFinalists: null,
     })),
     ...FIDE_PCA_FILES.map((item) => ({
       collection: 'fide-pca-championship',
       dir: 'fide-pca-championships',
       file: item.file,
+      eventOverride: WCH_EVENT_OVERRIDES[item.file] || null,
       filterKnockoutFinalists: item.filterKnockoutFinalists,
     })),
     ...CANDIDATES_FILES.map((file) => ({
@@ -368,6 +485,7 @@ async function main() {
       pgnText,
       collection: spec.collection,
       filenameHint: spec.file,
+      eventOverride: spec.eventOverride || null,
       filterKnockoutFinalists: spec.filterKnockoutFinalists,
     };
   });
@@ -412,11 +530,14 @@ async function main() {
     for (const g of res.games) rawGames.push(g);
   }
 
-  // Deduplicate cleanly by year + white + black + result + first 18 plies
+  // Deduplicate strictly on full game move sequence (and preserve all World Championship match rounds)
   const seenSignatures = new Set();
   const dedupedGames = [];
   for (const rec of rawGames) {
-    const sig = `${rec.y || '?'}|${rec.w.toLowerCase()}|${rec.b.toLowerCase()}|${rec.res}|${rec.m.split(' ').slice(0, 18).join(' ')}`;
+    const isWch = rec.c === 'world-championship' || rec.c === 'fide-pca-championship';
+    const sig = isWch
+      ? `${rec._fn || ''}|${rec.y || '?'}|${rec.r || ''}|${rec.w.toLowerCase()}|${rec.b.toLowerCase()}|${rec.res}|${rec.m}`
+      : `${rec.y || '?'}|${rec.w.toLowerCase()}|${rec.b.toLowerCase()}|${rec.res}|${rec.m}`;
     if (seenSignatures.has(sig)) continue;
     seenSignatures.add(sig);
     dedupedGames.push(rec);
@@ -474,8 +595,8 @@ async function main() {
     version: 2,
     generatedAt: new Date().toISOString(),
     sources: [
-      'PGN Mentor World Chess Championships (1886–2024)',
-      'PGN Mentor Candidates (1950–2024) & Interzonals (1948–1979)',
+      'PGN Mentor & Official Broadcast World Chess Championships (1886–2026)',
+      'PGN Mentor Candidates, FIDE World Cups (1950–2024) & Interzonals (1948–1993)',
       'PGN Mentor Classic & Modern Super-Tournaments (1851–2024)',
       'Lichess CC0 ECO Opening Tables',
     ],

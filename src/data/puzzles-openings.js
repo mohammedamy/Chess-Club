@@ -1243,5 +1243,1308 @@ export const OPENING_PUZZLES = [
       "Nd6#"
     ],
     "explanation": "9.Nd6# is checkmate! Black’s e7 pawn is pinned to the e8 king by White’s e2 queen."
+  },
+  {
+    "id": "op-ruy-lopez-bird-3ply",
+    "category": "Openings",
+    "theme": "Ruy Lopez Noah’s Ark 3-Ply",
+    "difficulty": "Easy",
+    "rating": 1090,
+    "fen": "r1bqkbnr/2p2ppp/p2p4/1p6/3QP3/1B6/PPP2PPP/RNB1K2R b KQkq - 0 8",
+    "sideToMove": "Black",
+    "prompt": "White greedily recaptured on d4 with the queen! Execute the classic Noah’s Ark Trap sequence to win the b3 bishop!",
+    "moves": [
+      "c5",
+      "Qc3",
+      "c4"
+    ],
+    "explanation": "8...c5! attacks the queen, forcing 9.Qd5 Be6 (or Qc6+), followed by 10...c4 trapping the white bishop!"
+  },
+  {
+    "id": "op-budapest-3ply-mate",
+    "category": "Openings",
+    "theme": "Budapest Opening Fork & Win",
+    "difficulty": "Medium",
+    "rating": 1350,
+    "fen": "rnbqk2r/ppp2ppp/3b4/8/2P1n3/P4N2/1P2PPPP/RNBQKB1R b KQkq - 1 6",
+    "sideToMove": "Black",
+    "prompt": "In the Fajarowicz Budapest, White developed 6.Nf3?? overlooking a classic tactical strike on f2. Execute the 3-ply combination to win the corner rook!",
+    "moves": [
+      "Nxf2",
+      "Qd4",
+      "Nxh1"
+    ],
+    "explanation": "6...Nxf2! attacks the queen and rook; 7.Qd4 avoids 7.Kxf2?? Bg3+!, allowing 7...Nxh1 winning a full rook."
+  },
+  {
+    "id": "op-3ply-scholars-punish",
+    "category": "Openings",
+    "theme": "Punishing Early Qb3/Qh5",
+    "difficulty": "Easy",
+    "rating": 940,
+    "fen": "r1bqkb1r/pppp1p1p/5np1/4p3/2BnP3/3Q4/PPPP1PPP/RNB1K1NR b KQkq - 5 6",
+    "sideToMove": "Black",
+    "prompt": "White wandered around with the queen and stepped to d3! Seize the center with tempo!",
+    "moves": [
+      "d5",
+      "Bb3",
+      "dxe4"
+    ],
+    "explanation": "6...d5! attacks c4 and forces 7.Bb3, followed by 7...dxe4 tearing open White’s center with a huge lead in development."
+  },
+  {
+    "id": "op-sicilian-dragon-qa5-trap",
+    "category": "Openings",
+    "theme": "Sicilian Dragon Poisoned b2",
+    "difficulty": "Medium",
+    "rating": 1450,
+    "fen": "r1bq1rk1/p3ppbp/6p1/3Q4/8/4BP2/PPP3PP/2KR1B1R b - - 0 13",
+    "sideToMove": "Black",
+    "prompt": "White greedily grabbed the d5 pawn with 13.Qxd5?? ignoring Black’s dragon bishop! Launch the winning queen counterattack!",
+    "moves": [
+      "Qc7",
+      "Qc5",
+      "Qb7"
+    ],
+    "explanation": "13...Qc7! (or ...Rb8!) attacks c2 and traps White’s queen/king along the open c- and b-files!"
+  },
+  {
+    "id": "op-petroff-3ply-queen-win",
+    "category": "Openings",
+    "theme": "Petroff Symmetry Trap 3-Ply",
+    "difficulty": "Easy",
+    "rating": 1120,
+    "fen": "rnb1kb1r/ppp1q1pp/3p1p2/4N3/3PQ3/8/PPP2PPP/RNB1KB1R w KQkq - 0 7",
+    "sideToMove": "White",
+    "prompt": "Black attacked your pinned knight with 6...f6. Win a clean pawn or stay ahead with a sharp counterattack!",
+    "moves": [
+      "Nc3",
+      "fxe5",
+      "Nd5"
+    ],
+    "explanation": "7.Nc3! defends and attacks c7; after 7...fxe5 8.Nd5! White dominates the center with decisive threats."
+  },
+  {
+    "id": "op-3ply-philidor-legals-trap",
+    "category": "Openings",
+    "theme": "Philidor Légal-Style Fork 3-Ply",
+    "difficulty": "Medium",
+    "rating": 1260,
+    "fen": "r2qkbnr/ppp2ppp/2np4/4p2b/2B1P3/2N2N1P/PPPP1PP1/R1BQK2R w KQkq - 1 6",
+    "sideToMove": "White",
+    "prompt": "Black kept the pin with 5...Bh5? instead of trading on f3. Unleash the classic Légal Sacrifice!",
+    "moves": [
+      "Nxe5",
+      "Nxe5",
+      "Qxh5"
+    ],
+    "explanation": "6.Nxe5! wins a clean pawn because 6...Bxd1?? allows 7.Bxf7+ Ke7 8.Nd5#; after 6...Nxe5 7.Qxh5 White stays a clear pawn ahead."
+  },
+  {
+    "id": "op-vienna-falkbeer-punish",
+    "category": "Openings",
+    "theme": "Vienna Copycat Trap",
+    "difficulty": "Medium",
+    "rating": 1210,
+    "fen": "r1b1k2r/ppp2ppp/3p4/2b1p3/2P1P1nq/2N3NP/PPP2PP1/R1BQ1RK1 w kq - 1 10",
+    "sideToMove": "White",
+    "prompt": "Black ignored the threat to g4 and launched 10...Qh4?? eyeing g3. Defend f2/g3 accurately while keeping your extra piece!",
+    "moves": [
+      "Qd3",
+      "Nxf2",
+      "Rxf2"
+    ],
+    "explanation": "11.Qd3! (or 11.Qf3!) covers g3 cleanly; after 11...Nxf2 12.Rxf2 White emerges ahead in material.",
+    "acceptAlso": [
+      "Qf3"
+    ]
+  },
+  {
+    "id": "op-italian-deutz-gambit-3ply",
+    "category": "Openings",
+    "theme": "Italian Center Pin 3-Ply",
+    "difficulty": "Medium",
+    "rating": 1380,
+    "fen": "r1b1kb1r/ppp2ppp/2n5/q7/3pn3/2N2N2/PPP2PPP/R1BQR1K1 w kq - 2 9",
+    "sideToMove": "White",
+    "prompt": "In the sharp Canal/Italian gambit, Black stepped back with 8...Qa5. Win back your piece with decisive central tactics!",
+    "moves": [
+      "Nxe4",
+      "Be6",
+      "Neg5"
+    ],
+    "explanation": "9.Nxe4! threatens deadly discovered checks like Nf6+ or Bg5!"
+  },
+  {
+    "id": "op-3ply-italian-mate-f7",
+    "category": "Openings",
+    "theme": "Italian Opening Fork 3-Ply",
+    "difficulty": "Easy",
+    "rating": 960,
+    "fen": "r1bqk2r/pppp1ppp/2n5/8/2BP4/2b2N2/P4PPP/R1BQ1RK1 w kq - 0 10",
+    "sideToMove": "White",
+    "prompt": "Black greedily grabbed c3 with 9...Bxc3?? in the Greco Attack! Deflect the Black king and seize a crushing attack!",
+    "moves": [
+      "Bxf7+",
+      "Kxf7",
+      "Bg5"
+    ],
+    "acceptAlso": [
+      "Ba3",
+      "Ng5",
+      "Qb3"
+    ],
+    "explanation": "10.Bxf7+! Kxf7 11.Bg5 (or 10.Ba3 / 10.Ng5) strips Black’s king of shelter and traps it in the center."
+  },
+  {
+    "id": "op-italian-3ply-greek-fork",
+    "category": "Openings",
+    "theme": "Italian Opening Fork 3-Ply",
+    "difficulty": "Easy",
+    "rating": 1040,
+    "fen": "r1bqk2r/ppp2p2/2np1n2/2b1p1pp/2B1P3/3P1NB1/PPP2PPP/RN1Q1RK1 w kq - 0 9",
+    "sideToMove": "White",
+    "prompt": "Black launched a reckless pawn storm with ...g5 and ...h5 before castling! Strike immediately at the overextended kingside!",
+    "moves": [
+      "h4"
+    ],
+    "explanation": "9.h4! attacks g5 right away, ripping open lines against Black’s uncastled king."
+  },
+  {
+    "id": "op-englund-mate-3ply",
+    "category": "Openings",
+    "theme": "Englund Gambit Refutation 3-Ply",
+    "difficulty": "Medium",
+    "rating": 1320,
+    "fen": "r1b1k1nr/pppp1ppp/2n5/4P3/8/2Q2N2/PqP1PPPP/RN2KB1R b KQkq - 0 8",
+    "sideToMove": "Black",
+    "prompt": "White recaptured on c3 with the queen, leaving the first rank fatally undefended! Deliver checkmate in one move!",
+    "moves": [
+      "Qc1#"
+    ],
+    "explanation": "8...Qc1# is checkmate! White’s rook on a1 and knight on b1 block the king while Qc1 seals e1."
+  },
+  {
+    "id": "op-caro-two-knights-punish",
+    "category": "Openings",
+    "theme": "Caro-Kann Two Knights Trap",
+    "difficulty": "Easy",
+    "rating": 1140,
+    "fen": "r1bqkb1r/pp1npppp/2p2n2/8/4N3/5N2/PPPPQPPP/R1B1KB1R w KQkq - 3 6",
+    "sideToMove": "White",
+    "prompt": "Black blocked the e7 pawn’s defense with 5...Nbd7??! Deliver a famous 6-move smothered checkmate!",
+    "moves": [
+      "Nd6#"
+    ],
+    "explanation": "6.Nd6# is checkmate! The e7 pawn is pinned to the Black king by White’s queen on e2."
+  },
+  {
+    "id": "op-rousseau-gambit-punish",
+    "category": "Openings",
+    "theme": "Rousseau Gambit Refutation",
+    "difficulty": "Easy",
+    "rating": 1060,
+    "fen": "r2qkbnr/pppb2pp/2n5/1B1pN3/3Pp3/8/PPP2PPP/RNBQK2R w KQkq - 2 7",
+    "sideToMove": "White",
+    "prompt": "Black played the risky Rousseau Gambit (3...f5) and blocked with 6...Bd7. Eliminate the c6 defender before striking at the exposed king!",
+    "moves": [
+      "Bxc6"
+    ],
+    "explanation": "7.Bxc6! removes the c6 knight first so Black cannot meet Qh5+ or dxe5 without heavy material loss."
+  },
+  {
+    "id": "op-3ply-evans-5ba5-6o-o",
+    "category": "Openings",
+    "theme": "Evans Gambit 6.O-O Setup",
+    "difficulty": "Advanced",
+    "rating": 1580,
+    "fen": "r1b1k1nr/pppq1ppp/1bn5/4p3/2B1P3/1QP2N2/P4PPP/RNBR2K1 b kq - 3 10",
+    "sideToMove": "Black",
+    "prompt": "White placed Rd1 eyeing d8 and the queen on d7. Step out of the dangerous d-file pin cleanly!",
+    "moves": [
+      "Qe7"
+    ],
+    "explanation": "10...Qe7! avoids Ba3/d-file discovery tricks and prepares ...Nf6."
+  },
+  {
+    "id": "op-ruy-berlin-lasker-trap",
+    "category": "Openings",
+    "theme": "Ruy Lopez Marshall Counter",
+    "difficulty": "Medium",
+    "rating": 1380,
+    "fen": "r2q1rk1/4bppp/p2p1n2/1p1Pp3/4P3/2N1BP1P/PPQ2P2/R3R1K1 b - - 0 17",
+    "sideToMove": "Black",
+    "prompt": "White just recaptured on c2 with doubled f-pawns. Activate your queen to target both c2 and the weakened kingside light squares!",
+    "moves": [
+      "Qc8"
+    ],
+    "explanation": "17...Qc8! hits c2 and prepares ...Bxh3 or ...Nh5, exploiting White’s exposed kingside."
+  },
+  {
+    "id": "op-scandi-icelandic-gambit",
+    "category": "Openings",
+    "theme": "Scandinavian Portuguese Gambit",
+    "difficulty": "Medium",
+    "rating": 1340,
+    "fen": "r2q1b1r/ppp2kpp/2n2n2/5b2/2PP4/4BP2/PP4PP/RN1QKBNR b KQ - 1 8",
+    "sideToMove": "Black",
+    "prompt": "In the wild Portuguese Gambit, you sacrificed two pawns to strand White’s king and exploit the e-file. Pin c3 with check!",
+    "moves": [
+      "Bb4+"
+    ],
+    "explanation": "8...Bb4+! develops with tempo, preparing ...Re8+ with devastating pressure on White’s uncastled king."
+  },
+  {
+    "id": "op-grunfeld-exchange-be3",
+    "category": "Openings",
+    "theme": "Grünfeld Exchange 7.Bc4",
+    "difficulty": "Advanced",
+    "rating": 1620,
+    "fen": "r2q1rk1/pp2pBbp/6p1/n1p5/3PP1b1/2P1BP2/P3N1PP/R2Q1RK1 b - - 0 12",
+    "sideToMove": "Black",
+    "prompt": "White just played the famous 12.Bxf7+! tactical shot in the Exchange Grünfeld. Recapture correctly!",
+    "moves": [
+      "Rxf7"
+    ],
+    "explanation": "12...Rxf7! 13.fxg4 Rxf1+ 14.Kxf1 cxd4 15.cxd4 Nc4 leaves Black with tremendous dark-square counterplay."
+  },
+  {
+    "id": "op-najdorf-6bg5-b5-trap",
+    "category": "Openings",
+    "theme": "Najdorf Polugaevsky Tactics",
+    "difficulty": "Expert",
+    "rating": 1840,
+    "fen": "r1b1kb1r/6pp/p1pppn2/4P1B1/8/q1N5/P1PQ2PP/1R2KB1R b Kkq - 0 13",
+    "sideToMove": "Black",
+    "prompt": "In the ultra-sharp Poisoned Pawn Najdorf, White pushed 13.e5! attacking f6. Keep your cool and recapture accurately!",
+    "moves": [
+      "dxe5"
+    ],
+    "explanation": "13...dxe5! accepts the challenge cleanly; after 14.Bxf6 gxf6 15.Ne4 Be7 Black holds the extra pawn dynamically."
+  },
+  {
+    "id": "op-italian-bxf7-mate",
+    "category": "Openings",
+    "theme": "Italian Fried-Liver Fork",
+    "difficulty": "Easy",
+    "rating": 960,
+    "fen": "r1b1k2r/ppppqNpp/2n2n2/2b1p3/2B1P3/8/PPPP1PPP/RNBQK2R w KQkq - 1 6",
+    "sideToMove": "White",
+    "prompt": "Black declined 8...Bxf2+ and stepped aside with 9...Qe7??. Claim the trapped corner rook immediately!",
+    "moves": [
+      "Nxh8"
+    ],
+    "explanation": "10.Nxh8! wins a full rook cleanly, as White already captured f7 and keeps a crushing material edge."
+  },
+  {
+    "id": "op-danish-gambit-qb3",
+    "category": "Openings",
+    "theme": "Danish Gambit Diagonal Storm",
+    "difficulty": "Medium",
+    "rating": 1320,
+    "fen": "rnbqkb1r/ppp2ppp/5n2/3B4/4P3/8/PB3PPP/RN1QK1NR w KQkq - 1 7",
+    "sideToMove": "White",
+    "prompt": "Black tried the Schlechter Defence (5...d5) in the Danish Gambit, overlooking a classic deflection on f7! Win material cleanly!",
+    "moves": [
+      "Bxf7+"
+    ],
+    "explanation": "7.Bxf7+! Kxf7 8.Qxd8 Bb4+ 9.Qd2 Bxd2+ 10.Nxd2 leaves White with a clear extra piece/winning initiative? Even simpler: 7.Bxf7+! forces Black’s king out into a crushing attack."
+  },
+  {
+    "id": "op-grunfeld-russian-qb3",
+    "category": "Openings",
+    "theme": "Grünfeld Russian System",
+    "difficulty": "Medium",
+    "rating": 1460,
+    "fen": "r2q1rk1/ppp1ppbp/1nn3p1/8/3PP1b1/1QN1BN2/PP3PPP/3RKB1R w K - 7 11",
+    "sideToMove": "White",
+    "prompt": "In the Russian Grünfeld, Black attacked d4 with ...Nc6. Push forward to gain central space and drive the knight!",
+    "moves": [
+      "d5"
+    ],
+    "explanation": "11.d5! grabs central space, forces ...Ne5, and opens White’s bishop coordination."
+  },
+  {
+    "id": "op-qgd-ragozin-3ply",
+    "category": "Openings",
+    "theme": "QGD Catalan-Ragozin 3-Ply",
+    "difficulty": "Advanced",
+    "rating": 1620,
+    "fen": "r2q1rk1/1pp1bppp/p1n1pn2/3b2B1/P2P4/5NP1/1PQ1PPBP/RN1R2K1 b - - 6 13",
+    "sideToMove": "Black",
+    "prompt": "In the Catalan vs ...Bb4+, White placed Rd1. Eliminate White’s active f3 knight to disrupt White’s center and win control!",
+    "moves": [
+      "Bxf3"
+    ],
+    "explanation": "13...Bxf3! forces White to recapture awkwardly and leaves Black with active central play."
+  },
+  {
+    "id": "op-bishops-opening-urussov",
+    "category": "Openings",
+    "theme": "Urusov Gambit Initiative",
+    "difficulty": "Medium",
+    "rating": 1260,
+    "fen": "r3k2r/pppqbppp/2npbn2/6B1/2B4Q/2N2N2/PPP2PPP/2KRR3 w kq - 4 11",
+    "sideToMove": "White",
+    "prompt": "In the Urusov Gambit, Black’s king is still in the center and c6 is pinned? Pin the c6 knight and prepare Ne5/Nd4!",
+    "moves": [
+      "Bb5"
+    ],
+    "explanation": "11.Bb5! pins the c6 knight to the queen and increases pressure on the center and e7."
+  },
+  {
+    "id": "op-nimzo-kasparov-4nf3",
+    "category": "Openings",
+    "theme": "Nimzo-Indian Kasparov 4.Nf3",
+    "difficulty": "Medium",
+    "rating": 1420,
+    "fen": "rnbq1rk1/pp3ppp/4p3/8/3N4/2b3P1/P3PPBP/R1BQ1RK1 w - - 0 11",
+    "sideToMove": "White",
+    "prompt": "Black grabbed the c3 pawn with 10...Bxc3?! overlooking the a3-f8 diagonal. Punish Black’s uncastled king immediately!",
+    "moves": [
+      "Ba3"
+    ],
+    "explanation": "11.Ba3! cuts off Black’s kingside castling and traps Black’s king in the center."
+  },
+  {
+    "id": "op-dragon-rxc3-sac",
+    "category": "Openings",
+    "theme": "Sicilian Dragon ...Rxc3! Sac",
+    "difficulty": "Advanced",
+    "rating": 1710,
+    "fen": "r2q1rk1/p4pbp/2p1b1p1/2Bnp3/8/2N2P2/PPPQ2PP/2KR1B1R w - - 2 14",
+    "sideToMove": "White",
+    "prompt": "Black played the thematic ...d5 break and defended with 13...Be6. Before taking on f8, consolidate or jump centrally?",
+    "moves": [
+      "Ne4"
+    ],
+    "explanation": "14.Ne4! centralizes powerfully, eyes c5/d6/g5, and keeps Black’s queenside pawns under pressure."
+  },
+  {
+    "id": "op-italian-traxler-3ply",
+    "category": "Openings",
+    "theme": "Italian Fried-Liver 3-Ply Mate Threat",
+    "difficulty": "Medium",
+    "rating": 1360,
+    "fen": "r1bq1b1r/pp4pp/2p1k3/3np3/1nB1Q3/2N5/PPPP1PPP/R1B1K2R w KQ - 0 10",
+    "sideToMove": "White",
+    "prompt": "In the Fried Liver Attack, Black defended d5 with ...c6 and threatens ...Nxc2+. Kick the b4 knight while maintaining your attack!",
+    "moves": [
+      "a3"
+    ],
+    "explanation": "10.a3! chases the b4 knight away before Black can consolidate, keeping Black’s king stranded on e6."
+  },
+  {
+    "id": "op-sicilian-chelyabinsk-3ply",
+    "category": "Openings",
+    "theme": "Sicilian Knight Fork 3-Ply",
+    "difficulty": "Medium",
+    "rating": 1390,
+    "fen": "2r1kb1r/1p3ppp/p1npbq2/4p3/2N1P3/2N5/PPP2PPP/R2QKB1R w KQk - 0 11",
+    "sideToMove": "White",
+    "prompt": "Black recaptured on f6 with the queen instead of ...gxf6, leaving d5 and b6 unprotected. Fork the c8 rook and d5!",
+    "moves": [
+      "Nb6"
+    ],
+    "explanation": "11.Nb6! attacks the c8 rook and seizes total control of the d5 outpost."
+  },
+  {
+    "id": "op-vienna-max-lange-trap",
+    "category": "Openings",
+    "theme": "Vienna Gambit Refutation",
+    "difficulty": "Medium",
+    "rating": 1320,
+    "fen": "r1b1kb1r/ppp2ppp/2n5/1B1pP3/7q/2P2QP1/P1PP3P/R1B1K1NR b KQkq - 0 8",
+    "sideToMove": "Black",
+    "prompt": "White blocked the check with 8.g3. Seize the initiative with a central queen check that trades into a superior endgame or wins a pawn!",
+    "moves": [
+      "Qe4+"
+    ],
+    "explanation": "8...Qe4+! forces the queen exchange or wins the e5 pawn, shattering White’s overextended center."
+  },
+  {
+    "id": "op-scotch-4bc5-be3",
+    "category": "Openings",
+    "theme": "Scotch 4...Bc5 5.Be3",
+    "difficulty": "Easy",
+    "rating": 1110,
+    "fen": "r1b1k2r/ppppnppp/6q1/2b1n3/3NP3/2P1B3/PP2BPPP/RN1QK2R w KQkq - 5 9",
+    "sideToMove": "White",
+    "prompt": "Black attacked both e4 and g2 with 8...Qg6! Safeguard the kingside and sacrifice or defend? Find the strongest move!",
+    "moves": [
+      "O-O"
+    ],
+    "explanation": "9.O-O! calmly defends g2 while keeping e4 immune to ...Qxe4? due to Nd2/Bf3 tricks."
+  },
+  {
+    "id": "op-caro-advance-short-c5",
+    "category": "Openings",
+    "theme": "Caro-Kann Short System Break",
+    "difficulty": "Medium",
+    "rating": 1380,
+    "fen": "rn2kbnr/pp3ppp/1q2p3/2ppPb2/3P4/2N1BN2/PPP1BPPP/R2QK2R b KQkq - 3 7",
+    "sideToMove": "Black",
+    "prompt": "White left the b2 pawn undefended after 7.Nc3 in the Short Variation. Check the tactics on b4 and snatch the free pawn!",
+    "moves": [
+      "Qxb2"
+    ],
+    "explanation": "7...Qxb2! wins a clean pawn because 8.Nb5?! is met by 8...Bb4+! and 8.Na4 allows 8...Qa3."
+  },
+  {
+    "id": "op-english-sicilian-reversed-3ply",
+    "category": "Openings",
+    "theme": "English Four Knights e4",
+    "difficulty": "Medium",
+    "rating": 1320,
+    "fen": "r1b1k2r/ppp1qppp/2n5/3np3/8/P3PN2/1PQP1PPP/R1B1KB1R b KQkq - 1 9",
+    "sideToMove": "Black",
+    "prompt": "In the English Four Knights, White retreated Qc2. Seize space in the center and drive White’s knight back with tempo!",
+    "moves": [
+      "e4"
+    ],
+    "explanation": "9...e4! attacks f3, gains central space, and stops White from consolidating easily."
+  },
+  {
+    "id": "op-catalan-b5-trap",
+    "category": "Openings",
+    "theme": "Catalan Long Diagonal Tactics",
+    "difficulty": "Advanced",
+    "rating": 1640,
+    "fen": "rn1qkb1r/1bp2ppp/p3p3/1p2N3/PnpPP3/6P1/1P3PBP/RNBQ1RK1 w kq - 1 10",
+    "sideToMove": "White",
+    "prompt": "In the sharp Catalan 5...b5 line, Black hopped to b4. Open the a-file and win material on the queenside immediately!",
+    "moves": [
+      "axb5"
+    ],
+    "explanation": "10.axb5! opens the a-file against Black’s unprotected a8 rook and wins the b5 pawn cleanly."
+  },
+  {
+    "id": "op-ruy-open-bxe5-trap",
+    "category": "Openings",
+    "theme": "Ruy Lopez Steinitz Trap",
+    "difficulty": "Medium",
+    "rating": 1290,
+    "fen": "3r1rk1/ppp1bppp/5n2/4N3/4b3/2N5/PPP2PPP/R1B1R1K1 w - - 0 12",
+    "sideToMove": "White",
+    "prompt": "Black snatched on e4 trusting the back-rank pin on Re1. Check the tactics carefully and refute Black’s trick!",
+    "moves": [
+      "Nxe4"
+    ],
+    "explanation": "12.Nxe4! works because 12...Nxe4 13.Nd3! attacks the pinned knight and keeps White up a clean pawn."
+  },
+  {
+    "id": "op-ruy-marshall-re8-punish",
+    "category": "Openings",
+    "theme": "Ruy Lopez Marshall Attack",
+    "difficulty": "Advanced",
+    "rating": 1690,
+    "fen": "r1b2rk1/5ppp/p1pb4/1p1n4/3P4/1BP3Pq/PP3P1P/RNBQR1K1 w - - 1 15",
+    "sideToMove": "White",
+    "prompt": "In the Marshall Attack mainline, Black’s queen infiltrated to h3 after 14.g3. Defend laterally along the fourth rank with tempo!",
+    "moves": [
+      "Re4"
+    ],
+    "explanation": "15.Re4! activates the rook along the 4th rank, preparing Rh4 to drive Black’s queen away."
+  },
+  {
+    "id": "op-italian-giuoco-d4-strike",
+    "category": "Openings",
+    "theme": "Italian Center Strike 3-Ply",
+    "difficulty": "Easy",
+    "rating": 980,
+    "fen": "r1bqk2r/pppp1ppp/1bn2n2/8/2BPP3/5N2/PP3PPP/RNBQK2R w KQkq - 1 7",
+    "sideToMove": "White",
+    "prompt": "Black retreated 6...Bb6? instead of 6...Bb4+. Drive the f6 knight away with a sharp central thrust!",
+    "moves": [
+      "e5"
+    ],
+    "explanation": "7.e5! kicks the f6 knight immediately (7...Ne4 allows 8.Bd5!), seizing a commanding initiative."
+  },
+  {
+    "id": "op-kings-gambit-modern-3d5",
+    "category": "Openings",
+    "theme": "King’s Gambit Modern Defence",
+    "difficulty": "Easy",
+    "rating": 1090,
+    "fen": "rn1qk2r/ppp1bppp/4b3/3n4/5p2/1B3N2/PPPP2PP/RNBQ1RK1 w kq - 4 8",
+    "sideToMove": "White",
+    "prompt": "Against the Modern Defence to the King’s Gambit, Black’s knight sits exposed on d5. Strike at the center immediately!",
+    "moves": [
+      "c4"
+    ],
+    "explanation": "8.c4! kicks the d5 knight and builds a broad central pawn front."
+  },
+  {
+    "id": "op-sicilian-alapin-3ply-bb5",
+    "category": "Openings",
+    "theme": "Sicilian Alapin Fork 3-Ply",
+    "difficulty": "Medium",
+    "rating": 1340,
+    "fen": "r3kbnr/pp3ppp/2n1p3/q7/6b1/1QP1BN2/PP1N1PPP/R3KB1R b KQkq - 1 9",
+    "sideToMove": "Black",
+    "prompt": "White hit b7 with 9.Qb3 in the Alapin Sicilian. Defend b7 cleanly while keeping Black’s queen active!",
+    "moves": [
+      "Qc7"
+    ],
+    "explanation": "9...Qc7! protects b7 without creating pawn weaknesses, preparing ...Nf6 and ...Be7."
+  },
+  {
+    "id": "op-reti-king-indian-attack",
+    "category": "Openings",
+    "theme": "Réti Gambit Acceptance",
+    "difficulty": "Medium",
+    "rating": 1350,
+    "fen": "rnbqkbnr/ppp3pp/5p2/2P1p3/1P1p4/4PN2/P2P1PPP/RNBQKB1R b KQkq - 0 5",
+    "sideToMove": "Black",
+    "prompt": "In the sharp Réti 2...d4 3.b4 line, White overextended the queenside with 5.c5. Undermine White’s flank pawn chain immediately!",
+    "moves": [
+      "a5"
+    ],
+    "explanation": "5...a5! attacks b4 right away, forcing concessions on White’s queenside pawn structure."
+  },
+  {
+    "id": "op-benoni-taimanov-f4",
+    "category": "Openings",
+    "theme": "Modern Benoni Flick-Knife",
+    "difficulty": "Advanced",
+    "rating": 1680,
+    "fen": "rnbqk2r/pp3pbp/3p1np1/2pP4/4PP2/2N5/PP4PP/R1BQKBNR w KQkq - 1 8",
+    "sideToMove": "White",
+    "prompt": "In the sharp Flick-Knife Attack against the Modern Benoni, disrupt Black’s coordination with a thematic check!",
+    "moves": [
+      "Bb5+"
+    ],
+    "explanation": "8.Bb5+! forces ...Nfd7 or ...Bd7, creating immediate central threats with e5!"
+  },
+  {
+    "id": "op-albin-counter-c5",
+    "category": "Openings",
+    "theme": "Albin Countergambit Counter",
+    "difficulty": "Medium",
+    "rating": 1290,
+    "fen": "2kr1bnr/pppq1ppp/2n1b3/4P3/2Pp4/5NP1/PP1NPPBP/R1BQ1RK1 b - - 6 8",
+    "sideToMove": "Black",
+    "prompt": "Against the Albin Countergambit, White castled kingside into your bishop battery. Trade off White’s key fianchetto defender!",
+    "moves": [
+      "Bh3"
+    ],
+    "explanation": "8...Bh3! challenges the g2 bishop, preparing ...h5-h4 against White’s castled king."
+  },
+  {
+    "id": "op-london-counter-c5-dxc5",
+    "category": "Openings",
+    "theme": "Punishing Passive London",
+    "difficulty": "Easy",
+    "rating": 1010,
+    "fen": "r3kb1r/pp2pppp/1qn2n2/2pp1b2/3P1B2/1QP1PN2/PP1N1PPP/R3KB1R b KQkq - 6 7",
+    "sideToMove": "Black",
+    "prompt": "White offered the queen trade with 7.Qb3 in the London System. Gain queenside space with tempo instead of trading on b3!",
+    "moves": [
+      "c4"
+    ],
+    "explanation": "7...c4! forces White’s queen back to c2 or d1, seizing a powerful queenside space clamp."
+  },
+  {
+    "id": "op-pirc-classical-be2",
+    "category": "Openings",
+    "theme": "Pirc Classical Counterstrike",
+    "difficulty": "Medium",
+    "rating": 1340,
+    "fen": "r2q1rk1/ppp2pbp/2np1np1/4p3/3PP1b1/2N1BN2/PPPQBPPP/R4RK1 w - e6 0 9",
+    "sideToMove": "White",
+    "prompt": "Black struck in the center with 8...e5 in the Classical Pirc. Gain space with tempo against the c6 knight!",
+    "moves": [
+      "d5"
+    ],
+    "explanation": "9.d5! drives the c6 knight away and claims lasting central and queenside space."
+  },
+  {
+    "id": "op-catalan-open-qa4",
+    "category": "Openings",
+    "theme": "Catalan Queen Check",
+    "difficulty": "Easy",
+    "rating": 1130,
+    "fen": "r1bqkb1r/ppp2ppp/2n1pn2/8/2pP4/5NP1/PP2PPBP/RNBQK2R w KQkq - 2 6",
+    "sideToMove": "White",
+    "prompt": "Black blocked the c-pawn with 5...Nc6 in the Open Catalan. Pin the knight and recover c4 cleanly!",
+    "moves": [
+      "Qa4"
+    ],
+    "explanation": "6.Qa4! pins c6 to the king, threatening Ne5 and Qxc4 with huge pressure."
+  },
+  {
+    "id": "op-french-tarrasch-3nf6-e5",
+    "category": "Openings",
+    "theme": "French Tarrasch Universal",
+    "difficulty": "Easy",
+    "rating": 1120,
+    "fen": "r1bqkb1r/pp1n2pp/2n1pp2/3pP3/3P4/3B4/PP1NNPPP/R1BQK2R w KQkq - 0 9",
+    "sideToMove": "White",
+    "prompt": "Black challenged your e5 wedge with 8...f6 in the Tarrasch French. Capture to leave Black with an awkward e6 pawn or open lines!",
+    "moves": [
+      "exf6"
+    ],
+    "explanation": "9.exf6! Qxf6 10.Nf3 keeps White’s d4 square solid and targets the weak e6 pawn."
+  },
+  {
+    "id": "op-bird-opening-e4-trap",
+    "category": "Openings",
+    "theme": "From’s Gambit Trap",
+    "difficulty": "Medium",
+    "rating": 1320,
+    "fen": "r1b1k1nr/ppp2p1p/2n5/4P3/6p1/8/PPP1P1PP/RNBK1B1R w kq - 1 9",
+    "sideToMove": "White",
+    "prompt": "In From’s Gambit, queens are off and Black targets e5. Develop your queenside knight with tempo against e4!",
+    "moves": [
+      "Nc3"
+    ],
+    "explanation": "9.Nc3! attacks e4 immediately and accelerates White’s lead in development."
+  },
+  {
+    "id": "op-english-botvinnik-3ply-break",
+    "category": "Openings",
+    "theme": "English 1.c4 e5 2.Nc3 Bb4",
+    "difficulty": "Medium",
+    "rating": 1380,
+    "fen": "rn2k2r/pp2qppp/2pp1n2/4p3/2PPP1b1/3B1N2/PP3PPP/R1BQK2R w KQkq - 3 9",
+    "sideToMove": "White",
+    "prompt": "In the Nimzo-English, Black pinned f3 with 8...Bg4. Close the center or castle? Find White’s sharpest move!",
+    "moves": [
+      "d5"
+    ],
+    "explanation": "9.d5! (or Be3) grabs central space and limits Black’s pieces."
+  },
+  {
+    "id": "op-italian-evans-3ply",
+    "category": "Openings",
+    "theme": "Evans Gambit 3-Ply Breakthrough",
+    "difficulty": "Advanced",
+    "rating": 1580,
+    "fen": "r1b1k2r/ppppnppp/2n3q1/b3P3/2B5/1QN2N2/P4PPP/R1B2RK1 w kq - 1 11",
+    "sideToMove": "White",
+    "prompt": "In the Compromised Evans Gambit, Black’s king is stuck in the center. Reroute your knight or shut down castling to keep the attack rolling!",
+    "moves": [
+      "Ne2"
+    ],
+    "acceptAlso": [
+      "Ba3"
+    ],
+    "explanation": "11.Ne2! (or 11.Ba3!) transfers the knight toward f4/g3 while preparing to blast open the e-file."
+  },
+  {
+    "id": "op-kings-indian-4pa-e5",
+    "category": "Openings",
+    "theme": "King’s Indian Four Pawns Attack",
+    "difficulty": "Advanced",
+    "rating": 1640,
+    "fen": "rn1q1rk1/pp3pbp/3p1np1/2pP4/4PPb1/2N2N2/PP2B1PP/R1BQK2R w KQ - 1 10",
+    "sideToMove": "White",
+    "prompt": "In the Four Pawns Attack, Black pinned f3 with 9...Bg4. Question the g4 bishop immediately (or complete castling)!",
+    "moves": [
+      "h3"
+    ],
+    "acceptAlso": [
+      "O-O"
+    ],
+    "explanation": "10.h3! (or 10.O-O) resolves the pin on f3 right away before pushing e5."
+  },
+  {
+    "id": "op-scotch-mieses-bb4",
+    "category": "Openings",
+    "theme": "Scotch Mieses Variation",
+    "difficulty": "Advanced",
+    "rating": 1580,
+    "fen": "r3k2r/p1ppqpbp/b1p3p1/3nP3/2P5/1P6/PB2QPPP/RN2KB1R w KQkq - 2 11",
+    "sideToMove": "White",
+    "prompt": "Black fianchettoed against e5 and eyes ...Qb4+. Develop your queenside knight or shore up the kingside diagonal!",
+    "moves": [
+      "Nd2"
+    ],
+    "acceptAlso": [
+      "g3",
+      "Nc3"
+    ],
+    "explanation": "11.Nd2! (or 11.g3 / 11.Nc3) keeps White’s extra central space secure and prepares Ne4 or Bg2."
+  },
+  {
+    "id": "op-taimanov-nb5-fork",
+    "category": "Openings",
+    "theme": "Sicilian Taimanov d6 Weakness",
+    "difficulty": "Medium",
+    "rating": 1390,
+    "fen": "r1b1k2r/2qpbppp/p1p1pn2/8/N3P3/4B3/PPP1BPPP/R2Q1RK1 w kq - 0 11",
+    "sideToMove": "White",
+    "prompt": "Black played 10...bxc6 to reinforce the center, neglecting the dark squares on the queenside. Fork the rook and bishop!",
+    "moves": [
+      "Nb6"
+    ],
+    "acceptAlso": [
+      "Bb6"
+    ],
+    "explanation": "11.Nb6! lands on the weakened b6 square, attacking a8 and c8 and seizing immediate queenside control."
+  },
+  {
+    "id": "op-sicilian-rossolimo-3ply",
+    "category": "Openings",
+    "theme": "Rossolimo 4.Bxc6 Strategy",
+    "difficulty": "Easy",
+    "rating": 1100,
+    "fen": "r1bqkb1r/p2p1ppp/2p1p1n1/2p5/4P3/3P1N2/PPP2PPP/RNBQ1RK1 w kq - 1 7",
+    "sideToMove": "White",
+    "prompt": "In the 3...e6 Rossolimo, Black placed the knight on g6. Drive a wedge into the center and cramp Black’s f8 bishop!",
+    "moves": [
+      "e5"
+    ],
+    "acceptAlso": [
+      "Re1"
+    ],
+    "explanation": "7.e5! freezes Black’s d7-d5 advance and gives White lasting space."
+  },
+  {
+    "id": "op-sicilian-3ply-sacrifice",
+    "category": "Openings",
+    "theme": "Sicilian Najdorf 6.Bg5 Pin",
+    "difficulty": "Advanced",
+    "rating": 1680,
+    "fen": "r1b1k2r/2qnbppp/p2pp3/1p3PP1/3NP3/2N2Q2/PPP4P/2KR1B1R b kq - 0 13",
+    "sideToMove": "Black",
+    "prompt": "White pushed 13.f5! in the sharp 6.Bg5 Najdorf, attacking e6. Safeguard your king (or insert ...Bxg5+) before counterattacking!",
+    "moves": [
+      "O-O"
+    ],
+    "acceptAlso": [
+      "Bxg5+"
+    ],
+    "explanation": "13...O-O! (or 13...Bxg5+) gets the king out of danger while leaving White’s kingside overextended."
+  },
+  {
+    "id": "op-scandi-3qd6-trap",
+    "category": "Openings",
+    "theme": "Scandinavian 3...Qd6 Trap",
+    "difficulty": "Medium",
+    "rating": 1320,
+    "fen": "2kr1b1r/1pp1pppp/p1nq1n2/8/3P2b1/2N2NP1/PPP2PBP/R1BQ1RK1 w - - 5 9",
+    "sideToMove": "White",
+    "prompt": "Black castled queenside in the 3...Qd6 Scandinavian. Secure g4 against Black’s bishop before expanding centrally!",
+    "moves": [
+      "h3"
+    ],
+    "acceptAlso": [
+      "d5"
+    ],
+    "explanation": "9.h3! (or 9.d5) challenges the g4 bishop cleanly and prepares queenside or central expansion."
+  },
+  {
+    "id": "op-sicilian-moscow-check-3ply",
+    "category": "Openings",
+    "theme": "Sicilian Poisoned Pawn Trap 3-Ply",
+    "difficulty": "Medium",
+    "rating": 1410,
+    "fen": "rnb1k2r/pp2bppp/3ppn2/6B1/3NPP2/q1N5/P1PQ2PP/1R2KB1R w Kkq - 2 10",
+    "sideToMove": "White",
+    "prompt": "Black grabbed b2 in the Classical Sicilian! Attack Black’s queen and c7 square immediately (or break with e5)!",
+    "moves": [
+      "Ndb5"
+    ],
+    "acceptAlso": [
+      "e5"
+    ],
+    "explanation": "10.Ndb5! (or 10.e5) threatens Nc7+ and traps Black’s queen on a3 without time to breathe."
+  },
+  {
+    "id": "op-petroff-cochrane-gambit",
+    "category": "Openings",
+    "theme": "Petroff Cochrane Strike",
+    "difficulty": "Advanced",
+    "rating": 1560,
+    "fen": "r3k2r/ppp1bppp/8/3q1b2/3Pn3/3Q1N2/PP3PPP/RNB1R1K1 w kq - 2 12",
+    "sideToMove": "White",
+    "prompt": "Black developed 11...Bf5 in the Petroff. Pile onto the pinned e4 knight and increase pressure along the e-file!",
+    "moves": [
+      "Qe2"
+    ],
+    "acceptAlso": [
+      "Nc3",
+      "g4",
+      "Qe3"
+    ],
+    "explanation": "12.Qe2! (or 12.Nc3 / 12.g4) targets the pinned e4 knight and prepares Nc3/Bf4 with strong central pressure."
+  },
+  {
+    "id": "op-french-winawer-3ply-qxa8",
+    "category": "Openings",
+    "theme": "French Poisoned Pawn Trap",
+    "difficulty": "Advanced",
+    "rating": 1650,
+    "fen": "rnb1k1r1/ppq1np1Q/4p3/3pP3/3p4/P1P5/2P2PPP/R1BK1BNR b q - 1 10",
+    "sideToMove": "Black",
+    "prompt": "White played the ultra-modern 10.Kd1! in the Winawer Poisoned Pawn. Keep your passed c3 pawn alive or develop a piece!",
+    "moves": [
+      "dxc3"
+    ],
+    "acceptAlso": [
+      "Nbc6"
+    ],
+    "explanation": "10...dxc3! (or 10...Nbc6) creates a dangerous protected pawn on c3 and opens lines against White’s uncastled king."
+  },
+  {
+    "id": "op-kings-gambit-muzio",
+    "category": "Openings",
+    "theme": "King’s Gambit Kieseritzky",
+    "difficulty": "Medium",
+    "rating": 1410,
+    "fen": "rnbqk2r/p4p1p/2Nb4/1B5n/3P1ppP/8/PPP3P1/RNBQK2R b KQkq - 0 11",
+    "sideToMove": "Black",
+    "prompt": "White just grabbed c6 with the knight, attacking your queen and rook. Strike back with a counterattacking capture!",
+    "moves": [
+      "Nxc6"
+    ],
+    "acceptAlso": [
+      "Qb6"
+    ],
+    "explanation": "11...Nxc6! 12.Bxc6+ Kf8! traps the white king in a deadly counterattack along the e-file and dark squares."
+  },
+  {
+    "id": "op-caro-fantasy-e5",
+    "category": "Openings",
+    "theme": "Caro-Kann Fantasy Strike",
+    "difficulty": "Medium",
+    "rating": 1330,
+    "fen": "rnbqkbnr/pp3ppp/2p5/8/2BpP3/5N2/PPP3PP/RNBQK2R b KQkq - 1 6",
+    "sideToMove": "Black",
+    "prompt": "White sacrificed a central pawn in the Fantasy Variation and eyes f7. Reinforce e5 and develop your queenside knight!",
+    "moves": [
+      "Nd7"
+    ],
+    "acceptAlso": [
+      "Nf6"
+    ],
+    "explanation": "6...Nd7! (or 6...Nf6) defends e5 solidly while keeping the extra pawn."
+  },
+  {
+    "id": "op-stafford-be2-refute",
+    "category": "Openings",
+    "theme": "Refuting Stafford Gambit",
+    "difficulty": "Easy",
+    "rating": 1060,
+    "fen": "r1bqk2r/ppp2ppp/2p2n2/2b5/4P3/3P4/PPP2PPP/RNBQKB1R w KQkq - 1 6",
+    "sideToMove": "White",
+    "prompt": "Against the tricky Stafford Gambit, Black aims at f2 and g4. Play the calm, accurate developing move that shuts down Ng4 tricks!",
+    "moves": [
+      "Be2"
+    ],
+    "acceptAlso": [
+      "h3"
+    ],
+    "explanation": "6.Be2! develops safely, blocks ...Ng4 ideas, and prepares c3/O-O keeping White a clean pawn ahead."
+  },
+  {
+    "id": "op-english-flohr-mikenas",
+    "category": "Openings",
+    "theme": "English Flohr-Mikenas e5",
+    "difficulty": "Advanced",
+    "rating": 1620,
+    "fen": "rnb1kb1r/pp3ppp/4pq2/2p5/2PP4/2P5/P4PPP/R1BQKBNR w KQkq c6 0 8",
+    "sideToMove": "White",
+    "prompt": "In the wild Flohr-Mikenas English, Black challenges d4 with 7...c5. Reinforce d4 and accelerate kingside castling!",
+    "moves": [
+      "Nf3"
+    ],
+    "acceptAlso": [
+      "Rb1"
+    ],
+    "explanation": "8.Nf3! defends d4 cleanly and prepares Bd3/O-O with strong dark-square compensation."
+  },
+  {
+    "id": "op-scandi-qa5-nf6-trap",
+    "category": "Openings",
+    "theme": "Scandinavian 3...Qa5 Pin",
+    "difficulty": "Easy",
+    "rating": 1080,
+    "fen": "rn2kb1r/ppp1pppp/5nb1/q3N3/3P2P1/2N4P/PPP2P2/R1BQKB1R b KQkq - 2 8",
+    "sideToMove": "Black",
+    "prompt": "White chased the bishop to g6 and jumped 8.Ne5 threatening Nxg6. Develop your queenside knight to contest e5 and guard c7!",
+    "moves": [
+      "Nbd7"
+    ],
+    "acceptAlso": [
+      "e6"
+    ],
+    "explanation": "8...Nbd7! (or 8...e6) challenges the e5 knight immediately and covers c7."
+  },
+  {
+    "id": "op-kings-indian-samisch-c5",
+    "category": "Openings",
+    "theme": "Sämisch KID Panno Counter",
+    "difficulty": "Advanced",
+    "rating": 1620,
+    "fen": "1rbq1rk1/1pp2pbp/p2p1np1/3Pp3/2PnP3/2N1BP2/PP1Q2PP/R1N1KB1R w KQ - 1 11",
+    "sideToMove": "White",
+    "prompt": "In the Panno Sämisch KID, Black planted a knight on d4. Challenge the intrusive knight immediately!",
+    "moves": [
+      "Nb3"
+    ],
+    "acceptAlso": [
+      "N1e2"
+    ],
+    "explanation": "11.Nb3! attacks d4 directly, forcing Black to concede the central outpost or trade knights."
+  },
+  {
+    "id": "op-french-winawer-6ba4",
+    "category": "Openings",
+    "theme": "French Winawer 7.Qg4 Kf8",
+    "difficulty": "Expert",
+    "rating": 1810,
+    "fen": "r3k1r1/1pqbnp2/p1n1p3/3pP3/5P2/P1NQ4/2P3PP/R1B1KB1R w KQq - 0 14",
+    "sideToMove": "White",
+    "prompt": "In the Poisoned Pawn Winawer, Black stopped Nb5 with 13...a6. Develop your kingside knight or activate the rook to keep pressure!",
+    "moves": [
+      "Ne2"
+    ],
+    "acceptAlso": [
+      "Rb1",
+      "h4",
+      "Bd2"
+    ],
+    "explanation": "14.Ne2! (or 14.Rb1!) clears the back rank and prepares Nf4/Rb1 to challenge Black’s queenside."
+  },
+  {
+    "id": "op-four-knights-rubinstein",
+    "category": "Openings",
+    "theme": "Four Knights Rubinstein",
+    "difficulty": "Medium",
+    "rating": 1310,
+    "fen": "r1b1kb1r/pppp1ppp/8/1B6/8/2P5/PPP1qPPP/R1B1K2R w KQkq - 0 10",
+    "sideToMove": "White",
+    "prompt": "Black offered the queen trade on e2 in the Rubinstein Countergambit. Recapture with the piece that accelerates your bishop development!",
+    "moves": [
+      "Bxe2"
+    ],
+    "acceptAlso": [
+      "Kxe2"
+    ],
+    "explanation": "10.Bxe2! develops the bishop back to an active diagonal while avoiding blocking the king."
+  },
+  {
+    "id": "op-nimzo-classical-qc2-c5",
+    "category": "Openings",
+    "theme": "Nimzo-Indian Classical 4.Qc2",
+    "difficulty": "Medium",
+    "rating": 1380,
+    "fen": "rn1q1rk1/pbp2pp1/1p2pn1p/3p4/2PP3B/P1Q2P2/1P2P1PP/R3KBNR w KQ d6 0 10",
+    "sideToMove": "White",
+    "prompt": "Black struck in the center with 9...d5 against 4.Qc2. Solidify d4 and open the f1-a6 diagonal for your bishop!",
+    "moves": [
+      "e3"
+    ],
+    "acceptAlso": [
+      "cxd5"
+    ],
+    "explanation": "10.e3! reinforces d4 and prepares Bd3/Ne2, keeping the bishop pair poised for the middlegame."
+  },
+  {
+    "id": "op-ruy-keres-ne2",
+    "category": "Openings",
+    "theme": "Ruy Lopez Steinitz Tactics",
+    "difficulty": "Medium",
+    "rating": 1440,
+    "fen": "r1bqkb1r/2p3pp/p7/2ppPp2/3Nn3/8/PPP2PPP/RNBQR1K1 w kq - 0 11",
+    "sideToMove": "White",
+    "prompt": "In the Ruy Lopez (Keres–Reshevsky), Black overextended on the kingside leaving the d4 knight attacked by ...c5. Find White’s crisp tactical retreat!",
+    "moves": [
+      "Ne2"
+    ],
+    "explanation": "11.Ne2! sidesteps the attack, eyes f4/g3, and keeps Black’s overextended c5/f5 pawns under pressure."
+  },
+  {
+    "id": "op-ruy-berlin-qxe5-3ply",
+    "category": "Openings",
+    "theme": "Berlin Defence 3-Ply Queen Strike",
+    "difficulty": "Medium",
+    "rating": 1380,
+    "fen": "r1b1k2r/ppppqp2/7p/1Bb1N1pn/4P3/3P4/PPP2PPP/RN1Q1RK1 b kq - 0 10",
+    "sideToMove": "Black",
+    "prompt": "In the Open Berlin Ruy Lopez, White left the e5 knight underdefended while f2/b2 sit exposed. Win material in 3 plies!",
+    "moves": [
+      "Qxe5",
+      "Qxh5",
+      "Qxb2"
+    ],
+    "explanation": "10...Qxe5! 11.Qxh5 Qxh2+ or 11...Qxb2! scoops up pawns while attacking the corner rook."
+  },
+  {
+    "id": "op-winawer-bxb7-3ply",
+    "category": "Openings",
+    "theme": "French Winawer Long-Diagonal Fork",
+    "difficulty": "Medium",
+    "rating": 1410,
+    "fen": "rnb1k2r/pB3ppp/4pn2/q7/3N4/2P2Q2/P1P2PPP/R1B1K2R b KQkq - 0 10",
+    "sideToMove": "Black",
+    "prompt": "In the Winawer French (Winawer–De Vere), White sent the bishop to b7 overlooking a deadly 3-ply fork! Punish White immediately!",
+    "moves": [
+      "Bxb7",
+      "Qxb7",
+      "Qxc3+"
+    ],
+    "explanation": "10...Bxb7! 11.Qxb7 Qxc3+! forks White’s king and unprotected a1 rook."
+  },
+  {
+    "id": "op-dutch-classical-nxe4",
+    "category": "Openings",
+    "theme": "Dutch Defence Central Strike",
+    "difficulty": "Advanced",
+    "rating": 1580,
+    "fen": "rnb1qrk1/pp2b1pp/2p1p3/5p2/2PPp1n1/1P4PN/PB1N1PBP/R2Q1RK1 w - - 0 11",
+    "sideToMove": "White",
+    "prompt": "Against the Classical Dutch (Beliavsky–Byrne), Black’s e4 pawn stands loosely supported. Capture in the center to break open Black’s position!",
+    "moves": [
+      "Nxe4"
+    ],
+    "explanation": "11.Nxe4! wins a crucial central pawn cleanly because 11...fxe4?? drops material along the long diagonal."
+  },
+  {
+    "id": "op-taimanov-fischer-tal-3ply",
+    "category": "Openings",
+    "theme": "Sicilian Taimanov Fischer Strike",
+    "difficulty": "Advanced",
+    "rating": 1680,
+    "fen": "rqb1k2r/pp1p1ppp/4pn2/1Nb1n3/4PB2/2N3P1/PPP1BP1P/R2QK2R w KQkq - 7 10",
+    "sideToMove": "White",
+    "prompt": "In Fischer–Tal (Bled), Black left the e5 knight pinned/exposed in the Taimanov Sicilian. Execute White’s winning 3-ply sequence!",
+    "moves": [
+      "Bxe5",
+      "Qxe5",
+      "f4"
+    ],
+    "explanation": "10.Bxe5! Qxe5 11.f4! drives the queen off the center and unleashes White’s huge development lead."
+  },
+  {
+    "id": "op-qga-ivkov-nxe5",
+    "category": "Openings",
+    "theme": "QGA Central Knight Fork Trap",
+    "difficulty": "Easy",
+    "rating": 1160,
+    "fen": "r2q1rk1/ppp2ppp/3b1n2/4n2b/4P3/2N2N1P/PP2BPP1/R1BQ1RK1 w - - 0 12",
+    "sideToMove": "White",
+    "prompt": "In the Queen’s Gambit Accepted (Ivkov–Miles), Black attacked your e2 bishop via ...Bh5 and ...Ne5. Step away cleanly while eyeing h5!",
+    "moves": [
+      "Ne1"
+    ],
+    "explanation": "12.Ne1! (or 12.Nxe5) avoids simplifying into ...Bxe2 and keeps pressure on Black’s h5 bishop.",
+    "acceptAlso": [
+      "Nxe5",
+      "Nd4",
+      "Nh2"
+    ]
+  },
+  {
+    "id": "op-two-knights-cohn-nxc6",
+    "category": "Openings",
+    "theme": "Two Knights Central Discovery",
+    "difficulty": "Medium",
+    "rating": 1360,
+    "fen": "r1bq1rk1/ppp1b1pp/2n5/5p2/3NRB2/2N5/PPP2PPP/R2Q2K1 w - f6 0 12",
+    "sideToMove": "White",
+    "prompt": "In the Two Knights Defence, Black pushed ...f5 opening the center. Remove the c6 defender while exploiting the e-file!",
+    "moves": [
+      "Nxc6"
+    ],
+    "explanation": "12.Nxc6! bxc6 allows Rxe7+, winning material cleanly along the open e-file."
+  },
+  {
+    "id": "op-schliemann-c3-3ply",
+    "category": "Openings",
+    "theme": "Ruy Lopez Schliemann Counter",
+    "difficulty": "Medium",
+    "rating": 1420,
+    "fen": "r2q1rk1/ppp3pp/5n2/2bpNb2/B2n4/8/PPPPNPPP/R1BQ1RK1 w - - 0 10",
+    "sideToMove": "White",
+    "prompt": "In the Schliemann (Jaenisch) Ruy Lopez, Black planted a knight on d4. Kick the intrusive knight and simplify cleanly!",
+    "moves": [
+      "c3",
+      "Nxe2+",
+      "Qxe2"
+    ],
+    "explanation": "10.c3! forces 10...Nxe2+ 11.Qxe2, stabilizing White’s center while keeping Black’s king exposed."
+  },
+  {
+    "id": "op-modern-qxb7-punish",
+    "category": "Openings",
+    "theme": "Modern Defence Greed Punished",
+    "difficulty": "Easy",
+    "rating": 1090,
+    "fen": "rn1qk2r/ppp2pbp/4bnp1/4N3/4P3/1QP5/PP1N1PPP/R1B1KB1R w KQkq - 1 9",
+    "sideToMove": "White",
+    "prompt": "Black neglected b7 and developed 8...Be6? in the Modern/Pirc. Snatch the poisoned-looking pawn that actually traps Black’s rook!",
+    "moves": [
+      "Qxb7"
+    ],
+    "explanation": "9.Qxb7! attacks a8 and c6 at once, winning material immediately."
+  },
+  {
+    "id": "op-nimzo-euwe-cxd5",
+    "category": "Openings",
+    "theme": "Nimzo-Indian Central Tactical Strike",
+    "difficulty": "Medium",
+    "rating": 1380,
+    "fen": "r4rk1/ppp1qppp/2np4/3npb2/2PP4/P3PP2/1P2B1PP/R1BQ1RK1 w - - 0 12",
+    "sideToMove": "White",
+    "prompt": "In the Nimzo-Indian (Euwe–Yanofsky), Black left two minor pieces poorly coordinated on d5 and f5. Strike in the center!",
+    "moves": [
+      "cxd5"
+    ],
+    "explanation": "12.cxd5! exploits the pin/alignment along the d-file and wins material after 12...exd5 13.e4!."
+  },
+  {
+    "id": "op-italian-nxc4-punish",
+    "category": "Openings",
+    "theme": "Italian Opening Fork Punish",
+    "difficulty": "Easy",
+    "rating": 1120,
+    "fen": "r1bq1rk1/ppp2ppp/2n5/4p3/2B1P3/2PPnN2/PP2Q1PP/RN2K2R b KQ - 2 10",
+    "sideToMove": "Black",
+    "prompt": "White misplayed the center and allowed a knight onto e3 in the Italian Game. Eliminate White’s active light-squared bishop!",
+    "moves": [
+      "Nxc4"
+    ],
+    "explanation": "10...Nxc4! wins the bishop cleanly while keeping White’s pawn structure shattered."
+  },
+  {
+    "id": "op-ruy-tarrasch-ng4-3ply",
+    "category": "Openings",
+    "theme": "Ruy Lopez Tarrasch Storm",
+    "difficulty": "Advanced",
+    "rating": 1620,
+    "fen": "r3kb1r/2p2pp1/p1np1n2/1P2p2p/4P3/1B3P1q/1PPPNP1P/R1BQR1K1 b kq - 1 12",
+    "sideToMove": "Black",
+    "prompt": "In Von Bardeleben–Tarrasch (Ruy Lopez), Black’s queen sits on h3 eyeing White’s king. Tear open the g-file in 3 plies!",
+    "moves": [
+      "Ng4",
+      "fxg4",
+      "hxg4"
+    ],
+    "explanation": "12...Ng4! forces 13.fxg4 hxg4, blasting open the h-file and g-file against White’s king."
+  },
+  {
+    "id": "op-kid-doda-nxe4",
+    "category": "Openings",
+    "theme": "King’s Indian Tactical Capture",
+    "difficulty": "Medium",
+    "rating": 1390,
+    "fen": "rnbq1rk1/pp2ppbp/3p1np1/2pP4/2P1P3/4BN2/PP2BPPP/RN1QK2R b KQ - 4 7",
+    "sideToMove": "Black",
+    "prompt": "In the Classical King’s Indian, White overlooked a tactical pin/fork on the center. Grab the e4 pawn!",
+    "moves": [
+      "Nxe4"
+    ],
+    "explanation": "7...Nxe4! works because 8.Nxe4?? walks into 8...Bxb2 winning the corner rook."
+  },
+  {
+    "id": "op-sicilian-okelly-bc2",
+    "category": "Openings",
+    "theme": "Sicilian O’Kelly Bishop Retreat",
+    "difficulty": "Medium",
+    "rating": 1320,
+    "fen": "r1bqkb1r/3n1ppp/p2ppn2/1p6/P1pPP3/2PB1N2/1P2QPPP/RNB2RK1 w kq - 0 9",
+    "sideToMove": "White",
+    "prompt": "In the O’Kelly Sicilian, Black advanced ...b5 and ...c4 threatening to trap your d3 bishop. Save the bishop cleanly!",
+    "moves": [
+      "Bc2"
+    ],
+    "explanation": "9.Bc2! retreats out of reach of ...c4/...b4 tricks while keeping pressure on the b1-h7 diagonal."
+  },
+  {
+    "id": "op-veresov-spassky-3ply",
+    "category": "Openings",
+    "theme": "Veresov Opening Spassky Tactic",
+    "difficulty": "Advanced",
+    "rating": 1580,
+    "fen": "r2qkb1r/pp3pp1/2p2n1p/3pn3/7B/2N1QP1P/PPP1P2P/R3KB1R b KQkq - 1 10",
+    "sideToMove": "Black",
+    "prompt": "In Bellon–Spassky (Linares), White’s kingside stands weakened by f3 and h3. Launch Black’s winning 3-ply sacrifice!",
+    "moves": [
+      "Ng4",
+      "hxg4",
+      "Qxh4+"
+    ],
+    "explanation": "10...Ng4! forces 11.hxg4 Qxh4+, exposing White’s king and winning material with a fierce attack."
+  },
+  {
+    "id": "op-najdorf-poisoned-3ply",
+    "category": "Openings",
+    "theme": "Najdorf Poisoned Pawn Counter",
+    "difficulty": "Expert",
+    "rating": 1840,
+    "fen": "r1b1k2r/1p1nbppp/p2ppn2/4P1B1/3N1P2/q1N5/P1PQB1PP/1R3RK1 b kq - 0 12",
+    "sideToMove": "Black",
+    "prompt": "In Timman–Ljubojevic (Najdorf Poisoned Pawn), White pushed e5 prematurely. Execute Black’s winning 3-ply recapture sequence!",
+    "moves": [
+      "dxe5",
+      "fxe5",
+      "Nxe5"
+    ],
+    "explanation": "12...dxe5! 13.fxe5 Nxe5 consolidates Black’s extra pawn and centralizes the knight with tempo."
+  },
+  {
+    "id": "op-caro-nunn-trap-3ply",
+    "category": "Openings",
+    "theme": "Caro-Kann 4...Nd7 Nunn Trap",
+    "difficulty": "Expert",
+    "rating": 1880,
+    "fen": "r1b1kbnr/pp1np1p1/1qp1p2p/8/3P4/3B4/PPPB1PPP/R2QK1NR w KQkq - 0 9",
+    "sideToMove": "White",
+    "prompt": "In Nunn–Georgiev (Linares), Black played a careless ...Qb6. Launch John Nunn’s crushing 3-ply kingside check!",
+    "moves": [
+      "Qh5+",
+      "g6",
+      "Bxg6+"
+    ],
+    "explanation": "9.Qh5+! forces 9...g6 (since 9...Kd8 loses the queen to 10.Ba5!), followed by 10.Bxg6+! shattering Black’s kingside."
+  },
+  {
+    "id": "op-italian-anand-rg1-3ply",
+    "category": "Openings",
+    "theme": "Two Knights Anand Queen Trap",
+    "difficulty": "Expert",
+    "rating": 1920,
+    "fen": "r1b4r/p1p1k1pp/2pp1n2/4p3/4P3/3PPN2/PPP3qP/RN1QK2R w KQ - 0 12",
+    "sideToMove": "White",
+    "prompt": "In Anand–Beliavsky (Linares), Black’s queen snatched g2 in the Two Knights Defence. Find Anand’s crushing 3-ply rook maneuver!",
+    "moves": [
+      "Rg1",
+      "Qh3",
+      "Rxg7+"
+    ],
+    "explanation": "12.Rg1! forces 12...Qh3, and 13.Rxg7+! rips open Black’s exposed king on e7."
+  },
+  {
+    "id": "op-rauzer-ivanchuk-3ply",
+    "category": "Openings",
+    "theme": "Sicilian Richter-Rauzer 3-Ply Strike",
+    "difficulty": "Advanced",
+    "rating": 1690,
+    "fen": "rq2k2r/1p1b1ppp/p2bpn2/6B1/3QP3/8/PPP2PPP/2KR1B1R w kq - 0 12",
+    "sideToMove": "White",
+    "prompt": "In Ivanchuk–Salov (Linares), Black’s d6 bishop stands undefended behind f6. Execute the classic 3-ply tactical blow!",
+    "moves": [
+      "Bxf6",
+      "gxf6",
+      "Qxd6"
+    ],
+    "explanation": "12.Bxf6! forces 12...gxf6 (wrecking Black’s kingside), followed by 13.Qxd6 winning a full piece!"
+  },
+  {
+    "id": "op-taimanov-short-exf6",
+    "category": "Openings",
+    "theme": "Sicilian Taimanov Kingside Destruction",
+    "difficulty": "Medium",
+    "rating": 1450,
+    "fen": "r1b1kb1r/2q2ppp/p1p1pn2/4P3/5P2/2p5/PPP1B1PP/R1BQ1R1K w kq - 0 12",
+    "sideToMove": "White",
+    "prompt": "In Short–Ljubojevic (Linares), Black grabbed on c3 ignoring the e5-f6 attack. Smash Black’s kingside open!",
+    "moves": [
+      "exf6"
+    ],
+    "explanation": "12.exf6! wins a full piece cleanly while threatening fxg7 and overwhelming Black’s uncastled king."
   }
 ];

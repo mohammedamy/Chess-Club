@@ -10,6 +10,9 @@ const PLAYER_CANONICAL_MAP = new Map([
   ['Gukesh,D', 'Gukesh, D'],
   ['Gukesh D', 'Gukesh, D'],
   ['Gukesh Dommaraju', 'Gukesh, D'],
+  ['Sindarov,Javokhir', 'Sindarov, Javokhir'],
+  ['Sindarov,J', 'Sindarov, Javokhir'],
+  ['Sindarov, J', 'Sindarov, Javokhir'],
   ['Alekhine,Alexander', 'Alekhine, Alexander'],
   ['Alekhine,A', 'Alekhine, Alexander'],
   ['Capablanca,Jose', 'Capablanca, Jose Raul'],
@@ -200,7 +203,19 @@ function parseElo(raw) {
   return Number.isFinite(n) && n >= 1000 && n <= 3500 ? Math.round(n) : null;
 }
 
-function processChunk(rawGame, { collection, filenameHint, fenToEco, codeToName }) {
+function resolveEventTitle(rawEvent, filenameHint, eventOverride) {
+  const orig = String(rawEvent || filenameHint.replace(/\.pgn$/i, '')).trim();
+  if (!eventOverride) return orig;
+  if (/tiebreak|playoff|\bTB\b|rapid|25'|sudden death/i.test(orig) && !/tiebreak|playoff|rapid/i.test(eventOverride)) {
+    return `${eventOverride} — Rapid Tiebreak`;
+  }
+  if (/final|k\.o\. f/i.test(orig) && !/final/i.test(eventOverride)) {
+    return `${eventOverride} (Final)`;
+  }
+  return eventOverride;
+}
+
+function processChunk(rawGame, { collection, filenameHint, eventOverride = null, fenToEco, codeToName }) {
   const { headers, moveText } = rawGame;
   if (headers.FEN && headers.FEN !== 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1') {
     return null;
@@ -281,8 +296,9 @@ function processChunk(rawGame, { collection, filenameHint, fenToEco, codeToName 
   const black = cleanPlayerName(headers.Black);
 
   return {
+    _fn: filenameHint,
     c: collection,
-    e: headers.Event || filenameHint.replace(/\.pgn$/i, ''),
+    e: resolveEventTitle(headers.Event, filenameHint, eventOverride),
     s: headers.Site && headers.Site !== '?' ? headers.Site : '',
     d: headers.Date || '',
     y: year,
@@ -313,7 +329,7 @@ if (parentPort && workerData) {
   const perFileCounts = [];
 
   for (const job of jobs) {
-    const { pgnText, collection, filenameHint, filterKnockoutFinalists = null } = job;
+    const { pgnText, collection, filenameHint, eventOverride = null, filterKnockoutFinalists = null } = job;
     const rawChunks = splitPgnGames(pgnText);
     let parsed = 0;
 
@@ -329,6 +345,7 @@ if (parentPort && workerData) {
       const rec = processChunk(chunk, {
         collection,
         filenameHint,
+        eventOverride,
         fenToEco,
         codeToName,
       });

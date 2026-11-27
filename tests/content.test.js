@@ -14,21 +14,21 @@ import {
 import { isStockfishSafeFen } from '../src/domain/stockfish-service.js';
 
 describe('training library integrity', () => {
-  it('exposes the expanded curriculum (112), puzzle catalog (470), and quiz bank (80)', () => {
-    expect(OPENINGS).toHaveLength(48);
-    expect(TRAPS).toHaveLength(22);
-    expect(MIDDLEGAME_LESSONS).toHaveLength(12);
-    expect(ENDGAMES).toHaveLength(30);
-    expect(PUZZLES).toHaveLength(470);
-    expect(TACTICS).toHaveLength(150);
-    expect(QUIZZES).toHaveLength(80);
+  it('exposes the doubled curriculum (224), puzzle catalog (940), and quiz bank (160)', () => {
+    expect(OPENINGS).toHaveLength(96);
+    expect(TRAPS).toHaveLength(44);
+    expect(MIDDLEGAME_LESSONS).toHaveLength(24);
+    expect(ENDGAMES).toHaveLength(60);
+    expect(PUZZLES).toHaveLength(940);
+    expect(TACTICS).toHaveLength(300);
+    expect(QUIZZES).toHaveLength(160);
     expect(PUZZLE_CATEGORIES).toEqual(['All', 'Openings', 'Tactics', 'Strategy', 'Middlegame', 'Endgame']);
 
-    expect(getPuzzlesByCategory('Openings')).toHaveLength(85);
-    expect(getPuzzlesByCategory('Tactics')).toHaveLength(150);
-    expect(getPuzzlesByCategory('Strategy')).toHaveLength(75);
-    expect(getPuzzlesByCategory('Middlegame')).toHaveLength(75);
-    expect(getPuzzlesByCategory('Endgame')).toHaveLength(85);
+    expect(getPuzzlesByCategory('Openings')).toHaveLength(170);
+    expect(getPuzzlesByCategory('Tactics')).toHaveLength(300);
+    expect(getPuzzlesByCategory('Strategy')).toHaveLength(150);
+    expect(getPuzzlesByCategory('Middlegame')).toHaveLength(150);
+    expect(getPuzzlesByCategory('Endgame')).toHaveLength(170);
   });
 
   it('preserves all 17 legacy club tactic IDs', () => {
@@ -45,8 +45,8 @@ describe('training library integrity', () => {
   });
 
   it('has 100% unique IDs, Stockfish-safe FENs, and legal solution moves', () => {
-    expect(new Set(PUZZLES.map((p) => p.id)).size).toBe(470);
-    expect(new Set(QUIZZES.map((q) => q.id)).size).toBe(80);
+    expect(new Set(PUZZLES.map((p) => p.id)).size).toBe(940);
+    expect(new Set(QUIZZES.map((q) => q.id)).size).toBe(160);
 
     for (const puzzle of PUZZLES) {
       expect(isStockfishSafeFen(puzzle.fen, Chess)).toBe(true);

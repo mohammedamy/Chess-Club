@@ -610,5 +610,641 @@ export const MIDDLEGAME_LESSONS = [
       }
     ],
     "startFen": "r1b2rk1/pp1nqppp/2p1p3/3n4/2BP4/2N1PN2/PP3PPP/2RQK2R w K - 0 11"
+  },
+  {
+    "id": "english-attack-storm",
+    "name": "English Attack: Opposite-Side Pawn Storm",
+    "category": "Attacking the King",
+    "level": "Club",
+    "color": "White",
+    "summary": "Against the Sicilian Najdorf, the English Attack (Be3, f3, Qd2, O-O-O) launches g4-h4-g5 while keeping White’s king sheltered on the queenside.",
+    "keyIdeas": [
+      "Reinforce e4 with f3 to prepare g4 without allowing ...Ng4",
+      "Castle queenside so the h1 rook supports the pawn storm",
+      "Push g4-g5 to dislodge the key f6 defender",
+      "Tuck the king onto b1 before opening queenside files"
+    ],
+    "startFen": "r2q1rk1/1p1nbppp/p2pbn2/4p3/4P3/1NN1BP2/PPPQ2PP/2KR1B1R w - - 5 11",
+    "line": [
+      {
+        "move": "g4",
+        "text": "Launching the kingside pawn storm immediately toward Black’s castled king."
+      },
+      {
+        "move": "b5",
+        "text": "Black starts counterplay on the queenside where White’s king resides."
+      },
+      {
+        "move": "g5",
+        "text": "Driving the f6 knight away from the kingside and claiming space."
+      },
+      {
+        "move": "b4",
+        "text": "Counter-attacking White’s c3 knight with tempo."
+      },
+      {
+        "move": "Ne2",
+        "text": "Rerouting the knight flexibly toward g3 while keeping c3 clear."
+      },
+      {
+        "move": "Ne8",
+        "text": "Retreating to safety while preparing ...a5-a4."
+      },
+      {
+        "move": "h4",
+        "text": "Reinforcing g5 and preparing h5 to pry open the h-file."
+      },
+      {
+        "move": "a5",
+        "text": "Black races with ...a4 against b3."
+      },
+      {
+        "move": "Kb1",
+        "text": "A classic prophylactic king tuck off the c-file and a2 diagonal."
+      }
+    ]
+  },
+  {
+    "id": "sicilian-rxc3-sacrifice",
+    "name": "The Dragon Exchange Sacrifice (...Rxc3)",
+    "category": "Sacrifice & Initiative",
+    "level": "Expert",
+    "color": "Black",
+    "summary": "In the Sicilian Dragon, Black frequently sacrifices the exchange on c3 to wreck White’s queenside pawn shelter, win e4, and unleash dark-square pressure.",
+    "keyIdeas": [
+      "Shatter White’s b2/c2 shelter around the queenside king",
+      "Win the central e4 pawn as immediate material compensation",
+      "Activate the queen and dark squares along the c-file",
+      "Target the newly created weak pawns on c3 and a2"
+    ],
+    "startFen": "r5k1/pp1bpp1p/3p1npQ/q7/2rNP1P1/2N2P2/PPP5/1K1R3R b - - 0 18",
+    "line": [
+      {
+        "move": "Rxc3",
+        "text": "The thematic Dragon exchange sacrifice! Black destroys White’s king shelter and grabs e4 next."
+      },
+      {
+        "move": "bxc3",
+        "text": "White must recapture, leaving doubled isolated c-pawns and an open b-file."
+      },
+      {
+        "move": "Qxc3",
+        "text": "Black’s queen invades right next to White’s king while eyeing a1 and e3."
+      },
+      {
+        "move": "g5",
+        "text": "White tries to drive the f6 defender away to threaten Qxh7+."
+      },
+      {
+        "move": "Nh5",
+        "text": "Blocking the h-file and shutting down White’s kingside attack completely!"
+      },
+      {
+        "move": "Rd3",
+        "text": "Challenging the active queen and defending c3."
+      },
+      {
+        "move": "Qc5",
+        "text": "Keeping eye contact with c2, d4, and f2."
+      },
+      {
+        "move": "Nb3",
+        "text": "White kicks the queen to regain coordination."
+      },
+      {
+        "move": "Qe5",
+        "text": "Centralizing powerfully while keeping full dark-square compensation."
+      }
+    ]
+  },
+  {
+    "id": "prophylaxis-central-breaks",
+    "name": "Prophylaxis Against Central Breaks",
+    "category": "Strategic Plans",
+    "level": "Advanced",
+    "color": "White",
+    "summary": "Before launching your own strategic plan, identify the freeing break your opponent seeks (...d5 or ...b5) and restrain it with quiet prophylaxis.",
+    "keyIdeas": [
+      "Spot the opponent’s freeing central break (...d5 or ...b5)",
+      "Overprotect critical squares like d5 and e4",
+      "Use quiet moves such as f3, b3, or a4 to freeze counterplay",
+      "Expand only after enemy central breaks are neutralized"
+    ],
+    "startFen": "r2q1rk1/pp1bppbp/2np1np1/8/2PNP3/2N1B3/PP2BPPP/R2Q1RK1 w - - 2 10",
+    "line": [
+      {
+        "move": "Qd2",
+        "text": "Connecting rooks and preparing Bh6 while watching d4."
+      },
+      {
+        "move": "Nxd4",
+        "text": "Black simplifies to ease the spatial cramp."
+      },
+      {
+        "move": "Bxd4",
+        "text": "Recapturing centrally with control over f6 and a7."
+      },
+      {
+        "move": "Bc6",
+        "text": "Pressuring e4 to provoke a concession or prepare ...d5."
+      },
+      {
+        "move": "f3",
+        "text": "Pure prophylaxis: solidifying e4 permanently so ...Nd7-c5 cannot disrupt the center."
+      },
+      {
+        "move": "a5",
+        "text": "Black seeks queenside breathing room with ...a4."
+      },
+      {
+        "move": "b3",
+        "text": "Restraining ...a4 and keeping the queenside structure compact."
+      },
+      {
+        "move": "Nd7",
+        "text": "Offering the dark-squared bishop exchange."
+      },
+      {
+        "move": "Rfd1",
+        "text": "Placing a rook on the d-file to make ...d5 virtually impossible."
+      }
+    ]
+  },
+  {
+    "id": "transforming-advantage-endgame",
+    "name": "Transforming an Advantage into an Endgame",
+    "category": "Strategic Plans",
+    "level": "Advanced",
+    "color": "White",
+    "summary": "When an opponent carries structural weaknesses or a passive bishop, trading queens converts temporary middlegame pressure into a lasting endgame win.",
+    "keyIdeas": [
+      "Trade queens when your pawn structure and minor pieces are superior",
+      "Strip the defender of tactical middlegame counterplay",
+      "Centralize your king and rooks immediately after the queen swap",
+      "Target fixed enemy pawns along open files"
+    ],
+    "startFen": "rn1qkb1r/pp3ppp/2p2nb1/3p2B1/3P4/2N1PQ2/PP3PPP/R3KBNR w KQkq - 3 8",
+    "line": [
+      {
+        "move": "Bxf6",
+        "text": "Damaging Black’s kingside pawn structure before simplifying."
+      },
+      {
+        "move": "Qxf6",
+        "text": "Black recaptures to avoid losing a pawn."
+      },
+      {
+        "move": "Qxf6",
+        "text": "Trading queens immediately transforms the positional edge into a won endgame!"
+      },
+      {
+        "move": "gxf6",
+        "text": "Black is saddled with doubled isolated f-pawns."
+      },
+      {
+        "move": "h4",
+        "text": "Expanding on the kingside and eyeing h5 against the g6 bishop."
+      },
+      {
+        "move": "h5",
+        "text": "Stopping h5 at the cost of fixing weaknesses on dark squares."
+      },
+      {
+        "move": "Nh3",
+        "text": "Routing the knight toward f4 to attack d5 and g6."
+      },
+      {
+        "move": "Bd6",
+        "text": "Developing the dark-squared bishop."
+      },
+      {
+        "move": "Nf4",
+        "text": "Seizing the dominant f4 outpost in the queenless endgame."
+      }
+    ]
+  },
+  {
+    "id": "centralizing-rooks-flank-strike",
+    "name": "Centralizing Rooks Before a Flank Strike",
+    "category": "Central Play",
+    "level": "Club",
+    "color": "White",
+    "summary": "Flank attacks succeed only when the center is secured. Placing rooks on central files first prevents the defender from countering in the middle.",
+    "keyIdeas": [
+      "Connect rooks and seize central files (d1 and e1)",
+      "Ensure the center cannot be blown open while attacking on the wing",
+      "Support central pawns before advancing flank pawns",
+      "Use central rooks to swing laterally toward either wing"
+    ],
+    "startFen": "r2qr1k1/1bpnbppp/p2p1n2/1p2p3/3PP3/2P2N1P/PPBN1PP1/R1BQR1K1 w - - 5 13",
+    "line": [
+      {
+        "move": "Nf1",
+        "text": "Routing the knight toward g3 while clearing the c1-h6 diagonal."
+      },
+      {
+        "move": "Bf8",
+        "text": "Reinforcing g7 and clearing the e-file for the rook."
+      },
+      {
+        "move": "Ng3",
+        "text": "Eyeing the key f5 square before committing wing pawns."
+      },
+      {
+        "move": "g6",
+        "text": "Preventing Nf5 at the cost of loosening dark squares."
+      },
+      {
+        "move": "a4",
+        "text": "Probing on the queenside while White’s center remains rock-solid."
+      },
+      {
+        "move": "c5",
+        "text": "Black tries to challenge d4."
+      },
+      {
+        "move": "d5",
+        "text": "Locking the center so White’s rooks can safely back flank play."
+      },
+      {
+        "move": "c4",
+        "text": "Closing the queenside and seeking ...Nc5."
+      },
+      {
+        "move": "Bg5",
+        "text": "Pinning f6 and preparing Qd2-Bh6 or Nh2-g4."
+      }
+    ]
+  },
+  {
+    "id": "bad-bishop-good-knight-restriction",
+    "name": "Bad Bishop vs. Good Knight Restriction",
+    "category": "Pawn Structures",
+    "level": "Advanced",
+    "color": "White",
+    "summary": "Fix your opponent’s pawns on the color of their remaining bishop, then anchor your knight on an unassailable outpost of the opposite color.",
+    "keyIdeas": [
+      "Keep enemy pawns locked on the same color as their bishop",
+      "Trade off your own bad bishop or active enemy knights",
+      "Occupy outposts the enemy bishop cannot attack",
+      "Probe on both flanks once the defender is tied down"
+    ],
+    "startFen": "2rq1rk1/1b2bppp/pp1ppn2/4n3/2P1P3/N1N1BP2/PP2B1PP/2RQ1RK1 w - - 1 14",
+    "line": [
+      {
+        "move": "Qd2",
+        "text": "Connecting rooks and watching b4 and h6."
+      },
+      {
+        "move": "Qc7",
+        "text": "Pressuring c4 along the open c-file."
+      },
+      {
+        "move": "Rfd1",
+        "text": "Overprotecting d4 and eyeing the backward d6 pawn."
+      },
+      {
+        "move": "Rfd8",
+        "text": "Supporting d6 against central pressure."
+      },
+      {
+        "move": "Qe1",
+        "text": "Preparing Qf2 to target the weakened b6 square."
+      },
+      {
+        "move": "Nfd7",
+        "text": "Routing the knight toward c5."
+      },
+      {
+        "move": "Qf2",
+        "text": "Increasing pressure on b6 and pinning down Black’s queenside."
+      },
+      {
+        "move": "Qb8",
+        "text": "Defending b6 passively while tying down the queen."
+      },
+      {
+        "move": "Na4",
+        "text": "Increasing the bind against b6 — Black’s e7 bishop stays boxed in."
+      }
+    ]
+  },
+  {
+    "id": "carlsbad-minority-breakthrough",
+    "name": "Carlsbad Minority Attack Breakthrough",
+    "category": "Pawn Structures",
+    "level": "Advanced",
+    "color": "White",
+    "summary": "Once b4-b5 reaches contact in the Carlsbad structure, bxc6 saddles Black with a backward c6-pawn or an isolated d5-pawn on the half-open c-file.",
+    "keyIdeas": [
+      "Push b5 to force a structural concession on c6 or b5",
+      "Capture bxc6 to expose the backward c6 pawn on the c-file",
+      "Double heavy pieces on the c-file against c6",
+      "Anchor a knight on c5 to paralyze Black’s queenside"
+    ],
+    "startFen": "r2qr1k1/1p2bppp/2p1bnn1/3p2B1/1P1P4/2NBPN2/2Q2PPP/1R3RK1 w - - 1 15",
+    "line": [
+      {
+        "move": "b5",
+        "text": "The decisive Carlsbad minority breakthrough!"
+      },
+      {
+        "move": "Rc8",
+        "text": "Black avoids ...cxb5 to keep pawns connected, bracing on the c-file."
+      },
+      {
+        "move": "bxc6",
+        "text": "Creating a permanent backward pawn target on c6 (or isolated d5 after ...Rxc6)."
+      },
+      {
+        "move": "bxc6",
+        "text": "Keeping d5 protected while saddling Black with a weak c6 pawn."
+      },
+      {
+        "move": "Ba6",
+        "text": "Attacking the c8 rook with tempo and seizing dark squares."
+      },
+      {
+        "move": "Rc7",
+        "text": "Forced off the back rank while defending c6."
+      },
+      {
+        "move": "Na4",
+        "text": "Heading straight for the eternal c5 outpost in front of c6."
+      },
+      {
+        "move": "Ne4",
+        "text": "Seeking counterplay by challenging White’s dark-squared bishop."
+      },
+      {
+        "move": "Bxe7",
+        "text": "Trading off defenders so White dominates c5 and the c-file."
+      }
+    ]
+  },
+  {
+    "id": "f-file-attack-f4-f5",
+    "name": "Open f-File Attack After f4–f5",
+    "category": "Attacking the King",
+    "level": "Club",
+    "color": "White",
+    "summary": "In King’s Indian or Italian setups, preparing and pushing f4-f5 opens the f-file for the rook and unleashes bishops and queen toward f7 and g7.",
+    "keyIdeas": [
+      "Castle kingside so the f1 rook stands directly behind the f-pawn",
+      "Stabilize the center so ...d5 does not refute your flank advance",
+      "Break with f4-f5 to open the f-file or create a cramping wedge",
+      "Coordinate Rf3/Qh5/Ng5 down the opened f-file"
+    ],
+    "startFen": "r3r1k1/bppq1pp1/p1npbn1p/4p3/4P3/1BPP1NNP/PP3PP1/R1BQR1K1 w - - 6 13",
+    "line": [
+      {
+        "move": "Nh4",
+        "text": "Preparing the thematic f4-f5 kingside break while eyeing f5."
+      },
+      {
+        "move": "d5",
+        "text": "Black strikes in the center to seek counterplay."
+      },
+      {
+        "move": "Qf3",
+        "text": "Adding pressure on d5 and f6 while clearing the first rank."
+      },
+      {
+        "move": "Rad8",
+        "text": "Supporting the d5 pawn."
+      },
+      {
+        "move": "Nhf5",
+        "text": "Planting a powerful knight on f5 targeting g7 and h6."
+      },
+      {
+        "move": "Bxf5",
+        "text": "Black eliminates the dangerous intruder."
+      },
+      {
+        "move": "Nxf5",
+        "text": "Recapturing with a strong outpost and opening the path for f4 or Qg3."
+      },
+      {
+        "move": "dxe4",
+        "text": "Opening central lines."
+      },
+      {
+        "move": "dxe4",
+        "text": "Keeping f5 anchored and threatening Bxh6 or Nxh6+."
+      }
+    ]
+  },
+  {
+    "id": "exploiting-color-complexes",
+    "name": "Exploiting Weakened Color Complexes (f6/h6)",
+    "category": "Attacking the King",
+    "level": "Expert",
+    "color": "White",
+    "summary": "Trading off the defender’s fianchettoed g7-bishop leaves f6, g7, and h6 defenseless, inviting queen and knight infiltration on dark squares.",
+    "keyIdeas": [
+      "Trade off the defending fianchetto bishop with Bh6",
+      "Plant a queen on h6 or f6 to dominate the weak dark squares",
+      "Keep queens on while the enemy king lacks dark-square cover",
+      "Bring a knight or h-pawn forward to weave a mating net"
+    ],
+    "startFen": "2rq1rk1/pp1bppbp/3p1np1/4n3/3NP3/1BN1BP2/PPPQ2PP/2KR3R w - - 5 12",
+    "line": [
+      {
+        "move": "Bh6",
+        "text": "Forcing the trade of Black’s crucial dark-squared defender on g7!"
+      },
+      {
+        "move": "Bxh6",
+        "text": "Black has no good way to avoid the exchange."
+      },
+      {
+        "move": "Qxh6",
+        "text": "White’s queen lands directly on h6, dominating f6 and g7."
+      },
+      {
+        "move": "Rxc3",
+        "text": "Black looks for counterplay on the queenside."
+      },
+      {
+        "move": "bxc3",
+        "text": "Accepting the exchange while keeping the king shelter intact enough."
+      },
+      {
+        "move": "Qa5",
+        "text": "Hitting c3 and a2."
+      },
+      {
+        "move": "Kb1",
+        "text": "Protecting a2 calmly before resuming the kingside assault."
+      },
+      {
+        "move": "Rc8",
+        "text": "Doubling pressure on c3."
+      },
+      {
+        "move": "h4",
+        "text": "Launching h4-h5 to breach Black’s weakened dark-square fortress."
+      }
+    ]
+  },
+  {
+    "id": "undermining-pawn-chain",
+    "name": "Undermining an Overextended Pawn Chain",
+    "category": "Pawn Structures",
+    "level": "Club",
+    "color": "Black",
+    "summary": "Nimzowitsch’s classic rule: strike the base of an opponent’s pawn chain (...c5 against d4-e5), then undermine the head with ...f6.",
+    "keyIdeas": [
+      "Challenge the base d4 with ...c5 before White stabilizes",
+      "Use ...Qb6 and ...Nc6 to pile pressure onto d4",
+      "Strike the head e5 with ...f6 once d4 is tied down",
+      "Activate the c8 bishop or f8-b4 pin after central exchanges"
+    ],
+    "startFen": "r1b1kb1r/pp3ppp/1qn1p2n/3pP3/1P1P4/P4N2/5PPP/RNBQKB1R b KQkq - 0 8",
+    "line": [
+      {
+        "move": "Nf5",
+        "text": "Increasing pressure directly onto the d4 base of White’s pawn chain."
+      },
+      {
+        "move": "Bb2",
+        "text": "White reinforces d4 passively with the c1 bishop."
+      },
+      {
+        "move": "Bd7",
+        "text": "Preparing ...Rc8 and smooth queenside development."
+      },
+      {
+        "move": "Be2",
+        "text": "Getting ready to castle."
+      },
+      {
+        "move": "Be7",
+        "text": "Completing kingside development flexibly."
+      },
+      {
+        "move": "O-O",
+        "text": "White tucks the king away."
+      },
+      {
+        "move": "O-O",
+        "text": "Black castles cleanly before opening the f-file."
+      },
+      {
+        "move": "Qd3",
+        "text": "Connecting rooks and watching f5."
+      },
+      {
+        "move": "f6",
+        "text": "Undermining the head of White’s pawn chain (e5) after tying down d4!"
+      }
+    ]
+  },
+  {
+    "id": "b1-h7-battery",
+    "name": "Queen-and-Bishop Battery on b1–h7",
+    "category": "Attacking the King",
+    "level": "Club",
+    "color": "White",
+    "summary": "Aligning Bc2/Bb1 behind Qd3 creates an immediate threat against h7, forcing kingside concessions (...g6 or ...f5) that create permanent holes.",
+    "keyIdeas": [
+      "Align Bc2/Bb1 and Qd3 along the b1-h7 diagonal",
+      "Eliminate or chase away the f6 knight guarding h7",
+      "Provoke ...g6 or ...h6 to weaken dark squares around the king",
+      "Pivot to dark squares or the h-file once Black weakens the shelter"
+    ],
+    "startFen": "r1br2k1/ppq2ppp/2n1pn2/2bp4/4P3/2PB1N2/PP1NQPPP/R1B2RK1 w - - 3 11",
+    "line": [
+      {
+        "move": "Bc2",
+        "text": "Dropping the bishop behind the e2/d3 queen to prepare the lethal b1-h7 battery."
+      },
+      {
+        "move": "Ng4",
+        "text": "Black tries to jump into e5 and counterattack f2."
+      },
+      {
+        "move": "h3",
+        "text": "Driving the knight back or forcing a decision."
+      },
+      {
+        "move": "Nge5",
+        "text": "Centralizing the knight to block the diagonal."
+      },
+      {
+        "move": "Nxe5",
+        "text": "Clearing the path toward h7."
+      },
+      {
+        "move": "Qxe5",
+        "text": "Black’s queen recaptures centrally."
+      },
+      {
+        "move": "Nf3",
+        "text": "Developing with tempo against the queen."
+      },
+      {
+        "move": "Qc7",
+        "text": "Retreating while keeping an eye on e5."
+      },
+      {
+        "move": "Qd3",
+        "text": "Completing the b1-h7 battery! Black is forced to weaken the kingside with ...g6 or ...f5."
+      }
+    ]
+  },
+  {
+    "id": "neutralizing-initiative-center",
+    "name": "Neutralizing a Wing Initiative in the Center",
+    "category": "Central Play",
+    "level": "Master",
+    "color": "Black",
+    "summary": "When an opponent invests tempos on a wing storm while their center lacks support, a timely central strike (...d5!) seizes the initiative immediately.",
+    "keyIdeas": [
+      "Refrain from panicked wing moves that create pawn hooks",
+      "Strike in the center with ...d5 as soon as development allows",
+      "Open central files toward the opponent’s uncastled king",
+      "Convert the attacker’s lost wing tempos into central dominance"
+    ],
+    "startFen": "r1bqkb1r/pp3pp1/2nppn1p/8/3NP1PP/2N5/PPP2P2/R1BQKBR1 b Qkq - 2 8",
+    "line": [
+      {
+        "move": "d5",
+        "text": "The textbook central counterstrike! Black blasts open the middle while White’s king is uncastled."
+      },
+      {
+        "move": "exd5",
+        "text": "White opens the e-file rather than allowing ...d4."
+      },
+      {
+        "move": "Nxd5",
+        "text": "Recapturing centrally with active threats along the d- and e-files."
+      },
+      {
+        "move": "Nxd5",
+        "text": "White trades knights to ease pressure on c3."
+      },
+      {
+        "move": "Qxd5",
+        "text": "Black’s queen dominates the center, pinning or eyeing a2 and e5."
+      },
+      {
+        "move": "Be3",
+        "text": "Developing and guarding d4/c5."
+      },
+      {
+        "move": "Bb4+",
+        "text": "Checking with tempo while White’s king remains stuck in the middle."
+      },
+      {
+        "move": "c3",
+        "text": "Blocking the check at the cost of weakening dark squares."
+      },
+      {
+        "move": "Be7",
+        "text": "Retreating smoothly while targeting White’s overextended h4 pawn."
+      }
+    ]
   }
 ];

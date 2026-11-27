@@ -1344,5 +1344,1260 @@ export const ENDGAME_PUZZLES = [
       "Ke4"
     ],
     "explanation": "Ke4! — Centralizing onto e4 fixes Black’s doubled pawns, seizes key space, and prepares Kd5 or f5 to break through."
+  },
+  {
+    "id": "end-lucena-rc1-1",
+    "category": "Endgame",
+    "theme": "Lucena Rear-Check Cutoff",
+    "difficulty": "Advanced",
+    "rating": 1547,
+    "fen": "4K3/2k1P3/8/8/8/8/5r2/3R4 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move in a Lucena-type rook endgame. Find the decisive move that clears the way to promote your 7th-rank pawn!",
+    "moves": [
+      "Rc1+"
+    ],
+    "explanation": "Rc1+ — Precise rook and king coordination overcomes Black’s checks and guarantees promotion."
+  },
+  {
+    "id": "end-lucena-kg7-2",
+    "category": "Endgame",
+    "theme": "Lucena King Exit to g7",
+    "difficulty": "Advanced",
+    "rating": 1561,
+    "fen": "5K2/3k1P2/8/8/5R2/8/4r3/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move in a Lucena-type rook endgame. Find the decisive move that clears the way to promote your 7th-rank pawn!",
+    "moves": [
+      "Kg7"
+    ],
+    "explanation": "Kg7 — Precise rook and king coordination overcomes Black’s checks and guarantees promotion."
+  },
+  {
+    "id": "end-lucena-ke7-3",
+    "category": "Endgame",
+    "theme": "Lucena Bridge Escort",
+    "difficulty": "Advanced",
+    "rating": 1559,
+    "fen": "8/1k1P4/3K4/8/4R3/8/3r4/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move in a Lucena-type rook endgame. Find the decisive move that clears the way to promote your 7th-rank pawn!",
+    "moves": [
+      "Ke7"
+    ],
+    "explanation": "Ke7 — Precise rook and king coordination overcomes Black’s checks and guarantees promotion."
+  },
+  {
+    "id": "end-lucena-rh1-4",
+    "category": "Endgame",
+    "theme": "Lucena Back-Rank Check",
+    "difficulty": "Advanced",
+    "rating": 1565,
+    "fen": "5K2/5P1k/8/8/4r3/8/8/5R2 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move in a Lucena-type rook endgame. Find the decisive move that clears the way to promote your 7th-rank pawn!",
+    "moves": [
+      "Rh1+"
+    ],
+    "explanation": "Rh1+ — Precise rook and king coordination overcomes Black’s checks and guarantees promotion."
+  },
+  {
+    "id": "end-lucena-ra1-5",
+    "category": "Endgame",
+    "theme": "Lucena Skewer Mate Finish",
+    "difficulty": "Advanced",
+    "rating": 1681,
+    "fen": "k1K5/2P5/8/8/8/8/1r6/2R5 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move in a Lucena-style rook endgame. Find the 3-ply winning technique to escort your 7th-rank pawn to promotion!",
+    "moves": [
+      "Ra1+",
+      "Ra2",
+      "Rxa2#"
+    ],
+    "explanation": "Ra1+ Ra2 Rxa2# — Driving away or shielding against Black’s rook clears the promotion square cleanly."
+  },
+  {
+    "id": "end-lucena-ka7-6",
+    "category": "Endgame",
+    "theme": "Lucena Corner Promotion",
+    "difficulty": "Advanced",
+    "rating": 1666,
+    "fen": "1K1k4/1P6/8/8/8/8/2r5/1R6 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move in a Lucena-style rook endgame. Find the 3-ply winning technique to escort your 7th-rank pawn to promotion!",
+    "moves": [
+      "Ka7",
+      "Rc7",
+      "Ka6"
+    ],
+    "explanation": "Ka7 Rc7 Ka6 — Driving away or shielding against Black’s rook clears the promotion square cleanly."
+  },
+  {
+    "id": "end-philidor-ke8-7",
+    "category": "Endgame",
+    "theme": "Philidor King Blockade on e8",
+    "difficulty": "Medium",
+    "rating": 1372,
+    "fen": "5k2/4P3/4K3/8/8/r7/8/4R3 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move, down a pawn in a dangerous rook endgame. Find the sole accurate defensive move to hold the draw!",
+    "moves": [
+      "Ke8"
+    ],
+    "explanation": "Ke8 — Placing the king on the blocking square prevents White’s pawn advance from winning and preserves the Philidor drawing mechanism."
+  },
+  {
+    "id": "end-philidor-kd8-8",
+    "category": "Endgame",
+    "theme": "Philidor King Blockade on d8",
+    "difficulty": "Medium",
+    "rating": 1390,
+    "fen": "2k5/3P4/3K4/8/8/7r/8/3R4 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move, down a pawn in a dangerous rook endgame. Find the sole accurate defensive move to hold the draw!",
+    "moves": [
+      "Kd8"
+    ],
+    "explanation": "Kd8 — Placing the king on the blocking square prevents White’s pawn advance from winning and preserves the Philidor drawing mechanism."
+  },
+  {
+    "id": "end-vancura-rb8-9",
+    "category": "Endgame",
+    "theme": "Vancura Defensive Switch to b8",
+    "difficulty": "Advanced",
+    "rating": 1533,
+    "fen": "8/5k2/P7/6K1/8/8/1r6/R7 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move against White’s advanced rook pawn. Find the Vancura-style rook defense that holds the draw!",
+    "moves": [
+      "Rb8"
+    ],
+    "acceptAlso": [
+      "Rg2+",
+      "Rb5+"
+    ],
+    "explanation": "Rb8 — Switching to lateral/long-range rook activity stops White from freeing the king and holds the draw. (Rg2+, Rb5+ also achieves the same result.)"
+  },
+  {
+    "id": "end-vancura-ra5-10",
+    "category": "Endgame",
+    "theme": "Vancura Lateral Check from a5",
+    "difficulty": "Advanced",
+    "rating": 1600,
+    "fen": "R7/P4k2/8/6K1/8/8/r7/8 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move against a dangerous rook pawn. Execute the 3-ply lateral defense to save the half point!",
+    "moves": [
+      "Ra5+",
+      "Kf4",
+      "Kg7"
+    ],
+    "acceptAlso": [
+      "Kg7"
+    ],
+    "explanation": "Ra5+ Kf4 Kg7 — Keeping the rook active laterally prevents White’s king from finding shelter and secures the draw. (Kg7 also achieves the same result.)"
+  },
+  {
+    "id": "end-short-side-kf8-11",
+    "category": "Endgame",
+    "theme": "Short-Side King Shelter on f8",
+    "difficulty": "Advanced",
+    "rating": 1707,
+    "fen": "6k1/8/4PK2/8/8/8/r7/4R3 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move in a critical rook endgame. Step to the short side so your rook retains maximum checking distance from the long side!",
+    "moves": [
+      "Kf8",
+      "Rh1",
+      "Rf2+"
+    ],
+    "explanation": "Kf8 Rh1 Rf2+ — Tucking the king onto the short side (f8) denies White shelter while allowing long-side rook checks to draw."
+  },
+  {
+    "id": "end-rook-behind-rc1-12",
+    "category": "Endgame",
+    "theme": "Rook Behind the Passed b-Pawn",
+    "difficulty": "Medium",
+    "rating": 1343,
+    "fen": "3k4/8/8/1P6/1K6/8/7r/1R6 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Apply Tarrasch’s golden rule by placing your rook behind the passed pawn!",
+    "moves": [
+      "Rc1"
+    ],
+    "explanation": "Rc1 — Putting the rook behind the passed pawn maximizes its scope as the pawn advances and secures a winning conversion."
+  },
+  {
+    "id": "end-opposition-kc3-13",
+    "category": "Endgame",
+    "theme": "Corner Opposition Hold on c3",
+    "difficulty": "Medium",
+    "rating": 1375,
+    "fen": "8/8/1p6/1P6/k1K5/8/8/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move in a razor-thin pawn endgame. Find the only king move that preserves the draw through opposition!",
+    "moves": [
+      "Kc3"
+    ],
+    "explanation": "Kc3 — Stepping to c3 keeps the enemy king boxed out and maintains the vital defensive opposition."
+  },
+  {
+    "id": "end-triangulation-kd4-14",
+    "category": "Endgame",
+    "theme": "Zugzwang Hold Behind Blocked Center",
+    "difficulty": "Advanced",
+    "rating": 1540,
+    "fen": "8/8/4k3/3pP3/2K5/8/8/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move in a blocked pawn endgame. Choose the precise king retreat that avoids losing the central wedge!",
+    "moves": [
+      "Kd4"
+    ],
+    "acceptAlso": [
+      "Kd3"
+    ],
+    "explanation": "Kd4 — Maintaining key-square protection prevents Black’s king from outflanking and holds the balance. (Kd3 also achieves the same result.)"
+  },
+  {
+    "id": "end-trebuchet-ke3-15",
+    "category": "Endgame",
+    "theme": "Trebuchet King Outflanking on e3",
+    "difficulty": "Advanced",
+    "rating": 1580,
+    "fen": "8/4k3/8/3pP3/3P4/3K4/8/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move around a mutual zugzwang pawn pair. Find the winning king move that outflanks the defender!",
+    "moves": [
+      "Ke3"
+    ],
+    "explanation": "Ke3 — Outflanking to e3 wins the critical central square and forces the defending king back."
+  },
+  {
+    "id": "end-trebuchet-kd2-16",
+    "category": "Endgame",
+    "theme": "Trebuchet Diagonal Step to d2",
+    "difficulty": "Advanced",
+    "rating": 1549,
+    "fen": "8/3k4/8/2pP4/2P5/2K5/8/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move around a mutual zugzwang pawn pair. Find the winning king move that outflanks the defender!",
+    "moves": [
+      "Kd2"
+    ],
+    "explanation": "Kd2 — Outflanking to d2 wins the critical central square and forces the defending king back."
+  },
+  {
+    "id": "end-underpromo-n-b8n-17",
+    "category": "Endgame",
+    "theme": "Knight Underpromotion Royal Fork (b8=N+)",
+    "difficulty": "Advanced",
+    "rating": 1596,
+    "fen": "8/1P1k4/q7/7P/8/8/6K1/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Queen promotion is met by perpetual threats or defense — find the 3-ply knight underpromotion that wins the queen!",
+    "moves": [
+      "b8=N+",
+      "Ke7",
+      "Nxa6"
+    ],
+    "acceptAlso": [
+      "b8=Q"
+    ],
+    "explanation": "b8=N+ Ke7 Nxa6 — Underpromoting with b8=N+ forks king and queen simultaneously, winning decisively on Nxa6. (b8=Q also achieves the same result.)"
+  },
+  {
+    "id": "end-breakthrough-g6-18",
+    "category": "Endgame",
+    "theme": "Kingside Three-Pawn Breakthrough",
+    "difficulty": "Advanced",
+    "rating": 1598,
+    "fen": "8/5ppp/8/5PPP/8/1k6/8/1K6 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move while both kings stand far away on the opposite wing. Execute the 3-ply pawn breakthrough to force promotion!",
+    "moves": [
+      "g6",
+      "hxg6",
+      "f6"
+    ],
+    "explanation": "g6 hxg6 f6 — Sacrificing pawns to clear the path creates an unstoppable passed pawn before the enemy king can return."
+  },
+  {
+    "id": "end-breakthrough-b6-19",
+    "category": "Endgame",
+    "theme": "Queenside Three-Pawn Breakthrough",
+    "difficulty": "Advanced",
+    "rating": 1638,
+    "fen": "8/ppp5/8/PPP5/8/6k1/8/6K1 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move while both kings stand far away on the opposite wing. Execute the 3-ply pawn breakthrough to force promotion!",
+    "moves": [
+      "b6",
+      "cxb6",
+      "a6"
+    ],
+    "explanation": "b6 cxb6 a6 — Sacrificing pawns to clear the path creates an unstoppable passed pawn before the enemy king can return."
+  },
+  {
+    "id": "end-underpromo-r-f8r-20",
+    "category": "Endgame",
+    "theme": "Rook Underpromotion Avoiding Stalemate (f8=R)",
+    "difficulty": "Advanced",
+    "rating": 1644,
+    "fen": "8/5P1k/5K2/7p/7P/8/8/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Promoting to a queen immediately stalemates Black’s king! Find the winning 3-ply underpromotion!",
+    "moves": [
+      "f8=R",
+      "Kh6",
+      "Rh8#"
+    ],
+    "explanation": "f8=R Kh6 Rh8# — Underpromoting with f8=R avoids stalemate, forces Black’s king to Kh6, and delivers checkmate with Rh8#!"
+  },
+  {
+    "id": "end-underpromo-n-e8n-21",
+    "category": "Endgame",
+    "theme": "Knight Underpromotion Royal Fork (e8=N+)",
+    "difficulty": "Advanced",
+    "rating": 1605,
+    "fen": "8/4P1k1/3q4/8/8/P7/6K1/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move. Queen promotion is met by perpetual threats or defense — find the 3-ply knight underpromotion that wins the queen!",
+    "moves": [
+      "e8=N+",
+      "Kf7",
+      "Nxd6+"
+    ],
+    "explanation": "e8=N+ Kf7 Nxd6+ — Underpromoting with e8=N+ forks king and queen simultaneously, winning decisively on Nxd6+."
+  },
+  {
+    "id": "end-stalemate-rg2-22",
+    "category": "Endgame",
+    "theme": "Mad Rook Stalemate Sacrifice on g2",
+    "difficulty": "Medium",
+    "rating": 1471,
+    "fen": "7k/5Q2/6K1/8/8/8/7r/8 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move in a desperate position. Unleash the stalemate sacrifice that forces an immediate draw!",
+    "moves": [
+      "Rg2+"
+    ],
+    "explanation": "Rg2+ — Sacrificing the rook forces stalemate if captured and otherwise drives the enemy king into perpetual checks."
+  },
+  {
+    "id": "end-stalemate-rxf7-23",
+    "category": "Endgame",
+    "theme": "Desperate Rook Capture for Draw",
+    "difficulty": "Advanced",
+    "rating": 1557,
+    "fen": "7k/5Q2/6K1/8/8/8/5r2/8 b - - 0 1",
+    "sideToMove": "Black",
+    "prompt": "Black to move, facing a hopeless material deficit. Find the desperate 3-ply stalemate sacrifice that forces a draw!",
+    "moves": [
+      "Rxf7",
+      "Kxf7",
+      "Kh7"
+    ],
+    "explanation": "Rxf7 Kxf7 Kh7 — Offering the rook leaves White unable to avoid stalemate or perpetual checks."
+  },
+  {
+    "id": "end-pawn-kxh6-24",
+    "category": "Endgame",
+    "theme": "Pawn Endgame Calculation: Kxh6 (Khalifman vs Leko, 2000)",
+    "difficulty": "Easy",
+    "rating": 1220,
+    "fen": "8/2k5/7p/4pp1K/8/8/5P1P/8 w - - 0 43",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp pawn endgame calculation. Find the key move (king play) to convert the advantage cleanly!",
+    "moves": [
+      "Kxh6"
+    ],
+    "explanation": "Kxh6 — The most accurate endgame continuation, maximizing piece and pawn activity for the win."
+  },
+  {
+    "id": "end-ocb-attack-gxh5-25",
+    "category": "Endgame",
+    "theme": "Opposite-Colored Bishop Wing Breakthrough",
+    "difficulty": "Advanced",
+    "rating": 1625,
+    "fen": "8/5pk1/3b4/4p2p/2P1P1P1/3B2K1/1P6/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move in an opposite-colored bishop ending. Open lines on the kingside in a 3-ply winning plan!",
+    "moves": [
+      "gxh5",
+      "Kf6",
+      "Kh4"
+    ],
+    "explanation": "gxh5 Kf6 Kh4 — Capturing gxh5 creates a decisive passed pawn and clears the path for Kh4 to invade."
+  },
+  {
+    "id": "end-same-bishop-exd6-26",
+    "category": "Endgame",
+    "theme": "Same-Colored Bishop Central Capture",
+    "difficulty": "Advanced",
+    "rating": 1563,
+    "fen": "8/4k3/3bp3/3pP3/3P4/2B1K3/8/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move in a same-colored bishop endgame. Spot the forcing 3-ply capture and check that breaks Black’s blockade!",
+    "moves": [
+      "exd6+",
+      "Kxd6",
+      "Bb4+"
+    ],
+    "explanation": "exd6+ Kxd6 Bb4+ — Opening the position with exd6+ allows Bb4+ to seize the key diagonal and win."
+  },
+  {
+    "id": "end-knight-tempo-nd5-27",
+    "category": "Endgame",
+    "theme": "Knight Check Stopping the 7th-Rank Pawn",
+    "difficulty": "Advanced",
+    "rating": 1534,
+    "fen": "8/2k5/8/8/1N6/2K5/5p2/8 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move against a pawn on the 2nd rank! Use a forcing 3-ply knight maneuver to halt promotion and save the draw!",
+    "moves": [
+      "Nd5+",
+      "Kc6",
+      "Ne3"
+    ],
+    "explanation": "Nd5+ Kc6 Ne3 — Delivering Nd5+ wins the critical tempo needed for Ne3 to blockade or fork the promotion square."
+  },
+  {
+    "id": "end-queen-7th-qg4-28",
+    "category": "Endgame",
+    "theme": "Queen vs 7th-Rank Bishop Pawn Mate Net",
+    "difficulty": "Medium",
+    "rating": 1340,
+    "fen": "8/8/8/8/2Q5/8/5pk1/3K4 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move against Black’s dangerous 7th-rank pawn. Deliver the precise queen check to drive the king in front of the pawn and win!",
+    "moves": [
+      "Qg4+"
+    ],
+    "explanation": "Qg4+ — Forcing checks weave a mating or winning net before stalemate tricks can save the pawn."
+  },
+  {
+    "id": "end-queen-7th-qb4-29",
+    "category": "Endgame",
+    "theme": "Queen vs 7th-Rank Rook Pawn Checkmate",
+    "difficulty": "Medium",
+    "rating": 1448,
+    "fen": "8/8/8/8/2Q5/8/pk6/3K4 w - - 0 1",
+    "sideToMove": "White",
+    "prompt": "White to move against Black’s dangerous 7th-rank pawn. Deliver the precise queen check to drive the king in front of the pawn and win!",
+    "moves": [
+      "Qb4+"
+    ],
+    "explanation": "Qb4+ — Forcing checks weave a mating or winning net before stalemate tricks can save the pawn."
+  },
+  {
+    "id": "end-rook-kxf5-30",
+    "category": "Endgame",
+    "theme": "Rook Endgame Precision: Kxf5 (Ding vs Nepomniachtchi, 2023)",
+    "difficulty": "Easy",
+    "rating": 1233,
+    "fen": "8/8/5k2/5R2/8/6K1/7P/8 b - - 0 43",
+    "sideToMove": "Black",
+    "prompt": "Black to move in a sharp rook endgame precision. Find the key move (king play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Kxf5"
+    ],
+    "explanation": "Kxf5 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-rook-kxg5-31",
+    "category": "Endgame",
+    "theme": "Rook Endgame Precision: Kxg5 (Gukesh vs Ding, 2024)",
+    "difficulty": "Easy",
+    "rating": 1190,
+    "fen": "8/8/6k1/6R1/7p/8/7K/8 b - - 0 52",
+    "sideToMove": "Black",
+    "prompt": "Black to move in a sharp rook endgame precision. Find the key move (king play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Kxg5"
+    ],
+    "explanation": "Kxg5 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-rook-rg1-32",
+    "category": "Endgame",
+    "theme": "Rook Endgame Precision: Rg1+ (Pachman vs Gligoric, 1948)",
+    "difficulty": "Easy",
+    "rating": 1175,
+    "fen": "5R2/8/8/4p1K1/4k3/8/8/r7 b - - 0 69",
+    "sideToMove": "Black",
+    "prompt": "Black to move in a sharp rook endgame precision. Find the key move (rook play) to convert the advantage cleanly!",
+    "moves": [
+      "Rg1+"
+    ],
+    "explanation": "Rg1+ — The most accurate endgame continuation, maximizing piece and pawn activity for the win."
+  },
+  {
+    "id": "end-rook-kd5-33",
+    "category": "Endgame",
+    "theme": "Rook Endgame Precision: Kd5 (Stoltz vs Ragozin, 1948)",
+    "difficulty": "Easy",
+    "rating": 1174,
+    "fen": "8/6k1/4r2p/2p5/2P1K3/8/5RP1/8 w - - 0 47",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp rook endgame precision. Find the key move (king play) to convert the advantage cleanly!",
+    "moves": [
+      "Kd5"
+    ],
+    "explanation": "Kd5 — The most accurate endgame continuation, maximizing piece and pawn activity for the win."
+  },
+  {
+    "id": "end-rook-e6-34",
+    "category": "Endgame",
+    "theme": "Rook Endgame Precision: e6 (Stoltz vs Ragozin, 1948)",
+    "difficulty": "Advanced",
+    "rating": 1538,
+    "fen": "8/6k1/7p/2p1P3/2P3r1/4K3/5RP1/8 w - - 2 45",
+    "sideToMove": "White",
+    "prompt": "White to move in a critical rook endgame precision. Calculate the exact 3-ply sequence to convert the advantage cleanly!",
+    "moves": [
+      "e6",
+      "Rg6",
+      "Ke4"
+    ],
+    "explanation": "e6 Rg6 Ke4 — Playing e6 sets up Ke4, locking in a decisive endgame edge."
+  },
+  {
+    "id": "end-rook-rb5-35",
+    "category": "Endgame",
+    "theme": "Rook Endgame Precision: Rb5 (Gligoric vs Lundin, 1948)",
+    "difficulty": "Advanced",
+    "rating": 1537,
+    "fen": "6k1/8/8/6p1/1R2p1P1/1P2P1K1/1r6/8 w - - 0 61",
+    "sideToMove": "White",
+    "prompt": "White to move in a critical rook endgame precision. Calculate the exact 3-ply sequence to convert the advantage cleanly!",
+    "moves": [
+      "Rb5",
+      "Kf7",
+      "Rxg5"
+    ],
+    "explanation": "Rb5 Kf7 Rxg5 — Playing Rb5 sets up Rxg5, locking in a decisive endgame edge."
+  },
+  {
+    "id": "end-rook-rxf7-36",
+    "category": "Endgame",
+    "theme": "Rook Endgame Precision: Rxf7+ (Gligoric vs Lundin, 1948)",
+    "difficulty": "Advanced",
+    "rating": 1678,
+    "fen": "8/3R1p1k/6pp/6r1/1p2p1P1/1P2P2P/P6K/8 w - - 0 55",
+    "sideToMove": "White",
+    "prompt": "White to move in a critical rook endgame precision. Calculate the exact 3-ply sequence to convert the advantage cleanly!",
+    "moves": [
+      "Rxf7+",
+      "Kh8",
+      "Ra7"
+    ],
+    "explanation": "Rxf7+ Kh8 Ra7 — Playing Rxf7+ sets up Ra7, locking in a decisive endgame edge."
+  },
+  {
+    "id": "end-rook-a6-37",
+    "category": "Endgame",
+    "theme": "Rook Endgame Precision: a6 (Bronstein vs Kotov, 1948)",
+    "difficulty": "Medium",
+    "rating": 1468,
+    "fen": "2R5/7p/4p1p1/PK2Pp2/5P2/3r2kP/8/8 w - - 0 49",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp rook endgame precision. Find the key move (pawn play) to convert the advantage cleanly!",
+    "moves": [
+      "a6"
+    ],
+    "explanation": "a6 — The most accurate endgame continuation, maximizing piece and pawn activity for the win."
+  },
+  {
+    "id": "end-rook-ke3-38",
+    "category": "Endgame",
+    "theme": "Rook Endgame Precision: Ke3 (Stoltz vs Ragozin, 1948)",
+    "difficulty": "Advanced",
+    "rating": 1658,
+    "fen": "8/8/6kp/2p1PR2/2Pr2P1/3K4/6P1/8 w - - 5 43",
+    "sideToMove": "White",
+    "prompt": "White to move in a critical rook endgame precision. Calculate the exact 3-ply sequence to convert the advantage cleanly!",
+    "moves": [
+      "Ke3",
+      "Rxc4",
+      "e6"
+    ],
+    "explanation": "Ke3 Rxc4 e6 — Playing Ke3 sets up e6, locking in a decisive endgame edge."
+  },
+  {
+    "id": "end-rook-ra4-39",
+    "category": "Endgame",
+    "theme": "Rook Endgame Precision: Ra4+ (Pachman vs Gligoric, 1948)",
+    "difficulty": "Advanced",
+    "rating": 1637,
+    "fen": "4R3/8/4pk2/6p1/6K1/r7/8/8 b - - 9 63",
+    "sideToMove": "Black",
+    "prompt": "Black to move in a critical rook endgame precision. Calculate the exact 3-ply sequence to convert the advantage cleanly!",
+    "moves": [
+      "Ra4+",
+      "Kg3",
+      "Ra3+"
+    ],
+    "explanation": "Ra4+ Kg3 Ra3+ — Playing Ra4+ sets up Ra3+, locking in a decisive endgame edge."
+  },
+  {
+    "id": "end-bishop-opposite-ka5-40",
+    "category": "Endgame",
+    "theme": "Opposite-Colored Bishops Endgame: Ka5 (Boleslavsky vs Trifunovic, 1948)",
+    "difficulty": "Medium",
+    "rating": 1459,
+    "fen": "k1b5/p7/K1P5/1P6/3B1P2/8/8/8 w - - 1 57",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp opposite-colored bishops endgame. Find the key move (king play) to convert the advantage cleanly!",
+    "moves": [
+      "Ka5"
+    ],
+    "explanation": "Ka5 — The most accurate endgame continuation, maximizing piece and pawn activity for the win."
+  },
+  {
+    "id": "end-bishop-opposite-g3-41",
+    "category": "Endgame",
+    "theme": "Opposite-Colored Bishops Endgame: g3 (Boleslavsky vs Trifunovic, 1948)",
+    "difficulty": "Medium",
+    "rating": 1428,
+    "fen": "2k5/p7/2P2p2/1PK5/8/2B5/6P1/5b2 w - - 4 51",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp opposite-colored bishops endgame. Find the key move (pawn play) to convert the advantage cleanly!",
+    "moves": [
+      "g3"
+    ],
+    "explanation": "g3 — The most accurate endgame continuation, maximizing piece and pawn activity for the win."
+  },
+  {
+    "id": "end-bishop-opposite-kxd6-42",
+    "category": "Endgame",
+    "theme": "Opposite-Colored Bishops Endgame: Kxd6 (Geller vs Stein, 1962)",
+    "difficulty": "Advanced",
+    "rating": 1616,
+    "fen": "4B3/bP4k1/3p2p1/3Kp2p/2P4P/5P2/8/8 w - - 1 53",
+    "sideToMove": "White",
+    "prompt": "White to move in a critical opposite-colored bishops endgame. Calculate the exact 3-ply sequence to convert the advantage cleanly!",
+    "moves": [
+      "Kxd6",
+      "Bf2",
+      "b8=Q"
+    ],
+    "explanation": "Kxd6 Bf2 b8=Q — Playing Kxd6 sets up b8=Q, locking in a decisive endgame edge."
+  },
+  {
+    "id": "end-bishop-opposite-bd4-43",
+    "category": "Endgame",
+    "theme": "Opposite-Colored Bishops Endgame: Bd4+ (Topalov vs Anand, 2010)",
+    "difficulty": "Advanced",
+    "rating": 1588,
+    "fen": "8/1p5p/p2Ppkp1/PbB5/5K1P/5P2/1P4P1/8 w - - 13 41",
+    "sideToMove": "White",
+    "prompt": "White to move in a critical opposite-colored bishops endgame. Calculate the exact 3-ply sequence to convert the advantage cleanly!",
+    "moves": [
+      "Bd4+",
+      "e5+",
+      "Bxe5+"
+    ],
+    "explanation": "Bd4+ e5+ Bxe5+ — Playing Bd4+ sets up Bxe5+, locking in a decisive endgame edge."
+  },
+  {
+    "id": "end-bishop-opposite-bd4-44",
+    "category": "Endgame",
+    "theme": "Opposite-Colored Bishops Endgame: Bd4 (Boleslavsky vs Trifunovic, 1948)",
+    "difficulty": "Advanced",
+    "rating": 1579,
+    "fen": "1k6/p7/2P5/1P3p2/1K6/2B3P1/8/5b2 w - - 2 53",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp opposite-colored bishops endgame. Find the key move (bishop play) to convert the advantage cleanly!",
+    "moves": [
+      "Bd4"
+    ],
+    "explanation": "Bd4 — The most accurate endgame continuation, maximizing piece and pawn activity for the win."
+  },
+  {
+    "id": "end-bishop-opposite-kc4-45",
+    "category": "Endgame",
+    "theme": "Opposite-Colored Bishops Endgame: Kc4 (Suba vs Mestel, 1982)",
+    "difficulty": "Advanced",
+    "rating": 1569,
+    "fen": "8/3Bk2p/4P1p1/5p2/P2p1P1P/1K4P1/8/4b3 w - - 1 51",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp opposite-colored bishops endgame. Find the key move (king play) to convert the advantage cleanly!",
+    "moves": [
+      "Kc4"
+    ],
+    "explanation": "Kc4 — The most accurate endgame continuation, maximizing piece and pawn activity for the win."
+  },
+  {
+    "id": "end-bishop-opposite-b5-46",
+    "category": "Endgame",
+    "theme": "Opposite-Colored Bishops Endgame: b5 (Boleslavsky vs Trifunovic, 1948)",
+    "difficulty": "Advanced",
+    "rating": 1561,
+    "fen": "4b3/p3k1p1/1p3p2/8/PPPK4/5P2/3B2P1/8 w - - 1 39",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp opposite-colored bishops endgame. Find the key move (pawn play) to convert the advantage cleanly!",
+    "moves": [
+      "b5"
+    ],
+    "explanation": "b5 — The most accurate endgame continuation, maximizing piece and pawn activity for the win."
+  },
+  {
+    "id": "end-bishop-opposite-fxg4-47",
+    "category": "Endgame",
+    "theme": "Opposite-Colored Bishops Endgame: fxg4 (Boleslavsky vs Trifunovic, 1948)",
+    "difficulty": "Advanced",
+    "rating": 1560,
+    "fen": "2k5/p4b2/5p2/BPP5/3K2p1/5P2/6P1/8 w - - 0 47",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp opposite-colored bishops endgame. Find the key move (pawn play) to convert the advantage cleanly!",
+    "moves": [
+      "fxg4"
+    ],
+    "explanation": "fxg4 — The most accurate endgame continuation, maximizing piece and pawn activity for the win."
+  },
+  {
+    "id": "end-bishop-same-bxg6-48",
+    "category": "Endgame",
+    "theme": "Same-Colored Bishops Endgame: Bxg6 (Svidler vs Morozevich, 2005)",
+    "difficulty": "Advanced",
+    "rating": 1534,
+    "fen": "8/8/5Pb1/8/4BP2/P6p/3K1k2/8 w - - 1 70",
+    "sideToMove": "White",
+    "prompt": "White to move in a critical same-colored bishops endgame. Calculate the exact 3-ply sequence to convert the advantage cleanly!",
+    "moves": [
+      "Bxg6",
+      "h2",
+      "Be4"
+    ],
+    "explanation": "Bxg6 h2 Be4 — Playing Bxg6 sets up Be4, locking in a decisive endgame edge."
+  },
+  {
+    "id": "end-bishop-same-exf4-49",
+    "category": "Endgame",
+    "theme": "Same-Colored Bishops Endgame: exf4+ (Aaron vs Barcza, 1962)",
+    "difficulty": "Advanced",
+    "rating": 1670,
+    "fen": "8/8/3p2pp/2kPp3/1p2PPP1/1B2K3/P7/1b6 b - - 0 50",
+    "sideToMove": "Black",
+    "prompt": "Black to move in a critical same-colored bishops endgame. Calculate the exact 3-ply sequence to convert the advantage cleanly!",
+    "moves": [
+      "exf4+",
+      "Kxf4",
+      "Kd4"
+    ],
+    "explanation": "exf4+ Kxf4 Kd4 — Playing exf4+ sets up Kd4, locking in a decisive endgame edge."
+  },
+  {
+    "id": "end-bishop-same-axb4-50",
+    "category": "Endgame",
+    "theme": "Same-Colored Bishops Endgame: axb4 (Radjabov vs Kasparov, 2003)",
+    "difficulty": "Medium",
+    "rating": 1474,
+    "fen": "2b5/8/3k1p1p/p7/1P3KPP/3B4/1P6/8 b - - 0 36",
+    "sideToMove": "Black",
+    "prompt": "Black to move in a sharp same-colored bishops endgame. Find the key move (pawn play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "axb4"
+    ],
+    "explanation": "axb4 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-bishop-same-bd4-51",
+    "category": "Endgame",
+    "theme": "Same-Colored Bishops Endgame: Bd4 (Najdorf vs Kotov, 1948)",
+    "difficulty": "Advanced",
+    "rating": 1612,
+    "fen": "6k1/7p/6p1/8/2K5/4B1P1/5P1P/b7 w - - 0 47",
+    "sideToMove": "White",
+    "prompt": "White to move in a critical same-colored bishops endgame. Calculate the exact 3-ply sequence to convert the advantage cleanly!",
+    "moves": [
+      "Bd4",
+      "Bxd4",
+      "Kxd4"
+    ],
+    "explanation": "Bd4 Bxd4 Kxd4 — Playing Bd4 sets up Kxd4, locking in a decisive endgame edge."
+  },
+  {
+    "id": "end-bishop-same-fxg5-52",
+    "category": "Endgame",
+    "theme": "Same-Colored Bishops Endgame: fxg5 (Anand vs Kramnik, 2010)",
+    "difficulty": "Medium",
+    "rating": 1354,
+    "fen": "8/5k1p/1pB2p2/6P1/PPb5/7P/5K2/8 b - - 0 32",
+    "sideToMove": "Black",
+    "prompt": "Black to move in a sharp same-colored bishops endgame. Find the key move (pawn play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "fxg5"
+    ],
+    "explanation": "fxg5 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-bishop-same-d3-53",
+    "category": "Endgame",
+    "theme": "Same-Colored Bishops Endgame: d3+ (Yanofsky vs Pirc, 1948)",
+    "difficulty": "Advanced",
+    "rating": 1617,
+    "fen": "3b4/7p/3B2p1/8/3pk3/7P/4KP2/8 b - - 1 53",
+    "sideToMove": "Black",
+    "prompt": "Black to move in a critical same-colored bishops endgame. Calculate the exact 3-ply sequence to convert the advantage cleanly!",
+    "moves": [
+      "d3+",
+      "Ke1",
+      "Ba5+"
+    ],
+    "explanation": "d3+ Ke1 Ba5+ — Playing d3+ sets up Ba5+, locking in a decisive endgame edge."
+  },
+  {
+    "id": "end-bishop-same-c5-54",
+    "category": "Endgame",
+    "theme": "Same-Colored Bishops Endgame: c5 (Carlsen vs Caruana, 2012)",
+    "difficulty": "Advanced",
+    "rating": 1593,
+    "fen": "8/1k6/8/1K6/PBP2b2/8/8/8 w - - 3 57",
+    "sideToMove": "White",
+    "prompt": "White to move in a critical same-colored bishops endgame. Calculate the exact 3-ply sequence to convert the advantage cleanly!",
+    "moves": [
+      "c5",
+      "Bg3",
+      "a5"
+    ],
+    "explanation": "c5 Bg3 a5 — Playing c5 sets up a5, locking in a decisive endgame edge."
+  },
+  {
+    "id": "end-bishop-same-a5-55",
+    "category": "Endgame",
+    "theme": "Same-Colored Bishops Endgame: a5 (Carlsen vs Caruana, 2012)",
+    "difficulty": "Medium",
+    "rating": 1401,
+    "fen": "1k6/8/2P5/1K6/PB3b2/8/8/8 w - - 1 59",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp same-colored bishops endgame. Find the key move (pawn play) to convert the advantage cleanly!",
+    "moves": [
+      "a5"
+    ],
+    "explanation": "a5 — The most accurate endgame continuation, maximizing piece and pawn activity for the win."
+  },
+  {
+    "id": "end-pawn-kh2-56",
+    "category": "Endgame",
+    "theme": "Pawn Endgame Calculation: Kh2 (Trois vs Tarjan, 1979)",
+    "difficulty": "Advanced",
+    "rating": 1586,
+    "fen": "8/8/4p3/p7/Pp1Pp2k/1P2P3/6K1/8 w - - 0 73",
+    "sideToMove": "White",
+    "prompt": "White to move in a critical pawn endgame calculation. Calculate the exact 3-ply sequence to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Kh2",
+      "Kg4",
+      "Kg2"
+    ],
+    "explanation": "Kh2 Kg4 Kg2 — Playing Kh2 sets up Kg2, neutralizing every winning attempt."
+  },
+  {
+    "id": "end-pawn-kh7-57",
+    "category": "Endgame",
+    "theme": "Pawn Endgame Calculation: Kh7 (Topalov vs Radjabov, 2008)",
+    "difficulty": "Easy",
+    "rating": 1235,
+    "fen": "8/5k2/p6K/8/6P1/8/8/8 w - - 3 53",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp pawn endgame calculation. Find the key move (king play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Kh7"
+    ],
+    "explanation": "Kh7 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-pawn-kh6-58",
+    "category": "Endgame",
+    "theme": "Pawn Endgame Calculation: Kh6 (Topalov vs Radjabov, 2008)",
+    "difficulty": "Easy",
+    "rating": 1232,
+    "fen": "8/7K/p4k2/8/6P1/8/8/8 w - - 5 54",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp pawn endgame calculation. Find the key move (king play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Kh6"
+    ],
+    "explanation": "Kh6 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-pawn-kxf5-59",
+    "category": "Endgame",
+    "theme": "Pawn Endgame Calculation: Kxf5 (Anand vs Kramnik, 2007)",
+    "difficulty": "Easy",
+    "rating": 1230,
+    "fen": "8/6p1/5p2/5P1K/4k2P/8/8/8 b - - 2 65",
+    "sideToMove": "Black",
+    "prompt": "Black to move in a sharp pawn endgame calculation. Find the key move (king play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Kxf5"
+    ],
+    "explanation": "Kxf5 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-pawn-kh5-60",
+    "category": "Endgame",
+    "theme": "Pawn Endgame Calculation: Kh5 (Anand vs Kramnik, 2007)",
+    "difficulty": "Easy",
+    "rating": 1217,
+    "fen": "8/6p1/5p2/5P2/4k1KP/8/8/8 w - - 1 65",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp pawn endgame calculation. Find the key move (king play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Kh5"
+    ],
+    "explanation": "Kh5 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-pawn-kb5-61",
+    "category": "Endgame",
+    "theme": "Pawn Endgame Calculation: Kb5 (Taimanov vs Cuellar Gacharna, 1973)",
+    "difficulty": "Easy",
+    "rating": 1203,
+    "fen": "8/6p1/8/5p1P/1K1k4/8/6P1/8 w - - 0 53",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp pawn endgame calculation. Find the key move (king play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Kb5"
+    ],
+    "explanation": "Kb5 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-pawn-f4-62",
+    "category": "Endgame",
+    "theme": "Pawn Endgame Calculation: f4 (Ivanchuk vs Leko, 2006)",
+    "difficulty": "Easy",
+    "rating": 1194,
+    "fen": "8/8/5p1k/3p1P1p/3P3K/5P2/8/8 w - - 4 61",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp pawn endgame calculation. Find the key move (pawn play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "f4"
+    ],
+    "explanation": "f4 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-pawn-kh2-63",
+    "category": "Endgame",
+    "theme": "Pawn Endgame Calculation: Kh2 (Sanguineti vs Cardoso, 1958)",
+    "difficulty": "Easy",
+    "rating": 1182,
+    "fen": "8/8/8/1Pk5/6p1/7p/5P2/6K1 w - - 4 69",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp pawn endgame calculation. Find the key move (king play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Kh2"
+    ],
+    "explanation": "Kh2 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-pawn-kh5-64",
+    "category": "Endgame",
+    "theme": "Pawn Endgame Calculation: Kh5 (Khalifman vs Leko, 2000)",
+    "difficulty": "Easy",
+    "rating": 1192,
+    "fen": "8/2k5/4p2p/5p2/7K/8/5P1P/8 w - - 0 42",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp pawn endgame calculation. Find the key move (king play) to convert the advantage cleanly!",
+    "moves": [
+      "Kh5"
+    ],
+    "explanation": "Kh5 — The most accurate endgame continuation, maximizing piece and pawn activity for the win."
+  },
+  {
+    "id": "end-pawn-ke3-65",
+    "category": "Endgame",
+    "theme": "Pawn Endgame Calculation: Ke3 (Leko vs Ivanchuk, 2007)",
+    "difficulty": "Easy",
+    "rating": 1157,
+    "fen": "8/8/pp3p1p/2p1k1pP/2P1P1P1/PP1K4/8/8 w - - 5 38",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp pawn endgame calculation. Find the key move (king play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Ke3"
+    ],
+    "explanation": "Ke3 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-knight-kxd5-66",
+    "category": "Endgame",
+    "theme": "Knight Endgame Technique: Kxd5 (Fischer vs Rossetto, 1958)",
+    "difficulty": "Medium",
+    "rating": 1434,
+    "fen": "8/8/8/3p4/3K2n1/8/2k5/8 w - - 0 73",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp knight endgame technique. Find the key move (king play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Kxd5"
+    ],
+    "explanation": "Kxd5 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-knight-kd4-67",
+    "category": "Endgame",
+    "theme": "Knight Endgame Technique: Kd4 (Fischer vs Rossetto, 1958)",
+    "difficulty": "Medium",
+    "rating": 1400,
+    "fen": "8/7n/8/3p4/8/4K1P1/2k5/8 w - - 0 71",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp knight endgame technique. Find the key move (king play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Kd4"
+    ],
+    "explanation": "Kd4 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-knight-nxa6-68",
+    "category": "Endgame",
+    "theme": "Knight Endgame Technique: Nxa6 (Larsen vs Pachman, 1964)",
+    "difficulty": "Medium",
+    "rating": 1395,
+    "fen": "8/7p/r1k1ppp1/2Nn4/1P6/P5P1/5P1P/5K2 w - - 2 37",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp knight endgame technique. Find the key move (knight play) to convert the advantage cleanly!",
+    "moves": [
+      "Nxa6"
+    ],
+    "explanation": "Nxa6 — The most accurate endgame continuation, maximizing piece and pawn activity for the win."
+  },
+  {
+    "id": "end-knight-ng5-69",
+    "category": "Endgame",
+    "theme": "Knight Endgame Technique: Ng5+ (Fischer vs Rossetto, 1958)",
+    "difficulty": "Medium",
+    "rating": 1369,
+    "fen": "8/7P/4n3/3p4/8/5KP1/2k5/8 b - - 0 69",
+    "sideToMove": "Black",
+    "prompt": "Black to move in a sharp knight endgame technique. Find the key move (knight play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Ng5+"
+    ],
+    "explanation": "Ng5+ — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-knight-nxf4-70",
+    "category": "Endgame",
+    "theme": "Knight Endgame Technique: Nxf4 (Carlsen vs Anand, 2013)",
+    "difficulty": "Medium",
+    "rating": 1385,
+    "fen": "8/1K4k1/p7/P4p2/2P2P2/1P5P/6n1/8 b - - 0 51",
+    "sideToMove": "Black",
+    "prompt": "Black to move in a sharp knight endgame technique. Find the key move (knight play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Nxf4"
+    ],
+    "explanation": "Nxf4 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-knight-kxe8-71",
+    "category": "Endgame",
+    "theme": "Knight Endgame Technique: Kxe8 (Carlsen vs Anand, 2013)",
+    "difficulty": "Medium",
+    "rating": 1367,
+    "fen": "4Nk2/pp3p1p/2p3p1/3p4/3P4/2P5/PP3PPP/6K1 b - - 0 28",
+    "sideToMove": "Black",
+    "prompt": "Black to move in a sharp knight endgame technique. Find the key move (king play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Kxe8"
+    ],
+    "explanation": "Kxe8 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-knight-nf4-72",
+    "category": "Endgame",
+    "theme": "Knight Endgame Technique: Nf4 (Bolbochan vs German, 1962)",
+    "difficulty": "Medium",
+    "rating": 1357,
+    "fen": "8/4k3/4p3/7N/4P2p/4nP1K/6P1/8 w - - 1 47",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp knight endgame technique. Find the key move (knight play) to convert the advantage cleanly!",
+    "moves": [
+      "Nf4"
+    ],
+    "explanation": "Nf4 — The most accurate endgame continuation, maximizing piece and pawn activity for the win."
+  },
+  {
+    "id": "end-knight-nb4-73",
+    "category": "Endgame",
+    "theme": "Knight Endgame Technique: Nb4 (Schweber vs Bertok, 1962)",
+    "difficulty": "Medium",
+    "rating": 1353,
+    "fen": "8/8/N4k2/3P1p2/3pnK2/7P/P7/8 w - - 1 43",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp knight endgame technique. Find the key move (knight play) to convert the advantage cleanly!",
+    "moves": [
+      "Nb4"
+    ],
+    "explanation": "Nb4 — The most accurate endgame continuation, maximizing piece and pawn activity for the win."
+  },
+  {
+    "id": "end-queen-kh2-74",
+    "category": "Endgame",
+    "theme": "Queen Endgame Precision: Kh2 (Carlsen vs Nepomniachtchi, 2021)",
+    "difficulty": "Medium",
+    "rating": 1459,
+    "fen": "6k1/6p1/2Q1p3/1p6/3P3p/7P/PP3PP1/4q1K1 w - - 1 30",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp queen endgame precision. Find the key move (king play) to convert the advantage cleanly!",
+    "moves": [
+      "Kh2"
+    ],
+    "explanation": "Kh2 — The most accurate endgame continuation, maximizing piece and pawn activity for the win."
+  },
+  {
+    "id": "end-queen-kh2-75",
+    "category": "Endgame",
+    "theme": "Queen Endgame Precision: Kh2 (Karjakin vs Carlsen, 2016)",
+    "difficulty": "Medium",
+    "rating": 1459,
+    "fen": "8/6pk/4Q2p/pp6/2PP4/P2P3P/4p1P1/4q1K1 w - - 0 33",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp queen endgame precision. Find the key move (king play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Kh2"
+    ],
+    "explanation": "Kh2 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-queen-ka2-76",
+    "category": "Endgame",
+    "theme": "Queen Endgame Precision: Ka2 (Leko vs Gelfand, 2007)",
+    "difficulty": "Medium",
+    "rating": 1459,
+    "fen": "8/Q7/1p4k1/2p4p/8/P1P5/1P6/K2q4 w - - 1 54",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp queen endgame precision. Find the key move (king play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Ka2"
+    ],
+    "explanation": "Ka2 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-queen-ka2-77",
+    "category": "Endgame",
+    "theme": "Queen Endgame Precision: Ka2 (Leko vs Gelfand, 2007)",
+    "difficulty": "Medium",
+    "rating": 1336,
+    "fen": "8/p5k1/1p4P1/2p4p/8/P1P3Q1/1P6/K4q2 w - - 2 48",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp queen endgame precision. Find the key move (king play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Ka2"
+    ],
+    "explanation": "Ka2 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-queen-kxg6-78",
+    "category": "Endgame",
+    "theme": "Queen Endgame Precision: Kxg6 (Leko vs Gelfand, 2007)",
+    "difficulty": "Medium",
+    "rating": 1358,
+    "fen": "8/p1Q3k1/1p4P1/2p4p/6q1/P1P5/1P6/K7 b - - 11 52",
+    "sideToMove": "Black",
+    "prompt": "Black to move in a sharp queen endgame precision. Find the key move (king play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Kxg6"
+    ],
+    "explanation": "Kxg6 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-queen-qe4-79",
+    "category": "Endgame",
+    "theme": "Queen Endgame Precision: Qe4+ (Karjakin vs Carlsen, 2016)",
+    "difficulty": "Medium",
+    "rating": 1444,
+    "fen": "8/6pk/4Q2p/pp6/2PP4/P2P3P/4pqPK/8 w - - 2 34",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp queen endgame precision. Find the key move (queen play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "Qe4+"
+    ],
+    "explanation": "Qe4+ — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-queen-qxe6-80",
+    "category": "Endgame",
+    "theme": "Queen Endgame Precision: Qxe6+ (Carlsen vs Nepomniachtchi, 2021)",
+    "difficulty": "Medium",
+    "rating": 1370,
+    "fen": "6k1/6p1/2Q1p3/1p6/3P3p/7P/PP3qPK/8 w - - 0 31",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp queen endgame precision. Find the key move (queen play) to convert the advantage cleanly!",
+    "moves": [
+      "Qxe6+"
+    ],
+    "explanation": "Qxe6+ — The most accurate endgame continuation, maximizing piece and pawn activity for the win."
+  },
+  {
+    "id": "end-bishop-vs-knight-hxg6-81",
+    "category": "Endgame",
+    "theme": "Bishop vs Knight Endgame: hxg6 (Topalov vs Anand, 2010)",
+    "difficulty": "Medium",
+    "rating": 1343,
+    "fen": "8/7p/3k2p1/p5PP/5n2/1K6/4B3/8 w - - 1 59",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp bishop vs knight endgame. Find the key move (pawn play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "hxg6"
+    ],
+    "explanation": "hxg6 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-bishop-vs-knight-gxf5-82",
+    "category": "Endgame",
+    "theme": "Bishop vs Knight Endgame: gxf5 (Caruana vs Carlsen, 2018)",
+    "difficulty": "Medium",
+    "rating": 1333,
+    "fen": "8/8/6p1/b1k2P1p/2p1P2P/4N3/4K3/8 b - - 0 47",
+    "sideToMove": "Black",
+    "prompt": "Black to move in a sharp bishop vs knight endgame. Find the key move (pawn play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "gxf5"
+    ],
+    "explanation": "gxf5 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-bishop-vs-knight-cxb4-83",
+    "category": "Endgame",
+    "theme": "Bishop vs Knight Endgame: cxb4 (Caruana vs Carlsen, 2018)",
+    "difficulty": "Medium",
+    "rating": 1473,
+    "fen": "8/8/2k3p1/2b1p2p/1pp1P2P/2P3P1/4KP2/5N2 w - - 0 43",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp bishop vs knight endgame. Find the key move (pawn play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "cxb4"
+    ],
+    "explanation": "cxb4 — The most accurate endgame continuation, holding the critical squares for a draw."
+  },
+  {
+    "id": "end-bishop-vs-knight-c7-84",
+    "category": "Endgame",
+    "theme": "Bishop vs Knight Endgame: c7 (Kramnik vs Grischuk, 2007)",
+    "difficulty": "Medium",
+    "rating": 1429,
+    "fen": "B7/4kp1p/2P1p1p1/8/8/6P1/4PP1P/n5K1 w - - 1 43",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp bishop vs knight endgame. Find the key move (pawn play) to convert the advantage cleanly!",
+    "moves": [
+      "c7"
+    ],
+    "explanation": "c7 — The most accurate endgame continuation, maximizing piece and pawn activity for the win."
+  },
+  {
+    "id": "end-rook-vs-minor-cxd4-85",
+    "category": "Endgame",
+    "theme": "Rook vs Minor Piece Endgame: cxd4 (Gukesh vs Ding, 2024)",
+    "difficulty": "Medium",
+    "rating": 1351,
+    "fen": "5k2/pp3pp1/2b5/4P3/3r4/2Pp2B1/PP3K1P/8 w - - 0 32",
+    "sideToMove": "White",
+    "prompt": "White to move in a sharp rook vs minor piece endgame. Find the key move (pawn play) to find the sole defensive resource that holds the draw!",
+    "moves": [
+      "cxd4"
+    ],
+    "explanation": "cxd4 — The most accurate endgame continuation, holding the critical squares for a draw."
   }
 ];

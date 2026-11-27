@@ -50,6 +50,7 @@ export const CLASSIC_PLAYER_HINTS = [
   'Topalov, Veselin',
   'Ding, Liren',
   'Gukesh, D',
+  'Sindarov, Javokhir',
   'Nepomniachtchi, Ian',
   'Caruana, Fabiano',
   'Nakamura, Hikaru',
@@ -68,6 +69,72 @@ export const CLASSIC_PLAYER_HINTS = [
   'Morphy, Paul',
   'Anderssen, Adolf',
 ];
+
+export const WORLD_CHAMPIONSHIPS = [
+  { id: 'wch-2026', year: 2026, matchTag: 'World Championship 2026 (Gukesh–Sindarov)', enLabel: '2026 · Gukesh vs Sindarov', arLabel: '2026 · غوكيش ضد سينداروف' },
+  { id: 'wch-2024', year: 2024, matchTag: 'World Championship 2024 (Gukesh–Ding Liren)', enLabel: '2024 · Gukesh vs Ding Liren', arLabel: '2024 · غوكيش ضد دينغ ليرين' },
+  { id: 'wch-2023', year: 2023, matchTag: 'World Championship 2023 (Ding Liren–Nepomniachtchi)', enLabel: '2023 · Ding Liren vs Nepomniachtchi', arLabel: '2023 · دينغ ليرين ضد نيبومنياتشي' },
+  { id: 'wch-2023-tb', year: 2023, matchTag: 'World Championship 2023 — Rapid Tiebreak (Ding Liren–Nepomniachtchi)', enLabel: '2023 (TB) · Ding Liren vs Nepomniachtchi', arLabel: '2023 (كسر التعادل) · دينغ ليرين ضد نيبومنياتشي' },
+  { id: 'wch-2021', year: 2021, matchTag: 'World Championship 2021 (Carlsen–Nepomniachtchi)', enLabel: '2021 · Carlsen vs Nepomniachtchi', arLabel: '2021 · كارلسن ضد نيبومنياتشي' },
+  { id: 'wch-2018', year: 2018, matchTag: 'World Championship 2018 (Carlsen–Caruana)', enLabel: '2018 · Carlsen vs Caruana', arLabel: '2018 · كارلسن ضد كاروانا' },
+  { id: 'wch-2016', year: 2016, matchTag: 'World Championship 2016 (Carlsen–Karjakin)', enLabel: '2016 · Carlsen vs Karjakin', arLabel: '2016 · كارلسن ضد كارياكين' },
+  { id: 'wch-2014', year: 2014, matchTag: 'World Championship 2014 (Carlsen–Anand II)', enLabel: '2014 · Carlsen vs Anand II', arLabel: '2014 · كارلسن ضد أناند ٢' },
+  { id: 'wch-2013', year: 2013, matchTag: 'World Championship 2013 (Carlsen–Anand I)', enLabel: '2013 · Carlsen vs Anand I', arLabel: '2013 · كارلسن ضد أناند ١' },
+  { id: 'wch-2012', year: 2012, matchTag: 'World Championship 2012 (Anand–Gelfand)', enLabel: '2012 · Anand vs Gelfand', arLabel: '2012 · أناند ضد غيلفاند' },
+  { id: 'wch-2010', year: 2010, matchTag: 'World Championship 2010 (Anand–Topalov)', enLabel: '2010 · Anand vs Topalov', arLabel: '2010 · أناند ضد توبالوف' },
+  { id: 'wch-2008', year: 2008, matchTag: 'World Championship 2008 (Anand–Kramnik)', enLabel: '2008 · Anand vs Kramnik', arLabel: '2008 · أناند ضد كرامنيك' },
+  { id: 'wch-2007', year: 2007, matchTag: 'World Championship 2007 (Anand / Mexico City)', enLabel: '2007 · Mexico City Tournament (Anand)', arLabel: '2007 · بطولة المكسيك (أناند)' },
+  { id: 'wch-2006', year: 2006, matchTag: 'World Championship 2006 (Kramnik–Topalov)', enLabel: '2006 · Kramnik vs Topalov', arLabel: '2006 · كرامنيك ضد توبالوف' },
+  { id: 'wch-2005-fide', year: 2005, matchTag: 'FIDE World Championship 2005 (Topalov / San Luis)', enLabel: '2005 (FIDE) · San Luis (Topalov)', arLabel: '2005 (فيدي) · سان لويس (توبالوف)' },
+  { id: 'wch-2004', year: 2004, matchTag: 'World Championship 2004 (Kramnik–Leko)', enLabel: '2004 · Kramnik vs Leko', arLabel: '2004 · كرامنيك ضد ليكو' },
+  { id: 'wch-2004-fide', year: 2004, matchTag: 'FIDE World Championship 2004 (Kasimdzhanov / Tripoli)', enLabel: '2004 (FIDE) · Tripoli KO (Kasimdzhanov)', arLabel: '2004 (فيدي) · طرابلس (قاسمجانوف)' },
+  { id: 'wch-2002-fide', year: 2002, matchTag: 'FIDE World Championship 2002 (Ponomariov / Moscow)', enLabel: '2002 (FIDE) · Moscow KO (Ponomariov)', arLabel: '2002 (فيدي) · موسكو (بونوماريوف)' },
+  { id: 'wch-2000', year: 2000, matchTag: 'World Championship 2000 (Kramnik–Kasparov)', enLabel: '2000 · Kramnik vs Kasparov', arLabel: '2000 · كرامنيك ضد كاسباروف' },
+  { id: 'wch-2000-fide', year: 2000, matchTag: 'FIDE World Championship 2000 (Anand / New Delhi–Tehran)', enLabel: '2000 (FIDE) · Anand (New Delhi–Tehran)', arLabel: '2000 (فيدي) · أناند (نيودلهي–طهران)' },
+  { id: 'wch-1999-fide', year: 1999, matchTag: 'FIDE World Championship 1999 (Khalifman / Las Vegas)', enLabel: '1999 (FIDE) · Las Vegas (Khalifman)', arLabel: '1999 (فيدي) · لاس فيغاس (خليفمان)' },
+  { id: 'wch-1998-fide', year: 1998, matchTag: 'FIDE World Championship 1998 (Karpov–Anand)', enLabel: '1998 (FIDE) · Karpov vs Anand', arLabel: '1998 (فيدي) · كاربوف ضد أناند' },
+  { id: 'wch-1996-fide', year: 1996, matchTag: 'FIDE World Championship 1996 (Karpov–Kamsky)', enLabel: '1996 (FIDE) · Karpov vs Kamsky', arLabel: '1996 (فيدي) · كاربوف ضد كامسكي' },
+  { id: 'wch-1995-pca', year: 1995, matchTag: 'PCA World Championship 1995 (Kasparov–Anand)', enLabel: '1995 (PCA) · Kasparov vs Anand', arLabel: '1995 (PCA) · كاسباروف ضد أناند' },
+  { id: 'wch-1993-pca', year: 1993, matchTag: 'PCA World Championship 1993 (Kasparov–Short)', enLabel: '1993 (PCA) · Kasparov vs Short', arLabel: '1993 (PCA) · كاسباروف ضد شورت' },
+  { id: 'wch-1993-fide', year: 1993, matchTag: 'FIDE World Championship 1993 (Karpov–Timman)', enLabel: '1993 (FIDE) · Karpov vs Timman', arLabel: '1993 (فيدي) · كاربوف ضد تيمان' },
+  { id: 'wch-1990', year: 1990, matchTag: 'World Championship 1990 (Kasparov–Karpov V)', enLabel: '1990 · Kasparov vs Karpov V', arLabel: '1990 · كاسباروف ضد كاربوف ٥' },
+  { id: 'wch-1987', year: 1987, matchTag: 'World Championship 1987 (Kasparov–Karpov IV)', enLabel: '1987 · Kasparov vs Karpov IV (Seville)', arLabel: '1987 · كاسباروف ضد كاربوف ٤ (إشبيلية)' },
+  { id: 'wch-1986', year: 1986, matchTag: 'World Championship 1986 (Kasparov–Karpov III)', enLabel: '1986 · Kasparov vs Karpov III', arLabel: '1986 · كاسباروف ضد كاربوف ٣' },
+  { id: 'wch-1985', year: 1985, matchTag: 'World Championship 1985 (Kasparov–Karpov II)', enLabel: '1985 · Kasparov vs Karpov II', arLabel: '1985 · كاسباروف ضد كاربوف ٢' },
+  { id: 'wch-1984', year: 1984, matchTag: 'World Championship 1984–85 (Karpov–Kasparov I)', enLabel: '1984–85 · Karpov vs Kasparov I', arLabel: '1984–85 · كاربوف ضد كاسباروف ١' },
+  { id: 'wch-1981', year: 1981, matchTag: 'World Championship 1981 (Karpov–Korchnoi II)', enLabel: '1981 · Karpov vs Korchnoi II (Merano)', arLabel: '1981 · كاربوف ضد كورتشنوي ٢ (ميرانو)' },
+  { id: 'wch-1978', year: 1978, matchTag: 'World Championship 1978 (Karpov–Korchnoi I)', enLabel: '1978 · Karpov vs Korchnoi I (Baguio)', arLabel: '1978 · كاربوف ضد كورتشنوي ١ (باغيو)' },
+  { id: 'wch-1972', year: 1972, matchTag: 'World Championship 1972 (Fischer–Spassky)', enLabel: '1972 · Fischer vs Spassky (Reykjavik)', arLabel: '1972 · فيشر ضد سباسكي (ريكيافيك)' },
+  { id: 'wch-1969', year: 1969, matchTag: 'World Championship 1969 (Spassky–Petrosian II)', enLabel: '1969 · Spassky vs Petrosian II', arLabel: '1969 · سباسكي ضد بتروسيان ٢' },
+  { id: 'wch-1966', year: 1966, matchTag: 'World Championship 1966 (Petrosian–Spassky I)', enLabel: '1966 · Petrosian vs Spassky I', arLabel: '1966 · بتروسيان ضد سباسكي ١' },
+  { id: 'wch-1963', year: 1963, matchTag: 'World Championship 1963 (Petrosian–Botvinnik)', enLabel: '1963 · Petrosian vs Botvinnik', arLabel: '1963 · بتروسيان ضد بوتفينيك' },
+  { id: 'wch-1961', year: 1961, matchTag: 'World Championship 1961 (Botvinnik–Tal II)', enLabel: '1961 · Botvinnik vs Tal II', arLabel: '1961 · بوتفينيك ضد تال ٢' },
+  { id: 'wch-1960', year: 1960, matchTag: 'World Championship 1960 (Tal–Botvinnik I)', enLabel: '1960 · Tal vs Botvinnik I', arLabel: '1960 · تال ضد بوتفينيك ١' },
+  { id: 'wch-1958', year: 1958, matchTag: 'World Championship 1958 (Botvinnik–Smyslov III)', enLabel: '1958 · Botvinnik vs Smyslov III', arLabel: '1958 · بوتفينيك ضد سميسلوف ٣' },
+  { id: 'wch-1957', year: 1957, matchTag: 'World Championship 1957 (Smyslov–Botvinnik II)', enLabel: '1957 · Smyslov vs Botvinnik II', arLabel: '1957 · سميسلوف ضد بوتفينيك ٢' },
+  { id: 'wch-1954', year: 1954, matchTag: 'World Championship 1954 (Botvinnik–Smyslov I)', enLabel: '1954 · Botvinnik vs Smyslov I', arLabel: '1954 · بوتفينيك ضد سميسلوف ١' },
+  { id: 'wch-1951', year: 1951, matchTag: 'World Championship 1951 (Botvinnik–Bronstein)', enLabel: '1951 · Botvinnik vs Bronstein', arLabel: '1951 · بوتفينيك ضد برونشتاين' },
+  { id: 'wch-1948', year: 1948, matchTag: 'World Championship 1948 (Hague–Moscow Tournament)', enLabel: '1948 · Hague–Moscow Tournament', arLabel: '1948 · بطولة لاهاي–موسكو الخماسية' },
+  { id: 'wch-1937', year: 1937, matchTag: 'World Championship 1937 (Alekhine–Euwe Rematch)', enLabel: '1937 · Alekhine vs Euwe II', arLabel: '1937 · أليخين ضد أويفه ٢' },
+  { id: 'wch-1935', year: 1935, matchTag: 'World Championship 1935 (Euwe–Alekhine)', enLabel: '1935 · Euwe vs Alekhine I', arLabel: '1935 · أويفه ضد أليخين ١' },
+  { id: 'wch-1934', year: 1934, matchTag: 'World Championship 1934 (Alekhine–Bogoljubow II)', enLabel: '1934 · Alekhine vs Bogoljubow II', arLabel: '1934 · أليخين ضد بوغوليوبوف ٢' },
+  { id: 'wch-1929', year: 1929, matchTag: 'World Championship 1929 (Alekhine–Bogoljubow I)', enLabel: '1929 · Alekhine vs Bogoljubow I', arLabel: '1929 · أليخين ضد بوغوليوبوف ١' },
+  { id: 'wch-1927', year: 1927, matchTag: 'World Championship 1927 (Alekhine–Capablanca)', enLabel: '1927 · Alekhine vs Capablanca', arLabel: '1927 · أليخين ضد كابابلانكا' },
+  { id: 'wch-1921', year: 1921, matchTag: 'World Championship 1921 (Capablanca–Lasker)', enLabel: '1921 · Capablanca vs Lasker', arLabel: '1921 · كابابلانكا ضد لاسكر' },
+  { id: 'wch-1910b', year: 1910, matchTag: 'World Championship 1910 (Lasker–Janowski Berlin)', enLabel: '1910 (II) · Lasker vs Janowski (Berlin)', arLabel: '1910 (٢) · لاسكر ضد يانوفسكي (برلين)' },
+  { id: 'wch-1910a', year: 1910, matchTag: 'World Championship 1910 (Lasker–Schlechter)', enLabel: '1910 (I) · Lasker vs Schlechter', arLabel: '1910 (١) · لاسكر ضد شليختر' },
+  { id: 'wch-1909', year: 1909, matchTag: 'World Championship 1909 (Lasker–Janowski Paris)', enLabel: '1909 · Lasker vs Janowski (Paris)', arLabel: '1909 · لاسكر ضد يانوفسكي (باريس)' },
+  { id: 'wch-1908', year: 1908, matchTag: 'World Championship 1908 (Lasker–Tarrasch)', enLabel: '1908 · Lasker vs Tarrasch', arLabel: '1908 · لاسكر ضد تاراش' },
+  { id: 'wch-1907', year: 1907, matchTag: 'World Championship 1907 (Lasker–Marshall)', enLabel: '1907 · Lasker vs Marshall', arLabel: '1907 · لاسكر ضد مارشال' },
+  { id: 'wch-1896', year: 1896, matchTag: 'World Championship 1896–97 (Lasker–Steinitz II)', enLabel: '1896–97 · Lasker vs Steinitz II', arLabel: '1896–97 · لاسكر ضد شتاينتس ٢' },
+  { id: 'wch-1894', year: 1894, matchTag: 'World Championship 1894 (Lasker–Steinitz I)', enLabel: '1894 · Lasker vs Steinitz I', arLabel: '1894 · لاسكر ضد شتاينتس ١' },
+  { id: 'wch-1892', year: 1892, matchTag: 'World Championship 1892 (Steinitz–Chigorin II)', enLabel: '1892 · Steinitz vs Chigorin II', arLabel: '1892 · شتاينتس ضد تشيغورين ٢' },
+  { id: 'wch-1890', year: 1890, matchTag: 'World Championship 1890–91 (Steinitz–Gunsberg)', enLabel: '1890–91 · Steinitz vs Gunsberg', arLabel: '1890–91 · شتاينتس ضد غونزبرغ' },
+  { id: 'wch-1889', year: 1889, matchTag: 'World Championship 1889 (Steinitz–Chigorin I)', enLabel: '1889 · Steinitz vs Chigorin I', arLabel: '1889 · شتاينتس ضد تشيغورين ١' },
+  { id: 'wch-1886', year: 1886, matchTag: 'World Championship 1886 (Steinitz–Zukertort)', enLabel: '1886 · Steinitz vs Zukertort', arLabel: '1886 · شتاينتس ضد زوكرتورت' },
+];
+
+const WCH_BY_ID = new Map(WORLD_CHAMPIONSHIPS.map((w) => [w.id, w]));
 
 function summarizeBoardMaterial(boardOrGame) {
   const board = Array.isArray(boardOrGame) ? boardOrGame : boardOrGame?.board?.();
@@ -321,6 +388,8 @@ export function filterClassicGames(games = [], filters = {}) {
   const endgame = String(filters.endgame || '').trim();
   const result = String(filters.result || '').trim();
   const collection = String(filters.collection || '').trim();
+  const wchEdition = String(filters.wchEdition || '').trim();
+  const wchMeta = wchEdition ? WCH_BY_ID.get(wchEdition) : null;
 
   const rawFrom = filters.yearFrom !== '' && filters.yearFrom != null ? Number(filters.yearFrom) : null;
   const rawTo = filters.yearTo !== '' && filters.yearTo != null ? Number(filters.yearTo) : null;
@@ -330,7 +399,23 @@ export function filterClassicGames(games = [], filters = {}) {
   const filtered = list.filter((g) => {
     if (!g) return false;
 
-    if (collection && g.collection !== collection) return false;
+    if (collection) {
+      if (collection === 'all-world-championships') {
+        if (g.collection !== 'world-championship' && g.collection !== 'fide-pca-championship') return false;
+      } else if (g.collection !== collection) {
+        return false;
+      }
+    }
+    if (wchEdition) {
+      if (wchMeta) {
+        const ev = String(g.event || '');
+        if (!ev.includes(wchMeta.matchTag)) return false;
+      } else {
+        const needle = wchEdition.toLowerCase();
+        const evText = g._ev ?? `${g.event || ''} ${g.site || ''}`.toLowerCase();
+        if (!evText.includes(needle)) return false;
+      }
+    }
     if (result && g.result !== result) return false;
 
     if (ecoFamily) {

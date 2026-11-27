@@ -164,7 +164,7 @@ export function updateBoardArrows(svgEl, lines = [], { flipped = false, show = t
  */
 export function createStockfishPanel({
   title = t('sfLiveAnalysis'),
-  showArrows = true,
+  showArrows = false,
   onToggleArrows = null,
   onApplyMove = null,
   onRetryMove = null,
@@ -233,7 +233,7 @@ export function createStockfishPanel({
 /**
  * Update the Stockfish panel in place so candidate chips can be clicked cleanly even while searching.
  */
-export function updateStockfishPanel(panel, snapshot, lastMoveGrade = null, { showArrows = true } = {}) {
+export function updateStockfishPanel(panel, snapshot, lastMoveGrade = null, { showArrows = false } = {}) {
   if (!panel) return;
   const lang = getLang();
   const toggleBtn = panel.querySelector('[data-sf-arrows-toggle]');

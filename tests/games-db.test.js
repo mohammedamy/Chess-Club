@@ -13,6 +13,7 @@ import {
   gameRecordToPgn,
   normalizeGameRecord,
   summarizeGamesResults,
+  WORLD_CHAMPIONSHIPS,
 } from '../src/domain/games-db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -201,20 +202,28 @@ describe('classic games filtering, W/D/B summary, and PGN export', () => {
 });
 
 describe('compiled public classic-games-db.json dataset integrity', () => {
-  it('exists, contains 10,000+ historical & elite games (1844–2024), and replays sample moves cleanly', () => {
+  it('exists, contains 31,466+ historical & elite games (1844–2026) and every World Championship (1886–2026)', () => {
     expect(fs.existsSync(DB_JSON_PATH)).toBe(true);
     const raw = JSON.parse(fs.readFileSync(DB_JSON_PATH, 'utf8'));
     expect(raw.version).toBe(2);
     expect(raw.dict).toBeTruthy();
     expect(Array.isArray(raw.games)).toBe(true);
-    expect(raw.games.length).toBeGreaterThanOrEqual(10000);
+    expect(raw.games.length).toBeGreaterThanOrEqual(31466);
     expect(raw.stats.minYear).toBeLessThanOrEqual(1860);
-    expect(raw.stats.maxYear).toBeGreaterThanOrEqual(2024);
+    expect(raw.stats.maxYear).toBeGreaterThanOrEqual(2026);
 
     const normalized = decodeGamesDbPayload(raw);
     expect(normalized).toHaveLength(raw.games.length);
     for (const col of COLLECTION_TYPES) {
       expect(normalized.some((g) => g.collection === col)).toBe(true);
+    }
+    expect(filterClassicGames(normalized, { collection: 'all-world-championships' }).length).toBeGreaterThanOrEqual(
+      2900,
+    );
+    expect(WORLD_CHAMPIONSHIPS.length).toBeGreaterThanOrEqual(60);
+    for (const wch of WORLD_CHAMPIONSHIPS) {
+      const editionGames = filterClassicGames(normalized, { wchEdition: wch.id });
+      expect(editionGames.length).toBeGreaterThanOrEqual(1);
     }
     expect(normalized.some((g) => g.result === '1-0')).toBe(true);
     expect(normalized.some((g) => g.result === '0-1')).toBe(true);
@@ -223,10 +232,10 @@ describe('compiled public classic-games-db.json dataset integrity', () => {
     expect(normalized.some((g) => g.endgame === 'pawn')).toBe(true);
     expect(normalized.some((g) => g.tablebase)).toBe(true);
 
-    // Deterministically replay 60 evenly-spaced games across the full archive
-    const stride = Math.max(1, Math.floor(normalized.length / 60));
+    // Deterministically replay 80 evenly-spaced games across the full archive
+    const stride = Math.max(1, Math.floor(normalized.length / 80));
     let checked = 0;
-    for (let i = 0; i < normalized.length && checked < 60; i += stride) {
+    for (let i = 0; i < normalized.length && checked < 80; i += stride) {
       const g = normalized[i];
       expect(['1-0', '0-1', '1/2-1/2']).toContain(g.result);
       expect(g.eco).toMatch(/^[A-E]\d{2}$/);
@@ -238,6 +247,6 @@ describe('compiled public classic-games-db.json dataset integrity', () => {
       }
       checked += 1;
     }
-    expect(checked).toBe(60);
+    expect(checked).toBe(80);
   });
 });

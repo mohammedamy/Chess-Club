@@ -96,7 +96,7 @@ describe('i18n dictionary parity, localization projections, and RTL bidi safety'
     }
   });
 
-  it('projects 100% of curriculum studies, puzzles, quizzes, engines (8), and presets (12) into Arabic without altering SAN/FEN logic', () => {
+  it('projects 100% of curriculum studies, puzzles, quizzes, engines (18), and presets (12) into Arabic without altering SAN/FEN logic', () => {
     for (const o of OPENINGS) {
       const ar = localizeOpening(o, 'ar');
       expect(HAS_AR.test(ar.name)).toBe(true);
@@ -143,7 +143,7 @@ describe('i18n dictionary parity, localization projections, and RTL bidi safety'
       expect(ar.correctIndex).toBe(q.correctIndex);
     }
 
-    expect(ENGINE_PROFILE_LIST).toHaveLength(8);
+    expect(ENGINE_PROFILE_LIST).toHaveLength(18);
     for (const prof of ENGINE_PROFILE_LIST) {
       const arProf = localizeEngineProfile(prof, 'ar');
       expect(HAS_AR.test(arProf.name)).toBe(true);

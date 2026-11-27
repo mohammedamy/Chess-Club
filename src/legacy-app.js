@@ -106,6 +106,7 @@ import {
   filterClassicGames,
   gameRecordToPgn,
   summarizeGamesResults,
+  WORLD_CHAMPIONSHIPS,
 } from './domain/games-db.js';
 import { iconSvg } from './ui/icons.js';
 import {
@@ -162,25 +163,15 @@ import {
   createUserAnnotationsSvg,
   updateUserAnnotationsSvg,
 } from './ui/lichess-widgets.js';
+import { PIECE_STYLES, getPieceSvgMap } from './ui/piece-sets.js';
 
 /* =========================================================
    EDUGATES INTERNATIONAL SCHOOL — CHESS CLUB
    ========================================================= */
 
-const PIECE_SVG = {
-  K: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#fff" stroke="#000" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M22.5 11.63V6" stroke-linejoin="miter"/><path d="M20 8h5" stroke-linejoin="miter"/><path d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-3.5-7.5-13-10.5-16-4-3 6 5 10 5 10V37z"/><path d="M11.5 30c5.5-3 15.5-3 21 0M11.5 33.5c5.5-3 15.5-3 21 0M11.5 37c5.5-3 15.5-3 21 0" fill="none"/></g></svg>`,
-  Q: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#fff" stroke="#000" stroke-width="1.5" stroke-linejoin="round"><path d="M9 26c8.5-1.5 21-1.5 27 0l2-12-7 11V11l-5.5 13.5-3-15-3 15-5.5-14V25L7 14l2 12z"/><path d="M9 26c0 2 1.5 2 2.5 4 1 1.5 1 1 .5 3.5-1.5 1-1 2.5-1 2.5-1.5 1.5 0 2.5 0 2.5 6.5 1 16.5 1 23 0 0 0 1.5-1 0-2.5 0 0 .5-1.5-1-2.5-.5-2.5-.5-2 .5-3.5 1-2 2.5-2 2.5-4-8.5-1.5-18.5-1.5-27 0z"/><path d="M11 38.5a35 35 1 0 0 23 0" fill="none" stroke-linecap="butt"/><path d="M11 29a35 35 1 0 1 23 0M12.5 31.5h20M11.5 34.5a35 35 1 0 0 22 0M10.5 37.5a35 35 1 0 0 24 0" fill="none" stroke="#000"/><circle cx="6" cy="12" r="2"/><circle cx="14" cy="9" r="2"/><circle cx="22.5" cy="8" r="2"/><circle cx="31" cy="9" r="2"/><circle cx="39" cy="12" r="2"/></g></svg>`,
-  R: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#fff" stroke="#000" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="butt"><path d="M9 39h27v-3H9v3zM12 36v-4h21v4H12zM11 14V9h4v2h5V9h5v2h5V9h4v5"/><path d="M34 14l-3 3H14l-3-3"/><path d="M31 17v12.5H14V17" stroke-linecap="round" stroke-linejoin="miter"/><path d="M31 29.5l1.5 2.5h-20l1.5-2.5"/><path d="M11 14h23" fill="none" stroke-linejoin="miter"/></g></svg>`,
-  B: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#fff" stroke="#000" stroke-width="1.5" stroke-linejoin="round"><g stroke-linecap="butt"><path d="M9 36c3.39-.97 10.11.43 13.5-2 3.39 2.43 10.11 1.03 13.5 2 0 0 1.65.54 3 2-.68.97-1.65.99-3 .5-3.39-.97-10.11.46-13.5-1-3.39 1.46-10.11.03-13.5 1-1.354.49-2.323.47-3-.5 1.354-1.94 3-2 3-2z"/><path d="M15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2z"/><path d="M25 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 1 1 5 0z"/></g><path d="M17.5 26h10M15 30h15m-7.5-14.5v5M20 18h5" stroke-linejoin="miter"/></g></svg>`,
-  N: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#fff" stroke="#000" stroke-width="1.5" stroke-linejoin="round"><path d="M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21" stroke-linecap="butt"/><path d="M24 18c.38 2.91-5.55 7.37-8 9-3 2-2.82 4.34-5 4-1.042-.94 1.41-3.04 0-3-1 0 .19 1.23-1 2-1 0-4.003 1-4-4 0-2 6-12 6-12s1.89-1.9 2-3.5c-.73-.994-.5-2-.5-3 1-1 3 2.5 3 2.5h2s.78-1.992 2.5-3c1 0 1 3 1 3" stroke-linecap="butt"/><path d="M9.5 25.5a.5.5 0 1 1-1 0 .5.5 0 1 1 1 0zM15 15.5a.5 1.5 30 1 1-1 0 .5 1.5 30 1 1 1 0z" fill="#000" stroke="#000" stroke-width="1.5"/></g></svg>`,
-  P: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><path d="M22.5 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38C17.33 16.5 16 18.59 16 21c0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z" fill="#fff" stroke="#000" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  k: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M22.5 11.63V6" stroke-linejoin="miter" fill="none"/><path d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5" fill="#000" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-3.5-7.5-13-10.5-16-4-3 6 5 10 5 10V37z" fill="#000"/><path d="M20 8h5" stroke-linejoin="miter"/><path d="M32 29.5s8.5-4 6.03-9.65C34.15 14 25 18 22.5 24.5l.01 2.1-.01-2.1C20 18 9.906 14 6.997 19.85 4.5 25.5 13 29.5 13 29.5M12.5 30c5.5-3 14.5-3 20 0m-20 3.5c5.5-3 14.5-3 20 0m-20 3.5c5.5-3 14.5-3 20 0" stroke="#fff" fill="none"/></g></svg>`,
-  q: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round"><path d="M9 26c8.5-1.5 21-1.5 27 0l2.5-12.5L31 25l-.3-14.1-5.2 13.6-3-14.5-3 14.5-5.2-13.6L14 25 6.5 13.5 9 26z" stroke-linecap="butt"/><path d="M9 26c0 2 1.5 2 2.5 4 1 1.5 1 1 .5 3.5-1.5 1-1 2.5-1 2.5-1.5 1.5 0 2.5 0 2.5 6.5 1 16.5 1 23 0 0 0 1.5-1 0-2.5 0 0 .5-1.5-1-2.5-.5-2.5-.5-2 .5-3.5 1-2 2.5-2 2.5-4-8.5-1.5-18.5-1.5-27 0z" stroke-linecap="butt"/><path d="M11 38.5a35 35 1 0 0 23 0" fill="none" stroke-linecap="butt"/><path d="M11 29a35 35 1 0 1 23 0M12.5 31.5h20M11.5 34.5a35 35 1 0 0 22 0M10.5 37.5a35 35 1 0 0 24 0" fill="none" stroke="#fff"/><circle cx="6" cy="12" r="2" stroke="#fff"/><circle cx="14" cy="9" r="2" stroke="#fff"/><circle cx="22.5" cy="8" r="2" stroke="#fff"/><circle cx="31" cy="9" r="2" stroke="#fff"/><circle cx="39" cy="12" r="2" stroke="#fff"/></g></svg>`,
-  r: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="butt"><path d="M9 39h27v-3H9v3zM12.5 32l1.5-2.5h17l1.5 2.5h-20zM12 36v-4h21v4H12z"/><path d="M14 29.5v-13h17v13H14z" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M14 16.5L11 14h23l-3 2.5H14zM11 14V9h4v2h5V9h5v2h5V9h4v5H11z" stroke-linecap="butt"/><path d="M12 35.5h21M13 31.5h19M14 29.5h17M14 16.5h17M11 14h23" fill="none" stroke="#fff" stroke-width="1" stroke-linejoin="miter"/></g></svg>`,
-  b: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round"><g fill="#000" stroke-linecap="butt"><path d="M9 36c3.39-.97 10.11.43 13.5-2 3.39 2.43 10.11 1.03 13.5 2 0 0 1.65.54 3 2-.68.97-1.65.99-3 .5-3.39-.97-10.11.46-13.5-1-3.39 1.46-10.11.03-13.5 1-1.354.49-2.323.47-3-.5 1.354-1.94 3-2 3-2z"/><path d="M15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2z"/><path d="M25 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 1 1 5 0z"/></g><path d="M17.5 26h10M15 30h15m-7.5-14.5v5M20 18h5" fill="none" stroke="#fff" stroke-linejoin="miter"/></g></svg>`,
-  n: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round"><path d="M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21" stroke-linecap="butt"/><path d="M24 18c.38 2.91-5.55 7.37-8 9-3 2-2.82 4.34-5 4-1.042-.94 1.41-3.04 0-3-1 0 .19 1.23-1 2-1 0-4.003 1-4-4 0-2 6-12 6-12s1.89-1.9 2-3.5c-.73-.994-.5-2-.5-3 1-1 3 2.5 3 2.5h2s.78-1.992 2.5-3c1 0 1 3 1 3" stroke-linecap="butt"/><path d="M9.5 25.5a.5.5 0 1 1-1 0 .5.5 0 1 1 1 0zM15 15.5a.5 1.5 30 1 1-1 0 .5 1.5 30 1 1 1 0z" fill="#fff" stroke="#fff"/><path d="M24.55 10.4l-.45 1.45.5.15c3.15 1 5.65 2.49 7.9 6.75S35.75 29.06 35.25 39l-.05.5h2.25l.05-.5c.5-10.06-.88-16.85-3.25-21.34-2.37-4.49-5.79-6.64-9.19-7.16l-.51-.1z" fill="#fff" stroke="none"/></g></svg>`,
-  p: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><path d="M22.5 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38C17.33 16.5 16 18.59 16 21c0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z" fill="#000" stroke="#000" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-};
+function activePieceSvgMap() {
+  return getPieceSvgMap(State.preferences?.pieces || 'classic');
+}
 
 const SANDBOX_PRESETS = [
   { label: 'Starting Position', fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1' },
@@ -231,48 +222,119 @@ const BOARD_THEMES = {
   chessGreen: { name: 'Tournament Green', light: '#eeeed2', dark: '#769656', frame: '#2e4421', accent: '#bacb44' },
   midnight: { name: 'Midnight Blue', light: '#f0eadb', dark: '#263b5f', frame: '#13213a', accent: '#65a7d8' },
   forest: { name: 'Forest Green', light: '#f3ead1', dark: '#356246', frame: '#193c2a', accent: '#d7b75b' },
+  mahogany: { name: 'Royal Mahogany', light: '#f2dec0', dark: '#6d2e22', frame: '#3b150f', accent: '#dfb25b' },
+  ebonySlate: { name: 'Ebony & Slate', light: '#dee3e8', dark: '#4b5563', frame: '#1f2937', accent: '#cbd5e1' },
+  emeraldMarble: { name: 'Emerald Marble', light: '#e8f1eb', dark: '#28644c', frame: '#113325', accent: '#6ee7b7' },
+  rosewood: { name: 'Rosewood', light: '#f5e1d8', dark: '#8c3b4a', frame: '#4a1c24', accent: '#e7a977' },
+  blueSteel: { name: 'Steel Blue', light: '#e8eef5', dark: '#4f7396', frame: '#22364d', accent: '#93c5fd' },
+  sandstone: { name: 'Desert Sandstone', light: '#f7ead2', dark: '#b88b58', frame: '#5e4323', accent: '#eab308' },
+  nordicPine: { name: 'Nordic Pine', light: '#f3f1e7', dark: '#5e7a6d', frame: '#283d35', accent: '#a7c4b5' },
+  purpleVelvet: { name: 'Imperial Velvet', light: '#efe8f5', dark: '#624285', frame: '#2d1c42', accent: '#c4b5fd' },
+  obsidianGold: { name: 'Obsidian & Gold', light: '#d6ccb8', dark: '#292524', frame: '#0c0a09', accent: '#eab308' },
+  arcticIce: { name: 'Arctic Ice', light: '#eef6fb', dark: '#6d98ba', frame: '#1e3a5f', accent: '#7dd3fc' },
+  arabianGold: { name: 'Arabian Sand & Gold', light: '#f6ead0', dark: '#9c7138', frame: '#452c0c', accent: '#f59e0b' },
+  sakura: { name: 'Sakura Blossom', light: '#fdf2f4', dark: '#b4657d', frame: '#4c1d31', accent: '#f9a8d4' },
+  clubVinyl: { name: 'Federation Tournament', light: '#fdfdf5', dark: '#547c55', frame: '#1d3622', accent: '#a3e635' },
+  amethyst: { name: 'Royal Amethyst', light: '#f4eefc', dark: '#6e499c', frame: '#2c154a', accent: '#c084fc' },
+  terracotta: { name: 'Andalusian Terracotta', light: '#f7e5d7', dark: '#a8513b', frame: '#4f1e14', accent: '#fb923c' },
 };
 
-const PIECE_STYLES = {
-  classic: { name: 'Classic Staunton', note: 'Traditional ivory and charcoal' },
-  warm: { name: 'Warm Wood', note: 'Soft carved-wood finish' },
-  contrast: { name: 'High Contrast', note: 'Crisp high-legibility silhouettes' },
+const HIGHLIGHT_STYLES = {
+  emerald: { light: 'rgba(34,197,94,.48)', dark: 'rgba(22,163,74,.55)' },
+  amber: { light: 'rgba(245,158,11,.46)', dark: 'rgba(217,119,6,.56)' },
+  sky: { light: 'rgba(56,189,248,.48)', dark: 'rgba(2,132,199,.54)' },
+  coral: { light: 'rgba(244,63,94,.42)', dark: 'rgba(190,18,60,.52)' },
+  violet: { light: 'rgba(168,85,247,.44)', dark: 'rgba(126,34,206,.54)' },
+  mint: { light: 'rgba(45,212,191,.46)', dark: 'rgba(13,148,136,.54)' },
+};
+
+const DEPTH_3D_PX = { slim: '10px', classic: '18px', luxury: '26px' };
+
+const DEFAULT_VIEW_3D = {
+  enabled: false,
+  pitch: 42,
+  swivel: 0,
+  zoom: 100,
+  depth: 'classic',
+  lighting: 'warm-club',
+  projection: 'sculpted-3d',
 };
 
 function loadPreferences() {
+  const base = {
+    board: 'walnut',
+    customLight: '#f2e2c4',
+    customDark: '#7c4d2b',
+    customFrame: '#3d2310',
+    customAccent: '#d4a943',
+    boardFinish: 'wood-grain',
+    highlightStyle: 'emerald',
+    pieces: 'classic',
+    pieceScale: 88,
+    coordinates: true,
+    sound: true,
+    autoQueen: false,
+    showLegalMoves: true,
+    view3d: { ...DEFAULT_VIEW_3D },
+  };
   try {
+    const parsed = JSON.parse(localStorage.getItem('eis_board_preferences') || '{}');
     return {
-      board: 'walnut',
-      pieces: 'classic',
-      coordinates: true,
-      sound: true,
-      autoQueen: false,
-      showLegalMoves: true,
-      ...JSON.parse(localStorage.getItem('eis_board_preferences') || '{}'),
+      ...base,
+      ...parsed,
+      view3d: { ...DEFAULT_VIEW_3D, ...(parsed.view3d || {}) },
     };
   } catch {
+    return base;
+  }
+}
+
+function resolveActiveBoardPalette(prefs) {
+  if (prefs.board === 'custom') {
     return {
-      board: 'walnut',
-      pieces: 'classic',
-      coordinates: true,
-      sound: true,
-      autoQueen: false,
-      showLegalMoves: true,
+      name: 'Custom',
+      light: prefs.customLight || '#f2e2c4',
+      dark: prefs.customDark || '#7c4d2b',
+      frame: prefs.customFrame || '#3d2310',
+      accent: prefs.customAccent || '#d4a943',
     };
   }
+  return BOARD_THEMES[prefs.board] || BOARD_THEMES.walnut;
 }
 
 function applyPreferences() {
   applyLanguageDom(getLang());
-  const theme = BOARD_THEMES[State.preferences.board] || BOARD_THEMES.walnut;
+  const prefs = State.preferences;
+  const theme = resolveActiveBoardPalette(prefs);
+  const hl = HIGHLIGHT_STYLES[prefs.highlightStyle] || HIGHLIGHT_STYLES.emerald;
+  const v3d = { ...DEFAULT_VIEW_3D, ...(prefs.view3d || {}) };
+  const pitch = Math.max(20, Math.min(62, Number(v3d.pitch) || 42));
+  const swivel = Math.max(-35, Math.min(35, Number(v3d.swivel) || 0));
+  const zoom = Math.max(85, Math.min(112, Number(v3d.zoom) || 100));
+  const fit = Math.max(0.72, 0.87 - Math.abs(swivel) * 0.0042 - Math.max(0, pitch - 32) * 0.0016).toFixed(3);
+  const scale = Math.max(76, Math.min(98, Number(prefs.pieceScale) || 88));
+
   const root = document.documentElement;
   root.style.setProperty('--board-light', theme.light);
   root.style.setProperty('--board-dark', theme.dark);
   root.style.setProperty('--board-frame', theme.frame);
   root.style.setProperty('--board-accent', theme.accent);
-  document.body.dataset.pieceStyle = State.preferences.pieces;
-  document.body.classList.toggle('hide-coordinates', !State.preferences.coordinates);
-  document.body.classList.toggle('hide-legal-dots', !State.preferences.showLegalMoves);
+  root.style.setProperty('--highlight', hl.light);
+  root.style.setProperty('--highlight-strong', hl.dark);
+  root.style.setProperty('--piece-scale', `${scale}%`);
+  root.style.setProperty('--board-3d-pitch', String(pitch));
+  root.style.setProperty('--board-3d-swivel', String(swivel));
+  root.style.setProperty('--board-3d-depth', DEPTH_3D_PX[v3d.depth] || DEPTH_3D_PX.classic);
+  root.style.setProperty('--board-3d-fit', fit);
+  root.style.setProperty('--board-3d-zoom', (zoom / 100).toFixed(3));
+
+  document.body.dataset.pieceStyle = prefs.pieces || 'classic';
+  document.body.dataset.boardFinish = prefs.boardFinish || 'wood-grain';
+  document.body.dataset.boardLighting = v3d.lighting || 'warm-club';
+  document.body.dataset.pieceProjection = v3d.projection || 'sculpted-3d';
+  document.body.classList.toggle('board-3d', Boolean(v3d.enabled));
+  document.body.classList.toggle('hide-coordinates', !prefs.coordinates);
+  document.body.classList.toggle('hide-legal-dots', !prefs.showLegalMoves);
   document.body.classList.toggle('zen-mode', Boolean(State.zenMode));
 }
 
@@ -373,6 +435,8 @@ const State = {
 
   // Stockfish 19 Live Coach, PGN Game Analyzer & Move Cursor state
   coachMode: 'guided', // 'guided' | 'sandbox' | 'blunder-check' | 'pgn-analysis'
+  coachOpponentProfileId: 'sf19-nnue',
+  _coachEngineInstance: null,
   coachEngineLevel: 3,
   coachPlayerColor: 'w',
   coachGame: null,
@@ -385,7 +449,9 @@ const State = {
   coachFenInput: '',
   coachFenError: null,
   coachPausedOnMateOrDraw: null,
-  showCoachArrows: true,
+  showCoachArrows: false,
+  libraryFilter: 'all',
+  librarySearch: '',
   coachImportedGames: [],
   coachSelectedGameIdx: 0,
   coachGameMeta: null,
@@ -498,6 +564,7 @@ const State = {
     endgame: '',
     result: '',
     collection: '',
+    wchEdition: '',
     yearFrom: '',
     yearTo: '',
     sortBy: 'year-desc',
@@ -699,6 +766,13 @@ function applyStockfishDom(snap, grade = null) {
       showArrows: State.showCoachArrows,
     });
   }
+  const arrowToolbarBtn = document.querySelector('[data-arrows-btn]');
+  if (arrowToolbarBtn) {
+    const on = Boolean(State.showCoachArrows);
+    arrowToolbarBtn.classList.toggle('active', on);
+    const lbl = arrowToolbarBtn.querySelector('span');
+    if (lbl) lbl.textContent = t('arrowsToggle', { state: on ? t('on') : t('off') });
+  }
 }
 
 function triggerLiveAnalysis(fen, { depth = 13, multiPv = 3, grade = null } = {}) {
@@ -840,6 +914,55 @@ function makeMaxBoardButton() {
   return btn;
 }
 
+function makeArrowsToggleButton({ getFen = null, onAfterToggle = null } = {}) {
+  const on = Boolean(State.showCoachArrows);
+  const btn = el(`<button type="button" class="btn ghost sm ${on ? 'active' : ''}" data-arrows-btn title="${escapeHtml(t('arrows'))}">${iconSvg('arrows', 13)} <span>${escapeHtml(t('arrowsToggle', { state: on ? t('on') : t('off') }))}</span></button>`);
+  btn.onclick = () => {
+    State.showCoachArrows = !State.showCoachArrows;
+    const nowOn = Boolean(State.showCoachArrows);
+    btn.classList.toggle('active', nowOn);
+    const lblSpan = btn.querySelector('span');
+    if (lblSpan) lblSpan.textContent = t('arrowsToggle', { state: nowOn ? t('on') : t('off') });
+
+    if (onAfterToggle) {
+      onAfterToggle(nowOn);
+      return;
+    }
+
+    const targetFen = getFen ? getFen() : null;
+    if (State.dom.sfPanel) {
+      applyStockfishDom(State.sfSnapshot);
+      if (nowOn && targetFen && isStockfishSafeFen(targetFen, Chess) && (!State.sfSnapshot || State.sfSnapshot.fen !== targetFen)) {
+        triggerLiveAnalysis(targetFen, { depth: 12, multiPv: 3 });
+      }
+      return;
+    }
+
+    if (nowOn && targetFen && isStockfishSafeFen(targetFen, Chess)) {
+      triggerLiveAnalysis(targetFen, { depth: 11, multiPv: 3 });
+    } else if (State.dom.arrowsSvg) {
+      updateBoardArrows(State.dom.arrowsSvg, State.sfSnapshot?.lines || [], {
+        flipped: State.flipBoard,
+        show: nowOn,
+      });
+    }
+  };
+  return btn;
+}
+
+function make3dToggleButton({ onAfterToggle = null } = {}) {
+  const v3d = State.preferences.view3d || DEFAULT_VIEW_3D;
+  const on = Boolean(v3d.enabled);
+  const btn = el(`<button type="button" class="btn ghost sm ${on ? 'active' : ''}" data-3d-btn title="${escapeHtml(t('view3dTip'))}">${iconSvg('cube', 13)} <span>${escapeHtml(t('view3dBtn'))}</span></button>`);
+  btn.onclick = () => {
+    State.preferences.view3d = { ...DEFAULT_VIEW_3D, ...(State.preferences.view3d || {}), enabled: !on };
+    savePreferences();
+    if (onAfterToggle) onAfterToggle(Boolean(State.preferences.view3d.enabled));
+    else render();
+  };
+  return btn;
+}
+
 function buildMoveTransportBar({ ply = 0, total = 0, onNavigate }) {
   const wrap = document.createElement('div');
   wrap.className = 'move-transport';
@@ -895,6 +1018,10 @@ function navigate(page, ctx = null) {
   if (page === 'traps') State.openingsTab = 'traps';
   if (page === 'tactics') State.puzzleCategory = 'Tactics';
   const mapped = ROUTE_ALIASES[page] || page;
+
+  if (['openings', 'strategy', 'endgames', 'study-opening', 'study-trap', 'endgame-study'].includes(mapped)) {
+    State.studySidebarCollapsed = false;
+  }
 
   if (mapped !== 'engine-arena') disposeArenaEngines();
   if (mapped !== 'vs-engine' && State._humanVsEngineInstance) {
@@ -967,6 +1094,7 @@ function render() {
   const pages = {
     home: renderHome,
     coach: renderCoach,
+    library: renderLibrary,
     puzzles: renderPuzzles,
     openings: renderOpenings,
     strategy: renderStrategy,
@@ -1011,6 +1139,7 @@ function renderHeader() {
   const navItems = [
     ['home', t('navHall'), 'hall'],
     ['coach', t('navCoach'), 'coach'],
+    ['library', t('navLibrary'), 'library'],
     ['puzzles', t('navPuzzles'), 'puzzles'],
     ['openings', t('navOpenings'), 'openings'],
     ['strategy', t('navStrategy'), 'strategy'],
@@ -1056,6 +1185,14 @@ function renderHeader() {
     render();
   };
 
+  const h3dOn = Boolean(State.preferences?.view3d?.enabled);
+  const header3dBtn = el(`<button class="customize-button header-icon-btn ${h3dOn ? 'active' : ''}" type="button" id="header3dBtn" title="${escapeHtml(t('view3dTip'))}">${iconSvg('cube', 14)} <span>${escapeHtml(t('view3dBtn'))}</span></button>`);
+  header3dBtn.onclick = () => {
+    State.preferences.view3d = { ...DEFAULT_VIEW_3D, ...(State.preferences.view3d || {}), enabled: !h3dOn };
+    savePreferences();
+    render();
+  };
+
   const customizeBtn = el(`<button class="customize-button" type="button" title="${escapeHtml(t('boardStudioTitle'))}">${iconSvg('spark', 14)} <span>${escapeHtml(t('boardBtn'))}</span></button>`);
   customizeBtn.onclick = showCustomization;
 
@@ -1074,6 +1211,10 @@ function renderHeader() {
       State._humanVsEngineInstance.dispose();
       State._humanVsEngineInstance = null;
     }
+    if (State._coachEngineInstance) {
+      State._coachEngineInstance.dispose();
+      State._coachEngineInstance = null;
+    }
     if (sharedClub) {
       await signOutFirebase();
       State.user = null;
@@ -1086,6 +1227,7 @@ function renderHeader() {
   actions.appendChild(soundBtn);
   actions.appendChild(zenBtn);
   actions.appendChild(langBtn);
+  actions.appendChild(header3dBtn);
   actions.appendChild(customizeBtn);
   actions.appendChild(pill);
   c.appendChild(brand);
@@ -1100,28 +1242,311 @@ function renderHeader() {
 // =========================================================
 function showCustomization() {
   const lang = getLang();
+  const v3d = { ...DEFAULT_VIEW_3D, ...(State.preferences.view3d || {}) };
+  State.preferences.view3d = v3d;
+  const previewFen = 'r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQ1RK1 w kq - 4 5';
+  const previewGame = new Chess(previewFen);
+
   const back = document.createElement('div');
   back.className = 'modal-backdrop';
   const modal = document.createElement('div');
   modal.className = 'modal customization-modal';
+
+  const finishes = [
+    ['matte', t('finishMatte', {}, lang)],
+    ['wood-grain', t('finishWood', {}, lang)],
+    ['marble-vein', t('finishMarble', {}, lang)],
+    ['glass-sheen', t('finishGlass', {}, lang)],
+    ['brushed-metal', t('finishMetal', {}, lang)],
+    ['woven-linen', t('finishLinen', {}, lang)],
+  ];
+  const highlights = [
+    ['emerald', t('hlEmerald', {}, lang), HIGHLIGHT_STYLES.emerald.dark],
+    ['amber', t('hlAmber', {}, lang), HIGHLIGHT_STYLES.amber.dark],
+    ['sky', t('hlSky', {}, lang), HIGHLIGHT_STYLES.sky.dark],
+    ['coral', t('hlCoral', {}, lang), HIGHLIGHT_STYLES.coral.dark],
+    ['violet', t('hlViolet', {}, lang), HIGHLIGHT_STYLES.violet.dark],
+    ['mint', t('hlMint', {}, lang), HIGHLIGHT_STYLES.mint.dark],
+  ];
+  const depths = [
+    ['slim', t('depthSlim', {}, lang)],
+    ['classic', t('depthClassic', {}, lang)],
+    ['luxury', t('depthLuxury', {}, lang)],
+  ];
+  const lightings = [
+    ['warm-club', t('lightWarmClub', {}, lang)],
+    ['studio-bright', t('lightStudioBright', {}, lang)],
+    ['dramatic-spotlight', t('lightSpotlight', {}, lang)],
+    ['midnight-glow', t('lightMidnightGlow', {}, lang)],
+    ['golden-hour', t('lightGoldenHour', {}, lang)],
+  ];
+  const projections = [
+    ['sculpted-3d', t('projSculpted', {}, lang)],
+    ['pedestal-3d', t('projPedestal', {}, lang)],
+    ['flat', t('projFlat', {}, lang)],
+  ];
+  let previewShowArrows = Boolean(State.showCoachArrows);
+
   modal.innerHTML = `<button class="modal-close" type="button" aria-label="${escapeHtml(t('close'))}">×</button>
     <h2>${escapeHtml(t('boardStudioTitle'))}</h2>
     <p class="custom-intro">${escapeHtml(t('boardStudioIntro'))}</p>
-    <div class="custom-section">
-      <h3>${escapeHtml(t('languageLabel'))}</h3>
-      <div class="pill-switch" id="studioLangSwitch">
-        <button type="button" data-lang="en" class="${lang === 'en' ? 'active' : ''}">${escapeHtml(t('langOptionEn'))}</button>
-        <button type="button" data-lang="ar" class="${lang === 'ar' ? 'active' : ''}">${escapeHtml(t('langOptionAr'))}</button>
+    <div class="studio-layout">
+      <div class="studio-preview-col">
+        <strong class="small">${escapeHtml(t('studioPreviewLabel', {}, lang))}</strong>
+        <div class="studio-preview-wrap" id="studioPreviewMount"></div>
+        <div style="display:flex;gap:.4rem;flex-wrap:wrap;justify-content:center;align-items:center">
+          <div class="pill-switch" id="studioDimSwitch">
+            <button type="button" data-3d="0" class="${!v3d.enabled ? 'active' : ''}">${escapeHtml(t('mode2dLabel', {}, lang))}</button>
+            <button type="button" data-3d="1" class="${v3d.enabled ? 'active' : ''}">${iconSvg('cube', 13)} ${escapeHtml(t('mode3dLabel', {}, lang))}</button>
+          </div>
+          <button type="button" class="btn ghost sm ${previewShowArrows ? 'active' : ''}" id="stPreviewArrowsBtn">${iconSvg('arrows', 13)} ${escapeHtml(t('studioPreviewArrowsBtn', {}, lang))}</button>
+        </div>
+        <div class="toggle-row" id="studioAnglePresets" style="justify-content:center">
+          <button type="button" class="toggle-btn" data-pitch="42" data-swivel="0">${escapeHtml(t('presetClassicAngle', {}, lang))}</button>
+          <button type="button" class="toggle-btn" data-pitch="26" data-swivel="0">${escapeHtml(t('presetOverheadAngle', {}, lang))}</button>
+          <button type="button" class="toggle-btn" data-pitch="54" data-swivel="0">${escapeHtml(t('presetGmAngle', {}, lang))}</button>
+          <button type="button" class="toggle-btn" data-pitch="46" data-swivel="-18">${escapeHtml(t('presetIsoAngle', {}, lang))}</button>
+          <button type="button" class="toggle-btn" data-pitch="48" data-swivel="18">${escapeHtml(t('presetBroadcastAngle', {}, lang))}</button>
+          <button type="button" class="btn ghost sm" id="stResetCamBtn">${iconSvg('refresh', 12)} ${escapeHtml(t('resetCameraBtn', {}, lang))}</button>
+        </div>
+        <small style="text-align:center">${escapeHtml(t('altDragOrbitHint', {}, lang))}</small>
       </div>
-    </div>
-    <div class="custom-section"><h3>${escapeHtml(t('boardThemeLabel'))}</h3><div class="choice-grid board-choices"></div></div>
-    <div class="custom-section"><h3>${escapeHtml(t('pieceStyleLabel'))}</h3><div class="choice-grid piece-choices"></div></div>
-    <div class="studio-toggles">
-      <label class="coordinate-toggle"><input type="checkbox" id="coordToggle" ${State.preferences.coordinates ? 'checked' : ''}/> ${escapeHtml(t('showCoordinates'))}</label>
-      <label class="coordinate-toggle"><input type="checkbox" id="soundPrefToggle" ${State.preferences.sound ? 'checked' : ''}/> ${escapeHtml(t('soundLabel'))}</label>
-      <label class="coordinate-toggle"><input type="checkbox" id="autoQueenToggle" ${State.preferences.autoQueen ? 'checked' : ''}/> ${escapeHtml(t('autoQueenLabel'))}</label>
-      <label class="coordinate-toggle"><input type="checkbox" id="legalDotsToggle" ${State.preferences.showLegalMoves ? 'checked' : ''}/> ${escapeHtml(t('showLegalMovesLabel'))}</label>
+
+      <div class="studio-controls-col">
+        <div class="custom-section" style="margin-top:0">
+          <h3>${escapeHtml(t('languageLabel'))}</h3>
+          <div class="pill-switch" id="studioLangSwitch">
+            <button type="button" data-lang="en" class="${lang === 'en' ? 'active' : ''}">${escapeHtml(t('langOptionEn'))}</button>
+            <button type="button" data-lang="ar" class="${lang === 'ar' ? 'active' : ''}">${escapeHtml(t('langOptionAr'))}</button>
+          </div>
+        </div>
+
+        <div class="custom-section">
+          <h3>${iconSvg('cube', 15)} ${escapeHtml(t('studio3dTitle', {}, lang))}</h3>
+          <div class="studio-slider-grid" style="grid-template-columns:repeat(auto-fit,minmax(145px,1fr))">
+            <div class="studio-slider-row">
+              <span class="small mono" id="stPitchLbl">${escapeHtml(t('pitchLabel', { deg: v3d.pitch }, lang))}</span>
+              <input type="range" id="stPitchRange" min="20" max="62" step="1" value="${v3d.pitch}" />
+            </div>
+            <div class="studio-slider-row">
+              <span class="small mono" id="stSwivelLbl">${escapeHtml(t('swivelLabel', { deg: v3d.swivel }, lang))}</span>
+              <input type="range" id="stSwivelRange" min="-35" max="35" step="1" value="${v3d.swivel}" />
+            </div>
+            <div class="studio-slider-row">
+              <span class="small mono" id="stZoomLbl">${escapeHtml(t('zoomLabel', { pct: v3d.zoom ?? 100 }, lang))}</span>
+              <input type="range" id="stZoomRange" min="85" max="112" step="1" value="${v3d.zoom ?? 100}" />
+            </div>
+          </div>
+          <div class="arena-field-row" style="flex-wrap:wrap;margin-top:.45rem">
+            <div style="flex:1;min-width:130px">
+              <label for="stDepthSel">${escapeHtml(t('depthLabel', {}, lang))}</label>
+              <select id="stDepthSel">
+                ${depths.map(([id, lbl]) => `<option value="${id}" ${v3d.depth === id ? 'selected' : ''}>${escapeHtml(lbl)}</option>`).join('')}
+              </select>
+            </div>
+            <div style="flex:1;min-width:135px">
+              <label for="stLightSel">${escapeHtml(t('lightingLabel', {}, lang))}</label>
+              <select id="stLightSel">
+                ${lightings.map(([id, lbl]) => `<option value="${id}" ${v3d.lighting === id ? 'selected' : ''}>${escapeHtml(lbl)}</option>`).join('')}
+              </select>
+            </div>
+            <div style="flex:1;min-width:135px">
+              <label for="stProjSel">${escapeHtml(t('projectionLabel', {}, lang))}</label>
+              <select id="stProjSel">
+                ${projections.map(([id, lbl]) => `<option value="${id}" ${v3d.projection === id ? 'selected' : ''}>${escapeHtml(lbl)}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="custom-section">
+          <h3>${escapeHtml(t('boardThemeLabel'))}</h3>
+          <div class="choice-grid board-choices"></div>
+          <div class="studio-color-row">
+            <strong class="small">${escapeHtml(t('customBoardSection', {}, lang))}:</strong>
+            <label class="studio-color-chip"><input type="color" id="stCustLight" value="${escapeHtml(State.preferences.customLight || '#f2e2c4')}" /> ${escapeHtml(t('customLightLabel', {}, lang))}</label>
+            <label class="studio-color-chip"><input type="color" id="stCustDark" value="${escapeHtml(State.preferences.customDark || '#7c4d2b')}" /> ${escapeHtml(t('customDarkLabel', {}, lang))}</label>
+            <label class="studio-color-chip"><input type="color" id="stCustFrame" value="${escapeHtml(State.preferences.customFrame || '#3d2310')}" /> ${escapeHtml(t('customFrameLabel', {}, lang))}</label>
+            <label class="studio-color-chip"><input type="color" id="stCustAccent" value="${escapeHtml(State.preferences.customAccent || '#d4a943')}" /> ${escapeHtml(t('customAccentLabel', {}, lang))}</label>
+          </div>
+        </div>
+
+        <div class="custom-section">
+          <div class="arena-field-row" style="flex-wrap:wrap;gap:.75rem">
+            <div style="flex:1;min-width:190px">
+              <h3 style="margin-bottom:.3rem">${escapeHtml(t('boardFinishLabel', {}, lang))}</h3>
+              <div class="toggle-row" id="stFinishRow">
+                ${finishes.map(([id, lbl]) => `<button type="button" class="toggle-btn ${State.preferences.boardFinish === id ? 'active' : ''}" data-fin="${id}">${escapeHtml(lbl)}</button>`).join('')}
+              </div>
+            </div>
+            <div style="flex:1;min-width:190px">
+              <h3 style="margin-bottom:.3rem">${escapeHtml(t('highlightLabel', {}, lang))}</h3>
+              <div class="toggle-row" id="stHlRow">
+                ${highlights.map(([id, lbl, sw]) => `<button type="button" class="toggle-btn ${State.preferences.highlightStyle === id ? 'active' : ''}" data-hl="${id}"><span style="width:10px;height:10px;border-radius:2px;background:${sw};display:inline-block"></span> ${escapeHtml(lbl)}</button>`).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="custom-section">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap">
+            <h3 style="margin:0">${escapeHtml(t('pieceStyleLabel'))}</h3>
+            <label style="display:inline-flex;align-items:center;gap:.45rem;margin:0;text-transform:none;font-size:.84rem">
+              <span id="stScaleLbl">${escapeHtml(t('pieceScaleLabel', { pct: State.preferences.pieceScale || 88 }, lang))}</span>
+              <input type="range" id="stPieceScale" min="76" max="98" step="2" value="${State.preferences.pieceScale || 88}" style="width:110px;padding:0" />
+            </label>
+          </div>
+          <div class="choice-grid piece-choices" style="margin-top:.38rem"></div>
+        </div>
+
+        <div class="studio-toggles">
+          <label class="coordinate-toggle"><input type="checkbox" id="coordToggle" ${State.preferences.coordinates ? 'checked' : ''}/> ${escapeHtml(t('showCoordinates'))}</label>
+          <label class="coordinate-toggle"><input type="checkbox" id="soundPrefToggle" ${State.preferences.sound ? 'checked' : ''}/> ${escapeHtml(t('soundLabel'))}</label>
+          <label class="coordinate-toggle"><input type="checkbox" id="autoQueenToggle" ${State.preferences.autoQueen ? 'checked' : ''}/> ${escapeHtml(t('autoQueenLabel'))}</label>
+          <label class="coordinate-toggle"><input type="checkbox" id="legalDotsToggle" ${State.preferences.showLegalMoves ? 'checked' : ''}/> ${escapeHtml(t('showLegalMovesLabel'))}</label>
+        </div>
+      </div>
     </div>`;
+
+  const previewMount = modal.querySelector('#studioPreviewMount');
+  const rebuildPreview = () => {
+    previewMount.innerHTML = '';
+    const prevStage = buildBoardStage(previewGame, {
+      flip: State.flipBoard,
+      lastMove: { from: 'e2', to: 'e4' },
+      interactive: false,
+      showEvalBar: false,
+      showArrows: previewShowArrows,
+    });
+    if (previewShowArrows && prevStage.arrowsSvg) {
+      updateBoardArrows(
+        prevStage.arrowsSvg,
+        [
+          { uci: 'b1c3', bestMoveSan: 'Nc3', pvSan: ['Nc3'] },
+          { uci: 'c2c3', bestMoveSan: 'c3', pvSan: ['c3'] },
+          { uci: 'c1g5', bestMoveSan: 'Bg5', pvSan: ['Bg5'] },
+        ],
+        { flipped: State.flipBoard, show: true },
+      );
+    }
+    previewMount.appendChild(prevStage.frame);
+    const dimBtns = modal.querySelectorAll('#studioDimSwitch button');
+    dimBtns.forEach((b) => b.classList.toggle('active', b.dataset['3d'] === (State.preferences.view3d.enabled ? '1' : '0')));
+  };
+
+  const syncAfterPrefChange = (rebuildPieces = false) => {
+    savePreferences();
+    if (rebuildPieces) {
+      rebuildPreview();
+      if (State.user) {
+        const mainApp = document.getElementById('app');
+        const mainStageMount = mainApp?.querySelector('.view-shell');
+        if (mainStageMount) {
+          back.remove();
+          render();
+          showCustomization();
+          return;
+        }
+      }
+    } else {
+      rebuildPreview();
+    }
+  };
+
+  rebuildPreview();
+
+  modal.querySelectorAll('#studioDimSwitch button').forEach((btn) => {
+    btn.onclick = () => {
+      State.preferences.view3d = {
+        ...DEFAULT_VIEW_3D,
+        ...(State.preferences.view3d || {}),
+        enabled: btn.dataset['3d'] === '1',
+      };
+      savePreferences();
+      rebuildPreview();
+    };
+  });
+
+  modal.querySelectorAll('#studioAnglePresets button').forEach((btn) => {
+    btn.onclick = () => {
+      const p = Number(btn.dataset.pitch);
+      const sw = Number(btn.dataset.swivel);
+      State.preferences.view3d = {
+        ...DEFAULT_VIEW_3D,
+        ...(State.preferences.view3d || {}),
+        enabled: true,
+        pitch: p,
+        swivel: sw,
+      };
+      modal.querySelector('#stPitchRange').value = String(p);
+      modal.querySelector('#stSwivelRange').value = String(sw);
+      modal.querySelector('#stPitchLbl').textContent = t('pitchLabel', { deg: p }, lang);
+      modal.querySelector('#stSwivelLbl').textContent = t('swivelLabel', { deg: sw }, lang);
+      savePreferences();
+      rebuildPreview();
+    };
+  });
+
+  modal.querySelector('#stPitchRange').oninput = (e) => {
+    const val = Number(e.target.value);
+    State.preferences.view3d = { ...DEFAULT_VIEW_3D, ...(State.preferences.view3d || {}), enabled: true, pitch: val };
+    modal.querySelector('#stPitchLbl').textContent = t('pitchLabel', { deg: val }, lang);
+    savePreferences();
+    rebuildPreview();
+  };
+
+  modal.querySelector('#stSwivelRange').oninput = (e) => {
+    const val = Number(e.target.value);
+    State.preferences.view3d = { ...DEFAULT_VIEW_3D, ...(State.preferences.view3d || {}), enabled: true, swivel: val };
+    modal.querySelector('#stSwivelLbl').textContent = t('swivelLabel', { deg: val }, lang);
+    savePreferences();
+    rebuildPreview();
+  };
+
+  modal.querySelector('#stZoomRange').oninput = (e) => {
+    const val = Number(e.target.value);
+    State.preferences.view3d = { ...DEFAULT_VIEW_3D, ...(State.preferences.view3d || {}), enabled: true, zoom: val };
+    modal.querySelector('#stZoomLbl').textContent = t('zoomLabel', { pct: val }, lang);
+    savePreferences();
+    rebuildPreview();
+  };
+
+  modal.querySelector('#stResetCamBtn').onclick = () => {
+    State.preferences.view3d = { ...DEFAULT_VIEW_3D, enabled: Boolean(State.preferences.view3d?.enabled) };
+    modal.querySelector('#stPitchRange').value = String(DEFAULT_VIEW_3D.pitch);
+    modal.querySelector('#stSwivelRange').value = String(DEFAULT_VIEW_3D.swivel);
+    modal.querySelector('#stZoomRange').value = String(DEFAULT_VIEW_3D.zoom);
+    modal.querySelector('#stDepthSel').value = DEFAULT_VIEW_3D.depth;
+    modal.querySelector('#stLightSel').value = DEFAULT_VIEW_3D.lighting;
+    modal.querySelector('#stProjSel').value = DEFAULT_VIEW_3D.projection;
+    modal.querySelector('#stPitchLbl').textContent = t('pitchLabel', { deg: DEFAULT_VIEW_3D.pitch }, lang);
+    modal.querySelector('#stSwivelLbl').textContent = t('swivelLabel', { deg: DEFAULT_VIEW_3D.swivel }, lang);
+    modal.querySelector('#stZoomLbl').textContent = t('zoomLabel', { pct: DEFAULT_VIEW_3D.zoom }, lang);
+    savePreferences();
+    rebuildPreview();
+  };
+
+  modal.querySelector('#stPreviewArrowsBtn').onclick = () => {
+    previewShowArrows = !previewShowArrows;
+    modal.querySelector('#stPreviewArrowsBtn').classList.toggle('active', previewShowArrows);
+    rebuildPreview();
+  };
+
+  modal.querySelector('#stDepthSel').onchange = (e) => {
+    State.preferences.view3d = { ...DEFAULT_VIEW_3D, ...(State.preferences.view3d || {}), depth: e.target.value };
+    savePreferences();
+    rebuildPreview();
+  };
+  modal.querySelector('#stLightSel').onchange = (e) => {
+    State.preferences.view3d = { ...DEFAULT_VIEW_3D, ...(State.preferences.view3d || {}), lighting: e.target.value };
+    savePreferences();
+    rebuildPreview();
+  };
+  modal.querySelector('#stProjSel').onchange = (e) => {
+    State.preferences.view3d = { ...DEFAULT_VIEW_3D, ...(State.preferences.view3d || {}), projection: e.target.value };
+    savePreferences();
+    rebuildPreview();
+  };
 
   modal.querySelectorAll('#studioLangSwitch button').forEach((btn) => {
     btn.onclick = () => {
@@ -1138,29 +1563,81 @@ function showCustomization() {
     const btn = el(`<button class="visual-choice ${State.preferences.board === id ? 'selected' : ''}" type="button"><span class="board-swatch" style="--swatch-light:${themeObj.light};--swatch-dark:${themeObj.dark}"></span><strong>${escapeHtml(label)}</strong></button>`);
     btn.onclick = () => {
       State.preferences.board = id;
+      boardChoices.querySelectorAll('.visual-choice').forEach((x) => x.classList.remove('selected'));
+      btn.classList.add('selected');
       savePreferences();
-      back.remove();
-      showCustomization();
+      rebuildPreview();
     };
     boardChoices.appendChild(btn);
+  });
+
+  const applyCustomBoardColor = () => {
+    State.preferences.board = 'custom';
+    boardChoices.querySelectorAll('.visual-choice').forEach((x) => x.classList.remove('selected'));
+    savePreferences();
+    rebuildPreview();
+  };
+  modal.querySelector('#stCustLight').oninput = (e) => {
+    State.preferences.customLight = e.target.value;
+    applyCustomBoardColor();
+  };
+  modal.querySelector('#stCustDark').oninput = (e) => {
+    State.preferences.customDark = e.target.value;
+    applyCustomBoardColor();
+  };
+  modal.querySelector('#stCustFrame').oninput = (e) => {
+    State.preferences.customFrame = e.target.value;
+    applyCustomBoardColor();
+  };
+  modal.querySelector('#stCustAccent').oninput = (e) => {
+    State.preferences.customAccent = e.target.value;
+    applyCustomBoardColor();
+  };
+
+  modal.querySelectorAll('#stFinishRow button').forEach((btn) => {
+    btn.onclick = () => {
+      modal.querySelectorAll('#stFinishRow button').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      State.preferences.boardFinish = btn.dataset.fin;
+      savePreferences();
+      rebuildPreview();
+    };
+  });
+
+  modal.querySelectorAll('#stHlRow button').forEach((btn) => {
+    btn.onclick = () => {
+      modal.querySelectorAll('#stHlRow button').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      State.preferences.highlightStyle = btn.dataset.hl;
+      savePreferences();
+      rebuildPreview();
+    };
   });
 
   const pieceChoices = modal.querySelector('.piece-choices');
   Object.entries(PIECE_STYLES).forEach(([id, styleObj]) => {
     const loc = localizePieceStyle(id, styleObj, lang);
-    const btn = el(`<button class="visual-choice piece-choice ${State.preferences.pieces === id ? 'selected' : ''}" type="button"><span class="piece-preview ${id}">${PIECE_SVG.N}${PIECE_SVG.q}</span><strong>${escapeHtml(loc.name)}</strong><small>${escapeHtml(loc.note)}</small></button>`);
+    const pMap = getPieceSvgMap(id);
+    const btn = el(`<button class="visual-choice piece-choice ${State.preferences.pieces === id ? 'selected' : ''}" type="button"><span class="piece-preview ${id}">${pMap.N}${pMap.q}</span><strong>${escapeHtml(loc.name)}</strong><small>${escapeHtml(loc.note)}</small></button>`);
     btn.onclick = () => {
       State.preferences.pieces = id;
-      savePreferences();
-      back.remove();
-      showCustomization();
+      syncAfterPrefChange(true);
     };
     pieceChoices.appendChild(btn);
   });
 
+  modal.querySelector('#stPieceScale').oninput = (e) => {
+    const pct = Number(e.target.value);
+    State.preferences.pieceScale = pct;
+    modal.querySelector('#stScaleLbl').textContent = t('pieceScaleLabel', { pct }, lang);
+    savePreferences();
+    rebuildPreview();
+  };
+
   modal.querySelector('#coordToggle').onchange = (e) => {
     State.preferences.coordinates = e.target.checked;
     savePreferences();
+    rebuildPreview();
   };
   modal.querySelector('#soundPrefToggle').onchange = (e) => {
     State.preferences.sound = e.target.checked;
@@ -1174,10 +1651,16 @@ function showCustomization() {
   modal.querySelector('#legalDotsToggle').onchange = (e) => {
     State.preferences.showLegalMoves = e.target.checked;
     savePreferences();
+    rebuildPreview();
   };
-  modal.querySelector('.modal-close').onclick = () => back.remove();
+
+  const closeAndRefresh = () => {
+    back.remove();
+    if (State.user) render();
+  };
+  modal.querySelector('.modal-close').onclick = closeAndRefresh;
   back.onclick = (e) => {
-    if (e.target === back) back.remove();
+    if (e.target === back) closeAndRefresh();
   };
   back.appendChild(modal);
   document.getElementById('app').appendChild(back);
@@ -1425,9 +1908,10 @@ function renderHome() {
   // Card 4: Complete Library Tracks
   const tracks = el(`<section class="bento-card library-tracks">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:.45rem;flex-wrap:wrap">
-      <h3>${escapeHtml(t('studyLibraryTitle'))}</h3>
-      <div style="display:flex;align-items:center;gap:.45rem;flex-wrap:wrap">
+      <h3>${iconSvg('library', 16)} ${escapeHtml(t('studyLibraryTitle'))}</h3>
+      <div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">
         <span class="small tabular-nums">${escapeHtml(t('libraryCounts', { studies: OPENINGS.length + TRAPS.length + MIDDLEGAME_LESSONS.length + ENDGAMES.length, puzzles: PUZZLES.length, quizzes: QUIZZES.length }))}</span>
+        <button type="button" class="btn sm" id="trkFullLibrary">${iconSvg('library', 13)} ${escapeHtml(t('openFullLibrary'))}</button>
         <button type="button" class="btn gold sm" id="trkGamesDb">${iconSvg('database', 13)} ${escapeHtml(t('openGamesDb'))}</button>
       </div>
     </div>
@@ -1453,6 +1937,7 @@ function renderHome() {
       </button>
     </div>
   </section>`);
+  tracks.querySelector('#trkFullLibrary').onclick = () => navigate('library');
   tracks.querySelector('#trkOpenings').onclick = () => navigate('openings');
   tracks.querySelector('#trkPuzzles').onclick = () => {
     State.puzzleView = 'catalog';
@@ -1466,6 +1951,152 @@ function renderHome() {
 }
 
 // =========================================================
+// UNIFIED STUDY & TRAINING LIBRARY HUB
+// =========================================================
+function renderLibrary() {
+  const lang = getLang();
+  const wrap = document.createElement('div');
+  wrap.className = 'view-shell';
+  const sum = trainingSummary();
+  const totalStudies = OPENINGS.length + TRAPS.length + MIDDLEGAME_LESSONS.length + ENDGAMES.length;
+
+  const bar = el(`<div class="view-bar">
+    <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+      <h1>${iconSvg('library', 18)} ${escapeHtml(t('studyLibraryTitle'))}</h1>
+      <span class="tag gold tabular-nums">${escapeHtml(t('libraryCounts', { studies: totalStudies, puzzles: PUZZLES.length, quizzes: QUIZZES.length }))}</span>
+    </div>
+    <div class="view-bar-meta">
+      <button type="button" class="btn ghost sm" id="libGoPuzzles">${iconSvg('puzzles', 13)} ${escapeHtml(t('navPuzzles'))} (${sum.solvedPuzzles}/${PUZZLES.length})</button>
+      <button type="button" class="btn ghost sm" id="libGoQuiz">${iconSvg('trophy', 13)} ${escapeHtml(t('quizSprint10'))}</button>
+      <button type="button" class="btn gold sm" id="libGoGamesDb">${iconSvg('database', 13)} ${escapeHtml(t('openGamesDb'))}</button>
+    </div>
+  </div>`);
+  bar.querySelector('#libGoPuzzles').onclick = () => {
+    State.puzzleView = 'catalog';
+    navigate('puzzles');
+  };
+  bar.querySelector('#libGoQuiz').onclick = () => {
+    State.puzzleView = 'quiz';
+    navigate('puzzles');
+  };
+  bar.querySelector('#libGoGamesDb').onclick = () => navigate('games-db');
+  wrap.appendChild(bar);
+
+  const catalog = [
+    ...OPENINGS.map((it) => ({
+      kind: 'openings',
+      raw: it,
+      loc: localizeOpening(it, lang),
+      arLoc: localizeOpening(it, 'ar'),
+      badge: it.eco || t('navOpenings'),
+      level: localizeOpening(it, lang).level || '',
+      done: Boolean(State.training.openings?.[it.id]?.complete),
+      onOpen: () => navigate('study-opening', { id: it.id }),
+    })),
+    ...TRAPS.map((it) => ({
+      kind: 'traps',
+      raw: it,
+      loc: localizeTrap(it, lang),
+      arLoc: localizeTrap(it, 'ar'),
+      badge: it.eco || t('openingTrapsTab', { n: TRAPS.length }),
+      level: localizeTrap(it, lang).level || '',
+      done: Boolean(State.training.traps?.[it.id]?.complete),
+      onOpen: () => navigate('study-trap', { id: it.id }),
+    })),
+    ...MIDDLEGAME_LESSONS.map((it) => ({
+      kind: 'strategy',
+      raw: it,
+      loc: localizeMiddlegame(it, lang),
+      arLoc: localizeMiddlegame(it, 'ar'),
+      badge: t('navStrategy'),
+      level: localizeMiddlegame(it, lang).category || '',
+      done: Boolean(State.training.middlegame?.[it.id]?.complete),
+      onOpen: () => {
+        State.selectedStrategyId = it.id;
+        State.studyStep = 0;
+        navigate('strategy');
+      },
+    })),
+    ...ENDGAMES.map((it) => ({
+      kind: 'endgames',
+      raw: it,
+      loc: localizeEndgame(it, lang),
+      arLoc: localizeEndgame(it, 'ar'),
+      badge: t('navEndgames'),
+      level: localizeEndgame(it, lang).difficulty || '',
+      done: Boolean(State.training.endgames?.[it.id]?.complete),
+      onOpen: () => navigate('endgame-study', { id: it.id }),
+    })),
+  ];
+
+  const filterBar = el(`<div class="filter-bar">
+    <div class="toggle-row" id="libFilterTabs">
+      <button type="button" data-f="all" class="toggle-btn ${State.libraryFilter === 'all' ? 'active' : ''}">${escapeHtml(t('libAllFilter', { n: catalog.length }))}</button>
+      <button type="button" data-f="openings" class="toggle-btn ${State.libraryFilter === 'openings' ? 'active' : ''}">${escapeHtml(t('libOpeningsFilter', { n: OPENINGS.length }))}</button>
+      <button type="button" data-f="traps" class="toggle-btn ${State.libraryFilter === 'traps' ? 'active' : ''}">${escapeHtml(t('libTrapsFilter', { n: TRAPS.length }))}</button>
+      <button type="button" data-f="strategy" class="toggle-btn ${State.libraryFilter === 'strategy' ? 'active' : ''}">${escapeHtml(t('libStrategyFilter', { n: MIDDLEGAME_LESSONS.length }))}</button>
+      <button type="button" data-f="endgames" class="toggle-btn ${State.libraryFilter === 'endgames' ? 'active' : ''}">${escapeHtml(t('libEndgamesFilter', { n: ENDGAMES.length }))}</button>
+    </div>
+    <input type="search" id="libSearchIn" value="${escapeHtml(State.librarySearch)}" placeholder="${escapeHtml(t('libSearchPlaceholder', { n: catalog.length }))}" style="flex:1;min-width:190px" />
+  </div>`);
+  wrap.appendChild(filterBar);
+
+  const gridBox = document.createElement('div');
+  gridBox.className = 'library-catalog-grid';
+  wrap.appendChild(gridBox);
+
+  const renderGrid = () => {
+    const q = normalizeSearchText(State.librarySearch);
+    const items = catalog.filter((entry) => {
+      if (State.libraryFilter !== 'all' && entry.kind !== State.libraryFilter) return false;
+      if (!q) return true;
+      const hay = normalizeSearchText(
+        `${entry.raw.name} ${entry.raw.summary || ''} ${entry.loc.name} ${entry.loc.summary || ''} ${entry.arLoc?.name || ''} ${entry.badge} ${entry.level}`,
+      );
+      return hay.includes(q);
+    });
+
+    gridBox.innerHTML = '';
+    if (items.length === 0) {
+      gridBox.appendChild(el(`<div class="card" style="grid-column:1/-1;text-align:center"><p class="small" style="margin:0">${escapeHtml(t('libNoMatches'))}</p></div>`));
+      return;
+    }
+
+    items.forEach((entry) => {
+      const card = el(`<button type="button" class="library-study-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:.35rem;flex-wrap:wrap">
+          <span class="tag ${entry.kind === 'traps' ? 'burg' : entry.kind === 'endgames' ? 'green' : ''}">${escapeHtml(entry.badge)}</span>
+          <div style="display:flex;gap:.3rem;align-items:center">
+            ${entry.level ? `<span class="small">${escapeHtml(entry.level)}</span>` : ''}
+            ${entry.done ? `<span class="solved-badge">${escapeHtml(t('studiedBadge'))}</span>` : ''}
+          </div>
+        </div>
+        <h4>${escapeHtml(entry.loc.name)}</h4>
+        <p>${escapeHtml(entry.loc.summary || '')}</p>
+      </button>`);
+      card.onclick = () => entry.onOpen();
+      gridBox.appendChild(card);
+    });
+  };
+
+  filterBar.querySelectorAll('#libFilterTabs button').forEach((btn) => {
+    btn.onclick = () => {
+      State.libraryFilter = btn.dataset.f;
+      filterBar.querySelectorAll('#libFilterTabs button').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderGrid();
+    };
+  });
+  filterBar.querySelector('#libSearchIn').oninput = (e) => {
+    State.librarySearch = e.target.value;
+    renderGrid();
+  };
+
+  renderGrid();
+  return wrap;
+}
+
+// =========================================================
 // BOARD STAGE & CHESS INTERACTION (Drag/Drop, Premoves & Right-Click Arrows)
 // =========================================================
 let suppressNextBoardClick = false;
@@ -1476,7 +2107,7 @@ function buildBoardStage(game, {
   interactive = false,
   onMove = null,
   showEvalBar = false,
-  showArrows = false,
+  showArrows = true,
   premove = null,
   allowPremove = false,
   onPremove = null,
@@ -1484,11 +2115,52 @@ function buildBoardStage(game, {
   onEditorSquareClick = null,
   silentMoves = false,
 } = {}) {
+  const v3d = { ...DEFAULT_VIEW_3D, ...(State.preferences?.view3d || {}) };
   const frame = document.createElement('div');
-  frame.className = 'board-frame';
+  frame.className = `board-frame${v3d.enabled ? ' is-3d' : ''}`;
+  frame.dataset.boardLighting = v3d.lighting || 'warm-club';
+  frame.dataset.pieceProjection = v3d.projection || 'sculpted-3d';
 
   const wrap = document.createElement('div');
   wrap.className = 'board-wrap';
+  wrap.appendChild(el('<div class="board-3d-plinth-front" aria-hidden="true"></div>'));
+  wrap.appendChild(el('<div class="board-3d-plinth-left" aria-hidden="true"></div>'));
+  wrap.appendChild(el('<div class="board-3d-plinth-right" aria-hidden="true"></div>'));
+  wrap.appendChild(el('<div class="board-3d-lighting" aria-hidden="true"></div>'));
+
+  // Alt+Drag or Middle-Mouse Drag orbits the 3D camera live on any board
+  frame.addEventListener('pointerdown', (e) => {
+    if (!State.preferences?.view3d?.enabled) return;
+    if (!(e.altKey && e.button === 0) && e.button !== 1) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startPitch = Number(State.preferences.view3d.pitch ?? 42);
+    const startSwivel = Number(State.preferences.view3d.swivel ?? 0);
+    frame.classList.add('is-orbiting');
+
+    const onOrbitMove = (mv) => {
+      const dx = mv.clientX - startX;
+      const dy = mv.clientY - startY;
+      const nextSwivel = Math.max(-35, Math.min(35, Math.round(startSwivel + dx * 0.25)));
+      const nextPitch = Math.max(20, Math.min(62, Math.round(startPitch - dy * 0.25)));
+      State.preferences.view3d.swivel = nextSwivel;
+      State.preferences.view3d.pitch = nextPitch;
+      applyPreferences();
+    };
+    const onOrbitEnd = () => {
+      window.removeEventListener('pointermove', onOrbitMove);
+      window.removeEventListener('pointerup', onOrbitEnd);
+      window.removeEventListener('pointercancel', onOrbitEnd);
+      frame.classList.remove('is-orbiting');
+      savePreferences();
+    };
+    window.addEventListener('pointermove', onOrbitMove);
+    window.addEventListener('pointerup', onOrbitEnd);
+    window.addEventListener('pointercancel', onOrbitEnd);
+  });
+
   const board = buildBoard(game, {
     flip,
     lastMove,
@@ -1628,6 +2300,7 @@ function buildBoard(game, options) {
   board.addEventListener('contextmenu', (e) => e.preventDefault());
 
   board.addEventListener('pointerdown', (e) => {
+    if (e.altKey) return;
     const sqEl = e.target.closest('.square');
     if (!sqEl) return;
     const sq = sqEl.dataset.square;
@@ -1635,9 +2308,11 @@ function buildBoard(game, options) {
     // Right-click circle & arrow annotations
     if (e.button === 2) {
       const color = e.shiftKey ? 'red' : e.altKey ? 'blue' : e.ctrlKey || e.metaKey ? 'gold' : 'green';
+      board.classList.add('is-annotating');
       const onRightUp = (upEvt) => {
         window.removeEventListener('pointerup', onRightUp);
         window.removeEventListener('pointercancel', onRightUp);
+        board.classList.remove('is-annotating');
         const endSqEl = document.elementFromPoint(upEvt.clientX, upEvt.clientY)?.closest('.square');
         const endSq = endSqEl?.dataset.square || sq;
         toggleRightClickAnnotation({ fromSq: sq, toSq: endSq, color, flip });
@@ -1671,6 +2346,7 @@ function buildBoard(game, options) {
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerCancel);
+      board.classList.remove('is-dragging');
       if (ghost) {
         ghost.remove();
         ghost = null;
@@ -1685,6 +2361,7 @@ function buildBoard(game, options) {
     const onPointerMove = (moveEvt) => {
       if (!isDragging && Math.hypot(moveEvt.clientX - startX, moveEvt.clientY - startY) > 6) {
         isDragging = true;
+        board.classList.add('is-dragging');
         if (pieceEl) {
           ghost = document.createElement('div');
           ghost.className = 'drag-ghost';
@@ -1786,7 +2463,7 @@ function buildBoard(game, options) {
         const code = piece.color === 'w' ? piece.type.toUpperCase() : piece.type.toLowerCase();
         const pieceEl = document.createElement('span');
         pieceEl.className = `piece ${piece.color === 'w' ? 'white' : 'black'}`;
-        pieceEl.innerHTML = PIECE_SVG[code] || '';
+        pieceEl.innerHTML = activePieceSvgMap()[code] || '';
         cell.appendChild(pieceEl);
       }
 
@@ -1849,9 +2526,10 @@ function showPromotionPicker() {
   overlay.className = 'promo-picker';
   const card = document.createElement('div');
   card.className = 'promo-card';
+  const pieceMap = activePieceSvgMap();
   ['q', 'r', 'b', 'n'].forEach((t) => {
     const code = p.color === 'w' ? t.toUpperCase() : t.toLowerCase();
-    const piece = el(`<div class="promo-piece" data-t="${t}">${PIECE_SVG[code]}</div>`);
+    const piece = el(`<div class="promo-piece" data-t="${t}">${pieceMap[code]}</div>`);
     piece.onclick = () => {
       const targetGame = p.game || State.game;
       const result = targetGame.move({ from: p.from, to: p.to, promotion: t });
@@ -2336,7 +3014,17 @@ async function coachEngineReply() {
   State.coachThinking = true;
   render();
   const fenBefore = g.fen();
-  const uci = await stockfishClient.playMove(fenBefore, State.coachEngineLevel);
+  const oppId = State.coachOpponentProfileId || 'sf19-nnue';
+  let uci = null;
+  if (oppId === 'sf19-nnue') {
+    uci = await stockfishClient.playMove(fenBefore, State.coachEngineLevel);
+  } else {
+    if (!State._coachEngineInstance || State._coachEngineInstance.profile?.id !== oppId) {
+      if (State._coachEngineInstance) State._coachEngineInstance.dispose();
+      State._coachEngineInstance = createArenaEngine(oppId);
+    }
+    uci = await State._coachEngineInstance.playMove(fenBefore, State.coachEngineLevel);
+  }
   State.coachThinking = false;
   if (!uci || uci === '(none)' || State.page !== 'coach' || State.coachGame !== g) {
     render();
@@ -2456,12 +3144,17 @@ function renderCoach() {
     <div class="view-bar-meta">
       <button type="button" class="toggle-btn ${State.coachImportDrawerOpen ? 'active' : ''}" id="coachImportBtn">${iconSvg('upload', 13)} ${escapeHtml(t('importPgnText'))}</button>
       ${State.coachMode === 'guided' || State.coachMode === 'blunder-check' ? `
+        <select id="coachEngineSel" aria-label="${escapeHtml(t('coachOpponentAria'))}" style="width:auto;max-width:205px;padding:.24rem .5rem;font-size:.84rem">
+          ${ENGINE_PROFILE_LIST.map((p) => {
+            const locP = localizeEngineProfile(p, lang);
+            return `<option value="${p.id}" ${p.id === (State.coachOpponentProfileId || 'sf19-nnue') ? 'selected' : ''}>${escapeHtml(locP.shortName || locP.name)} — ${escapeHtml(locP.styleTag)}</option>`;
+          }).join('')}
+        </select>
         <select id="coachLvl" aria-label="${escapeHtml(t('coachStrengthAria'))}" style="width:auto;padding:.24rem .5rem;font-size:.84rem">
-          ${[1, 2, 3, 4, 5]
-            .map((n) => {
-              const cfg = resolveEngineLevelConfig(n);
-              const tierLabel = localizeEngineTier('sf19-nnue', { value: n, label: cfg.label }, lang).label;
-              return `<option value="${n}" ${State.coachEngineLevel === n ? 'selected' : ''}>${escapeHtml(t('levelOption', { n, label: tierLabel }))}</option>`;
+          ${(getEngineProfile(State.coachOpponentProfileId || 'sf19-nnue').tiers || [1, 2, 3, 4, 5].map((n) => ({ value: n, label: resolveEngineLevelConfig(n).label })))
+            .map((tierItem) => {
+              const tierLabel = localizeEngineTier(State.coachOpponentProfileId || 'sf19-nnue', tierItem, lang).label;
+              return `<option value="${tierItem.value}" ${Number(State.coachEngineLevel) === Number(tierItem.value) ? 'selected' : ''}>${escapeHtml(t('levelOption', { n: tierItem.value, label: tierLabel }))}</option>`;
             })
             .join('')}
         </select>
@@ -2498,6 +3191,17 @@ function renderCoach() {
     }
     render();
   };
+  const engSel = bar.querySelector('#coachEngineSel');
+  if (engSel) {
+    engSel.onchange = (e) => {
+      State.coachOpponentProfileId = e.target.value;
+      const prof = getEngineProfile(e.target.value);
+      if (!prof.tiers.some((tierItem) => Number(tierItem.value) === Number(State.coachEngineLevel))) {
+        State.coachEngineLevel = prof.defaultTier;
+      }
+      render();
+    };
+  }
   const lvlSel = bar.querySelector('#coachLvl');
   if (lvlSel) {
     lvlSel.onchange = (e) => {
@@ -2560,6 +3264,8 @@ function renderCoach() {
     render();
   };
   ctrl.appendChild(flipBtn);
+  ctrl.appendChild(makeArrowsToggleButton({ getFen: () => currentFen }));
+  ctrl.appendChild(make3dToggleButton());
   ctrl.appendChild(makeMaxBoardButton());
   boardCol.appendChild(ctrl);
   layout.appendChild(boardCol);
@@ -2624,18 +3330,19 @@ function renderCoach() {
   matAndLinks.className = 'coach-utility-bar';
   const matRow = document.createElement('div');
   matRow.className = 'coach-mat-pair';
+  const pieceMap = activePieceSvgMap();
   matRow.appendChild(
     createMaterialBar({
       capturedPieces: mat.whiteCaptured,
       netAdv: mat.netWhite > 0 ? mat.netWhite : 0,
-      pieceSvgMap: PIECE_SVG,
+      pieceSvgMap: pieceMap,
     }),
   );
   matRow.appendChild(
     createMaterialBar({
       capturedPieces: mat.blackCaptured,
       netAdv: mat.netWhite < 0 ? -mat.netWhite : 0,
-      pieceSvgMap: PIECE_SVG,
+      pieceSvgMap: pieceMap,
     }),
   );
   const linksWrap = el(`<div class="coach-ext-links">
@@ -2939,7 +3646,7 @@ function renderCoach() {
       turn: fenMeta.turn,
       castling: fenMeta.castling,
       presets: SANDBOX_PRESETS,
-      pieceSvgMap: PIECE_SVG,
+      pieceSvgMap: activePieceSvgMap(),
       lang,
       onSelectTool: (tool) => {
         State.coachEditorTool = tool;
@@ -3502,7 +4209,7 @@ function renderPuzzleSolver() {
     onMove: onPuzzleMove,
     silentMoves: true,
     showEvalBar: State.showPuzzleStockfish,
-    showArrows: State.showPuzzleStockfish,
+    showArrows: true,
   });
 
   State.dom.evalBar = stage.evalBar;
@@ -3571,6 +4278,8 @@ function renderPuzzleSolver() {
   ctrl.appendChild(solBtn);
   ctrl.appendChild(resetBtn);
   ctrl.appendChild(nextBtn);
+  ctrl.appendChild(makeArrowsToggleButton({ getFen: () => viewPos.game.fen() }));
+  ctrl.appendChild(make3dToggleButton());
   ctrl.appendChild(makeMaxBoardButton());
   boardCol.appendChild(ctrl);
   layout.appendChild(boardCol);
@@ -3633,6 +4342,8 @@ function renderPuzzleSolver() {
     });
     State.dom.sfPanel = sfPanel;
     side.appendChild(sfPanel);
+    triggerLiveAnalysis(viewPos.game.fen(), { depth: 12, multiPv: 3 });
+  } else if (State.showCoachArrows) {
     triggerLiveAnalysis(viewPos.game.fen(), { depth: 12, multiPv: 3 });
   }
 
@@ -3814,15 +4525,30 @@ function renderPuzzleRush() {
   };
 
   const boardCol = document.createElement('div');
-  boardCol.className = 'board-column no-controls';
+  boardCol.className = 'board-column';
   const stage = buildBoardStage(g, {
     flip: State.flipBoard,
     lastMove: State.rushLastMove,
     interactive: !State.rushAutoReplying && !State.promotionPending,
     onMove: onRushMove,
     silentMoves: true,
+    showArrows: true,
   });
+  State.dom.arrowsSvg = stage.arrowsSvg;
   boardCol.appendChild(stage.frame);
+  const rushCtrl = document.createElement('div');
+  rushCtrl.className = 'board-controls';
+  const rushFlipBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 13)} ${escapeHtml(t('flip'))}</button>`);
+  rushFlipBtn.onclick = () => {
+    State.flipBoard = !State.flipBoard;
+    render();
+  };
+  rushCtrl.appendChild(rushFlipBtn);
+  rushCtrl.appendChild(makeArrowsToggleButton({ getFen: () => g.fen() }));
+  rushCtrl.appendChild(make3dToggleButton());
+  rushCtrl.appendChild(makeMaxBoardButton());
+  boardCol.appendChild(rushCtrl);
+  if (State.showCoachArrows) triggerLiveAnalysis(g.fen(), { depth: 10, multiPv: 3 });
   layout.appendChild(boardCol);
 
   const side = document.createElement('div');
@@ -3954,9 +4680,9 @@ function renderQuizSprint() {
   layout.className = `play-layout${State.boardMaximized ? ' board-maximized' : ''}`;
 
   const boardCol = document.createElement('div');
-  boardCol.className = 'board-column no-controls';
+  boardCol.className = 'board-column';
   const stage = buildBoardStage(g, {
-    flip: rawQ.sideToMove === 'Black',
+    flip: rawQ.sideToMove === 'Black' ? !State.flipBoard : State.flipBoard,
     lastMove: answered ? session.lastResult?.playedMove || null : null,
     interactive: !answered && !State.promotionPending,
     silentMoves: true,
@@ -3977,11 +4703,23 @@ function renderQuizSprint() {
       render();
     },
     showEvalBar: State.showQuizStockfish,
-    showArrows: State.showQuizStockfish,
+    showArrows: true,
   });
   State.dom.evalBar = stage.evalBar;
   State.dom.arrowsSvg = stage.arrowsSvg;
   boardCol.appendChild(stage.frame);
+  const qzCtrl = document.createElement('div');
+  qzCtrl.className = 'board-controls';
+  const qzFlipBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('flip', 13)} ${escapeHtml(t('flip'))}</button>`);
+  qzFlipBtn.onclick = () => {
+    State.flipBoard = !State.flipBoard;
+    render();
+  };
+  qzCtrl.appendChild(qzFlipBtn);
+  qzCtrl.appendChild(makeArrowsToggleButton({ getFen: () => g.fen() }));
+  qzCtrl.appendChild(make3dToggleButton());
+  qzCtrl.appendChild(makeMaxBoardButton());
+  boardCol.appendChild(qzCtrl);
   layout.appendChild(boardCol);
 
   const side = document.createElement('div');
@@ -4073,6 +4811,8 @@ function renderQuizSprint() {
     });
     State.dom.sfPanel = sfPanel;
     side.appendChild(sfPanel);
+    triggerLiveAnalysis(g.fen(), { depth: 11, multiPv: 3 });
+  } else if (State.showCoachArrows) {
     triggerLiveAnalysis(g.fen(), { depth: 11, multiPv: 3 });
   }
 
@@ -4389,7 +5129,7 @@ function buildLineStudyWorkspace({ kind, items, active, searchValue = null, onSe
       render();
     },
     showEvalBar: State.showStudyStockfish,
-    showArrows: State.showStudyStockfish,
+    showArrows: true,
   });
   State.dom.evalBar = stage.evalBar;
   State.dom.arrowsSvg = stage.arrowsSvg;
@@ -4425,6 +5165,8 @@ function buildLineStudyWorkspace({ kind, items, active, searchValue = null, onSe
     ctrl.appendChild(rst);
     ctrl.appendChild(peek);
     ctrl.appendChild(flp);
+    ctrl.appendChild(makeArrowsToggleButton({ getFen: () => g.fen() }));
+    ctrl.appendChild(make3dToggleButton());
     ctrl.appendChild(makeMaxBoardButton());
   } else {
     ctrl.appendChild(
@@ -4444,6 +5186,8 @@ function buildLineStudyWorkspace({ kind, items, active, searchValue = null, onSe
       render();
     };
     ctrl.appendChild(bFlip);
+    ctrl.appendChild(makeArrowsToggleButton({ getFen: () => g.fen() }));
+    ctrl.appendChild(make3dToggleButton());
     ctrl.appendChild(makeMaxBoardButton());
   }
   boardCol.appendChild(ctrl);
@@ -4487,6 +5231,8 @@ function buildLineStudyWorkspace({ kind, items, active, searchValue = null, onSe
     });
     State.dom.sfPanel = sfPanel;
     side.appendChild(sfPanel);
+    triggerLiveAnalysis(g.fen(), { depth: 12, multiPv: 3 });
+  } else if (State.showCoachArrows) {
     triggerLiveAnalysis(g.fen(), { depth: 12, multiPv: 3 });
   }
 
@@ -4672,7 +5418,7 @@ function renderEndgames() {
       render();
     },
     showEvalBar: State.showStudyStockfish,
-    showArrows: State.showStudyStockfish,
+    showArrows: true,
   });
   State.dom.evalBar = stage.evalBar;
   State.dom.arrowsSvg = stage.arrowsSvg;
@@ -4706,6 +5452,8 @@ function renderEndgames() {
   };
   ctrl.appendChild(rst);
   ctrl.appendChild(flp);
+  ctrl.appendChild(makeArrowsToggleButton({ getFen: () => viewPos.game.fen() }));
+  ctrl.appendChild(make3dToggleButton());
   ctrl.appendChild(makeMaxBoardButton());
   boardCol.appendChild(ctrl);
   layout.appendChild(boardCol);
@@ -4776,6 +5524,8 @@ function renderEndgames() {
     });
     State.dom.sfPanel = sfPanel;
     side.appendChild(sfPanel);
+    triggerLiveAnalysis(viewPos.game.fen(), { depth: 13, multiPv: 3 });
+  } else if (State.showCoachArrows) {
     triggerLiveAnalysis(viewPos.game.fen(), { depth: 13, multiPv: 3 });
   }
 
@@ -5347,8 +6097,9 @@ function renderVsEngine() {
       if (!State.gameOver) setTimeout(() => engineMakeMove(), 180);
     },
     showEvalBar: false,
-    showArrows: false,
+    showArrows: true,
   });
+  State.dom.arrowsSvg = stage.arrowsSvg;
   boardCol.appendChild(stage.frame);
 
   const ctrl = document.createElement('div');
@@ -5400,10 +6151,15 @@ function renderVsEngine() {
   };
   ctrl.appendChild(undoBtn);
   ctrl.appendChild(flipBtn);
+  ctrl.appendChild(makeArrowsToggleButton({ getFen: () => viewPos.game.fen() }));
+  ctrl.appendChild(make3dToggleButton());
   ctrl.appendChild(resignBtn);
   ctrl.appendChild(newBtn);
   ctrl.appendChild(makeMaxBoardButton());
   boardCol.appendChild(ctrl);
+  if (State.showCoachArrows && !State.gameOver) {
+    triggerLiveAnalysis(viewPos.game.fen(), { depth: 11, multiPv: 3 });
+  }
   layout.appendChild(boardCol);
 
   const side = document.createElement('div');
@@ -5437,7 +6193,7 @@ function renderVsEngine() {
       createMaterialBar({
         capturedPieces: color === 'w' ? mat.whiteCaptured : mat.blackCaptured,
         netAdv: color === 'w' ? (mat.netWhite > 0 ? mat.netWhite : 0) : mat.netWhite < 0 ? -mat.netWhite : 0,
-        pieceSvgMap: PIECE_SVG,
+        pieceSvgMap: activePieceSvgMap(),
       }),
     );
     const rightSide = el(`<div style="display:flex;align-items:center;gap:.35rem;flex-shrink:0">${badgeHtml}</div>`);
@@ -5972,11 +6728,6 @@ function renderEngineArena() {
     State.flipBoard = !State.flipBoard;
     render();
   };
-  const arrBtn = el(`<button type="button" class="btn ghost sm ${State.showCoachArrows ? 'active' : ''}">${escapeHtml(t('arrowsToggle', { state: State.showCoachArrows ? t('on') : t('off') }))}</button>`);
-  arrBtn.onclick = () => {
-    State.showCoachArrows = !State.showCoachArrows;
-    render();
-  };
   const swapSidesBtn = el(`<button type="button" class="btn ghost sm">${iconSvg('swap', 13)} ${escapeHtml(t('swap'))}</button>`);
   swapSidesBtn.onclick = () => {
     [State.arenaWhiteProfileId, State.arenaBlackProfileId] = [State.arenaBlackProfileId, State.arenaWhiteProfileId];
@@ -5984,7 +6735,15 @@ function renderEngineArena() {
     startEngineArenaMatch();
   };
   ctrl.appendChild(flipBtn);
-  ctrl.appendChild(arrBtn);
+  ctrl.appendChild(makeArrowsToggleButton({
+    onAfterToggle: (nowOn) => {
+      syncArenaLiveDom();
+      if (nowOn && State.arenaPaused && !State.arenaWhiteSnap && !State.arenaBlackSnap) {
+        analyzeBothOnPause();
+      }
+    },
+  }));
+  ctrl.appendChild(make3dToggleButton());
   ctrl.appendChild(swapSidesBtn);
   ctrl.appendChild(makeMaxBoardButton());
   boardCol.appendChild(ctrl);
@@ -6217,7 +6976,7 @@ function renderVsHuman() {
       render();
     },
     showEvalBar: coachAllowed,
-    showArrows: coachAllowed,
+    showArrows: true,
   });
   State.dom.evalBar = stage.evalBar;
   State.dom.arrowsSvg = stage.arrowsSvg;
@@ -6257,6 +7016,8 @@ function renderVsHuman() {
   resignBtn.onclick = () => finishHumanGame(turn === 'w' ? '0-1' : '1-0', 'resignation');
   ctrl.appendChild(undoBtn);
   ctrl.appendChild(flipBtn);
+  ctrl.appendChild(makeArrowsToggleButton({ getFen: () => viewPos.game.fen() }));
+  ctrl.appendChild(make3dToggleButton());
   ctrl.appendChild(drawBtn);
   ctrl.appendChild(resignBtn);
   ctrl.appendChild(makeMaxBoardButton());
@@ -6282,7 +7043,7 @@ function renderVsHuman() {
       createMaterialBar({
         capturedPieces: color === 'w' ? mat.whiteCaptured : mat.blackCaptured,
         netAdv: color === 'w' ? (mat.netWhite > 0 ? mat.netWhite : 0) : mat.netWhite < 0 ? -mat.netWhite : 0,
-        pieceSvgMap: PIECE_SVG,
+        pieceSvgMap: activePieceSvgMap(),
       }),
     );
     const rightSide = el(`<div style="display:flex;align-items:center;gap:.35rem;flex-shrink:0"><span class="badge elo tabular-nums">${playerObj.rating}</span></div>`);
@@ -6314,6 +7075,8 @@ function renderVsHuman() {
     State.dom.sfPanel = sfPanel;
     side.appendChild(sfPanel);
     triggerLiveAnalysis(viewPos.game.fen(), { depth: 11, multiPv: 3, grade: isReviewing ? null : State.playCoachLastGrade });
+  } else if (State.showCoachArrows) {
+    triggerLiveAnalysis(viewPos.game.fen(), { depth: 11, multiPv: 3 });
   }
   side.appendChild(
     buildMovesPanel(State.gameMoveHistory, {
@@ -6497,11 +7260,16 @@ function renderGamesDb() {
       </select>
     </div>
     <div class="db-filter-row">
-      <select id="dbColSel" style="width:auto;min-width:170px;flex:1" aria-label="${escapeHtml(t('dbAllCollections'))}">
+      <select id="dbColSel" style="width:auto;min-width:165px;flex:1" aria-label="${escapeHtml(t('dbAllCollections'))}">
         <option value="" ${f.collection === '' ? 'selected' : ''}>${escapeHtml(t('dbAllCollections'))}</option>
+        <option value="all-world-championships" ${f.collection === 'all-world-championships' ? 'selected' : ''}>${escapeHtml(t('dbCol_all-world-championships'))}</option>
         ${COLLECTION_TYPES.map((colId) => `<option value="${colId}" ${f.collection === colId ? 'selected' : ''}>${escapeHtml(tCollectionType(colId, lang))}</option>`).join('')}
       </select>
-      <input type="number" id="dbYearFrom" min="1840" max="2030" value="${escapeHtml(f.yearFrom)}" placeholder="${escapeHtml(t('dbYearFrom'))} (${minYear})" style="width:118px" />
+      <select id="dbWchSel" style="width:auto;min-width:195px;flex:1.1" aria-label="${escapeHtml(t('dbAllWchEditions'))}">
+        <option value="" ${f.wchEdition === '' ? 'selected' : ''}>${escapeHtml(t('dbAllWchEditions'))}</option>
+        ${WORLD_CHAMPIONSHIPS.map((wch) => `<option value="${wch.id}" ${f.wchEdition === wch.id ? 'selected' : ''}>${escapeHtml(lang === 'ar' ? wch.arLabel : wch.enLabel)}</option>`).join('')}
+      </select>
+      <input type="number" id="dbYearFrom" min="1840" max="2030" value="${escapeHtml(f.yearFrom)}" placeholder="${escapeHtml(t('dbYearFrom'))} (${minYear})" style="width:112px" />
       <input type="number" id="dbYearTo" min="1840" max="2030" value="${escapeHtml(f.yearTo)}" placeholder="${escapeHtml(t('dbYearTo'))} (${maxYear})" style="width:118px" />
       <div class="pill-switch" id="dbResultPill">
         <button type="button" data-res="" class="${f.result === '' ? 'active' : ''}">${escapeHtml(t('dbAllResults'))}</button>
@@ -6587,6 +7355,11 @@ function renderGamesDb() {
   };
   filterPanel.querySelector('#dbColSel').onchange = (e) => {
     State.gamesDbFilters.collection = e.target.value;
+    State.gamesDbPage = 1;
+    refreshResults();
+  };
+  filterPanel.querySelector('#dbWchSel').onchange = (e) => {
+    State.gamesDbFilters.wchEdition = e.target.value;
     State.gamesDbPage = 1;
     refreshResults();
   };
@@ -6781,25 +7554,27 @@ function renderGamesDbResultsInto(region, lang) {
     lastMove: viewPos.lastMove,
     interactive: false,
     showEvalBar: false,
-    showArrows: false,
+    showArrows: true,
   });
+  State.dom.arrowsSvg = stage.arrowsSvg;
   boardStageWrap.appendChild(stage.frame);
   replayPane.appendChild(boardStageWrap);
 
+  const dbPieceMap = activePieceSvgMap();
   const matBarRow = document.createElement('div');
   matBarRow.className = 'coach-mat-pair';
   matBarRow.appendChild(
     createMaterialBar({
       capturedPieces: mat.whiteCaptured,
       netAdv: mat.netWhite > 0 ? mat.netWhite : 0,
-      pieceSvgMap: PIECE_SVG,
+      pieceSvgMap: dbPieceMap,
     }),
   );
   matBarRow.appendChild(
     createMaterialBar({
       capturedPieces: mat.blackCaptured,
       netAdv: mat.netWhite < 0 ? -mat.netWhite : 0,
-      pieceSvgMap: PIECE_SVG,
+      pieceSvgMap: dbPieceMap,
     }),
   );
   replayPane.appendChild(matBarRow);
@@ -6825,6 +7600,9 @@ function renderGamesDbResultsInto(region, lang) {
     renderGamesDbResultsInto(region, lang);
   };
   controls.appendChild(flipBtn);
+  controls.appendChild(makeArrowsToggleButton({ getFen: () => currentFen }));
+  controls.appendChild(make3dToggleButton({ onAfterToggle: () => renderGamesDbResultsInto(region, lang) }));
+  if (State.showCoachArrows) triggerLiveAnalysis(currentFen, { depth: 11, multiPv: 3 });
 
   if (selected.endgamePly && selected.endgamePly > 0) {
     const egMoveNum = Math.ceil(selected.endgamePly / 2);

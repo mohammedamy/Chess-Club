@@ -148,6 +148,186 @@ export const ENGINE_PROFILES = {
       { value: 4, label: 'Senior (~2080 · d5)', depth: 5, noiseCp: 0, maxTimeMs: 1150, elo: '~2080' },
     ],
   },
+  'lc0-neural': {
+    id: 'lc0-neural',
+    name: 'Leela Chess Zero BT4 (Lc0)',
+    shortName: 'Lc0 BT4',
+    family: 'nnue',
+    personality: 'lc0',
+    architecture: 'Policy Transformer + NNUE',
+    styleTag: 'Deep Positional Squeeze',
+    description: 'Neural policy-network profile inspired by Lc0 BT4 — favors long-term space, piece activity, and prophylaxis.',
+    defaultTier: 4,
+    tiers: [
+      { value: 1, label: 'Club (~1100)', elo: '~1100', sfLevel: 2, depth: 2, noiseCp: 22, maxTimeMs: 300 },
+      { value: 2, label: 'Expert (~1600)', elo: '~1600', sfLevel: 3, depth: 3, noiseCp: 10, maxTimeMs: 500 },
+      { value: 3, label: 'Master (~2100)', elo: '~2100', sfLevel: 4, depth: 4, noiseCp: 0, maxTimeMs: 800 },
+      { value: 4, label: 'GM (~2500)', elo: '~2500', sfLevel: 5, depth: 5, noiseCp: 0, maxTimeMs: 1050 },
+      { value: 5, label: 'Super-GM (~2650)', elo: '~2650', sfLevel: 5, depth: 5, noiseCp: 0, maxTimeMs: 1200 },
+    ],
+  },
+  'dragon-nnue': {
+    id: 'dragon-nnue',
+    name: 'Komodo Dragon 3.3',
+    shortName: 'Dragon 3.3',
+    family: 'nnue',
+    personality: 'dragon',
+    architecture: 'MCTS + NNUE Hybrid',
+    styleTag: 'Combat & Contempt Play',
+    description: 'Dynamic hybrid neural profile tuned to shun sterile symmetry and keep maximum tension in complex positions.',
+    defaultTier: 4,
+    tiers: [
+      { value: 1, label: 'Club (~1100)', elo: '~1100', sfLevel: 2, depth: 2, noiseCp: 22, maxTimeMs: 300 },
+      { value: 2, label: 'Expert (~1600)', elo: '~1600', sfLevel: 3, depth: 3, noiseCp: 10, maxTimeMs: 500 },
+      { value: 3, label: 'Master (~2100)', elo: '~2100', sfLevel: 4, depth: 4, noiseCp: 0, maxTimeMs: 800 },
+      { value: 4, label: 'GM (~2500)', elo: '~2500', sfLevel: 5, depth: 5, noiseCp: 0, maxTimeMs: 1050 },
+      { value: 5, label: 'Super-GM (~2650)', elo: '~2650', sfLevel: 5, depth: 5, noiseCp: 0, maxTimeMs: 1200 },
+    ],
+  },
+  'torch-nnue': {
+    id: 'torch-nnue',
+    name: 'Torch v3 NNUE',
+    shortName: 'Torch v3',
+    family: 'nnue',
+    personality: 'torch',
+    architecture: 'Gen-3 Tactical NNUE',
+    styleTag: 'Relentless Initiative',
+    description: 'Modern tournament powerhouse pairing deep tactical calculation with active piece coordination and king pressure.',
+    defaultTier: 4,
+    tiers: [
+      { value: 1, label: 'Club (~1100)', elo: '~1100', sfLevel: 2, depth: 2, noiseCp: 22, maxTimeMs: 300 },
+      { value: 2, label: 'Expert (~1600)', elo: '~1600', sfLevel: 3, depth: 3, noiseCp: 10, maxTimeMs: 500 },
+      { value: 3, label: 'Master (~2100)', elo: '~2100', sfLevel: 4, depth: 4, noiseCp: 0, maxTimeMs: 800 },
+      { value: 4, label: 'GM (~2500)', elo: '~2500', sfLevel: 5, depth: 5, noiseCp: 0, maxTimeMs: 1050 },
+      { value: 5, label: 'Super-GM (~2650)', elo: '~2650', sfLevel: 5, depth: 5, noiseCp: 0, maxTimeMs: 1200 },
+    ],
+  },
+  'berserk-nnue': {
+    id: 'berserk-nnue',
+    name: 'Berserk 13 NNUE',
+    shortName: 'Berserk 13',
+    family: 'nnue',
+    personality: 'berserk',
+    architecture: 'KP-Net Alpha-Beta NNUE',
+    styleTag: 'Razor-Sharp King Attack',
+    description: 'Open-source attacking NNUE contender specializing in fast king-side storms and open-file breakthroughs.',
+    defaultTier: 4,
+    tiers: [
+      { value: 1, label: 'Club (~1100)', elo: '~1100', sfLevel: 2, depth: 2, noiseCp: 22, maxTimeMs: 300 },
+      { value: 2, label: 'Expert (~1600)', elo: '~1600', sfLevel: 3, depth: 3, noiseCp: 10, maxTimeMs: 500 },
+      { value: 3, label: 'Master (~2100)', elo: '~2100', sfLevel: 4, depth: 4, noiseCp: 0, maxTimeMs: 800 },
+      { value: 4, label: 'GM (~2500)', elo: '~2500', sfLevel: 5, depth: 5, noiseCp: 0, maxTimeMs: 1050 },
+      { value: 5, label: 'Super-GM (~2650)', elo: '~2650', sfLevel: 5, depth: 5, noiseCp: 0, maxTimeMs: 1200 },
+    ],
+  },
+  'obsidian-nnue': {
+    id: 'obsidian-nnue',
+    name: 'Obsidian 14 NNUE',
+    shortName: 'Obsidian 14',
+    family: 'nnue',
+    personality: 'obsidian',
+    architecture: 'Selective-Prune + NNUE',
+    styleTag: 'Structural & Endgame Precision',
+    description: 'Ultra-accurate modern engine focused on central structural control and clinical endgame technique.',
+    defaultTier: 4,
+    tiers: [
+      { value: 1, label: 'Club (~1100)', elo: '~1100', sfLevel: 2, depth: 2, noiseCp: 22, maxTimeMs: 300 },
+      { value: 2, label: 'Expert (~1600)', elo: '~1600', sfLevel: 3, depth: 3, noiseCp: 10, maxTimeMs: 500 },
+      { value: 3, label: 'Master (~2100)', elo: '~2100', sfLevel: 4, depth: 4, noiseCp: 0, maxTimeMs: 800 },
+      { value: 4, label: 'GM (~2500)', elo: '~2500', sfLevel: 5, depth: 5, noiseCp: 0, maxTimeMs: 1050 },
+      { value: 5, label: 'Super-GM (~2650)', elo: '~2650', sfLevel: 5, depth: 5, noiseCp: 0, maxTimeMs: 1200 },
+    ],
+  },
+  'ethereal-nnue': {
+    id: 'ethereal-nnue',
+    name: 'Ethereal 14.3 NNUE',
+    shortName: 'Ethereal 14',
+    family: 'nnue',
+    personality: 'ethereal',
+    architecture: 'HalfKAv2 + PVS NNUE',
+    styleTag: 'Crystal-Clear Endgame & Safety',
+    description: 'Clean, disciplined top-tier NNUE engine balancing solid king safety with effortless endgame conversion.',
+    defaultTier: 4,
+    tiers: [
+      { value: 1, label: 'Club (~1100)', elo: '~1100', sfLevel: 2 },
+      { value: 2, label: 'Expert (~1600)', elo: '~1600', sfLevel: 3 },
+      { value: 3, label: 'Master (~2100)', elo: '~2100', sfLevel: 4 },
+      { value: 4, label: 'GM (~2500)', elo: '~2500', sfLevel: 5 },
+      { value: 5, label: 'Super-GM (~2650)', elo: '~2650', sfLevel: 5 },
+    ],
+  },
+  'integral-nnue': {
+    id: 'integral-nnue',
+    name: 'Integral v7 NNUE',
+    shortName: 'Integral v7',
+    family: 'nnue',
+    personality: 'integral',
+    architecture: 'C++20 Dual-Perspective NNUE',
+    styleTag: 'Dynamic Tactical Initiative',
+    description: 'Modern fast-rising neural engine prized for active piece coordination and crisp tactical timing.',
+    defaultTier: 4,
+    tiers: [
+      { value: 1, label: 'Club (~1100)', elo: '~1100', sfLevel: 2 },
+      { value: 2, label: 'Expert (~1600)', elo: '~1600', sfLevel: 3 },
+      { value: 3, label: 'Master (~2100)', elo: '~2100', sfLevel: 4 },
+      { value: 4, label: 'GM (~2500)', elo: '~2500', sfLevel: 5 },
+      { value: 5, label: 'Super-GM (~2650)', elo: '~2650', sfLevel: 5 },
+    ],
+  },
+  'alexandria-nnue': {
+    id: 'alexandria-nnue',
+    name: 'Alexandria 8.0 NNUE',
+    shortName: 'Alexandria 8',
+    family: 'nnue',
+    personality: 'alexandria',
+    architecture: 'SCReLU 1536 NNUE',
+    styleTag: 'Aggressive Space & Pawn Storm',
+    description: 'Latest SCReLU neural engine unleashing ambitious space gains, wing pawn storms, and persistent pressure.',
+    defaultTier: 4,
+    tiers: [
+      { value: 1, label: 'Club (~1100)', elo: '~1100', sfLevel: 2 },
+      { value: 2, label: 'Expert (~1600)', elo: '~1600', sfLevel: 3 },
+      { value: 3, label: 'Master (~2100)', elo: '~2100', sfLevel: 4 },
+      { value: 4, label: 'GM (~2500)', elo: '~2500', sfLevel: 5 },
+      { value: 5, label: 'Super-GM (~2650)', elo: '~2650', sfLevel: 5 },
+    ],
+  },
+  'koivisto-nnue': {
+    id: 'koivisto-nnue',
+    name: 'Koivisto 9.2 NNUE',
+    shortName: 'Koivisto 9.2',
+    family: 'nnue',
+    personality: 'koivisto',
+    architecture: 'SIMD Selective NNUE',
+    styleTag: 'Hyper-Selective Tempo',
+    description: 'High-speed neural grandmaster engine excelling at open-file initiative, piece activity, and rapid tempo play.',
+    defaultTier: 4,
+    tiers: [
+      { value: 1, label: 'Club (~1100)', elo: '~1100', sfLevel: 2 },
+      { value: 2, label: 'Expert (~1600)', elo: '~1600', sfLevel: 3 },
+      { value: 3, label: 'Master (~2100)', elo: '~2100', sfLevel: 4 },
+      { value: 4, label: 'GM (~2500)', elo: '~2500', sfLevel: 5 },
+      { value: 5, label: 'Super-GM (~2650)', elo: '~2650', sfLevel: 5 },
+    ],
+  },
+  'viridithas-nnue': {
+    id: 'viridithas-nnue',
+    name: 'Viridithas 16 NNUE',
+    shortName: 'Viridithas 16',
+    family: 'nnue',
+    personality: 'viridithas',
+    architecture: 'Rust Perspective NNUE',
+    styleTag: 'Deep Prophylaxis & Fortress',
+    description: 'Elite Rust-built perspective NNUE powerhouse combining prophylactic defense with rock-solid structural strategy.',
+    defaultTier: 4,
+    tiers: [
+      { value: 1, label: 'Club (~1100)', elo: '~1100', sfLevel: 2 },
+      { value: 2, label: 'Expert (~1600)', elo: '~1600', sfLevel: 3 },
+      { value: 3, label: 'Master (~2100)', elo: '~2100', sfLevel: 4 },
+      { value: 4, label: 'GM (~2500)', elo: '~2500', sfLevel: 5 },
+      { value: 5, label: 'Super-GM (~2650)', elo: '~2650', sfLevel: 5 },
+    ],
+  },
 };
 
 export const ENGINE_PROFILE_LIST = Object.values(ENGINE_PROFILES);
@@ -257,7 +437,7 @@ export class ClassicalEngineClient {
       if (this.worker) {
         try {
           this.worker.postMessage({ type: 'stop' });
-        } catch {}
+        } catch { }
       }
       cur.resolve(null);
     }
@@ -320,7 +500,7 @@ export class ClassicalEngineClient {
     if (this.worker) {
       try {
         this.worker.terminate();
-      } catch {}
+      } catch { }
       this.worker = null;
     }
   }
@@ -331,7 +511,7 @@ export class ClassicalEngineClient {
  */
 export function createArenaEngine(profileId = 'sf19-nnue') {
   const profile = getEngineProfile(profileId);
-  if (profile.family === 'nnue') {
+  if (profile.family === 'nnue' && !profile.personality) {
     return new StockfishClient();
   }
   return new ClassicalEngineClient(profile.id);
