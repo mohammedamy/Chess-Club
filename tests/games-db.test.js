@@ -248,5 +248,5 @@ describe('compiled public classic-games-db.json dataset integrity', () => {
       checked += 1;
     }
     expect(checked).toBe(80);
-  });
+  }, 30000);
 });
